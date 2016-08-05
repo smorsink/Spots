@@ -14,18 +14,8 @@
 */
 /***************************************************************************************/
 
-/* Things to FIX 
-1. Add Routine to compute look-up table of bending angles
-2. Call Bending routine once in every latitude (instead of same for whole spot)
-3. Change code so R_eq is input instead of R_spot (almost done!)
-4. Change oblate code so it is based on R_eq
-5. Add new shape function
-6. Add look-up tables for dpsi, delta(t)
-7. Dynamic memory allocation
-*/
-
-
-// TEST out GITHUB!!!
+// Changes
+// 2016-08-05 - SMM: Added a function to Chi.cpp called Bend. Bend computes the look-up table for the bending angles. Removed the section of code in Spot.cpp where this is computed. 
 
 
 // INCLUDE ALL THE THINGS! 
@@ -68,7 +58,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     mass,                       // Mass of the star, in M_sun
-    rspot,                      // Radius of the star at the spot, in km
+    rspot(0.0),                      // Radius of the star at the spot, in km
     mass_over_r, // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
@@ -160,10 +150,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    case 'b': // Blackbody ratio
 	            	sscanf(argv[i+1], "%lf", &bbrat);
 	            	break;
-
-	    case 'd': //toggle ignore_time_delays (only affects output)
-	                ignore_time_delays = true;
-	                break;
 	            
 	    case 'D':  // Distance to NS
 	            	sscanf(argv[i+1], "%lf", &distance);
@@ -181,6 +167,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    case 'g':  // Spectral Model, beaming (graybody factor)
 	                sscanf(argv[i+1],"%u", &beaming_model);
+	                // 0 = BB, no beaming
+	                // 1 = BB + graybody
+	                // 2 = Fake Spectral Line
+	                // 3 = Hydrogen
+	                // 4 = Helium
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -487,7 +478,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.beaming_model = beaming_model;
     curve.numbands = numbands;
 
-   // Define the Spectral Model
+
+   // Define the Observer's Spectral Model
 
     if (curve.flags.spectral_model == 0){ // NICER: Monochromatic Obs at E0=1keV
       curve.para.E0 = 1.0;
@@ -622,52 +614,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
     curve.para.cosgamma = cosgamma;
 
+    std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+    curve = Bend(&curve,defltoa);
 
-    /**********************************************************/
-    /* Compute maximum deflection for purely outgoing photons */
-    /**********************************************************/
-	
-    double  b_mid;  // the value of b, the impact parameter, at 90% of b_max
-    curve.defl.b_max =  defltoa->bmax_outgoing(rspot); // telling us the largest value of b
-
-    std::cout << "New M/R = " << mass_over_r << std::endl;
-    std::cout << "New b_max/R = " << 1.0 / sqrt( 1.0 - 2.0 * mass_over_r ) << std::endl;
-    std::cout << "z = " << 1.0 / sqrt( 1.0 - 2.0 * mass_over_r ) - 1.0 << std::endl;
-    std::cout << "b_max/R = " << curve.defl.b_max/rspot << std::endl;
-
-    curve.defl.psi_max = defltoa->psi_max_outgoing_u(curve.defl.b_max,rspot,&curve.problem); // telling us the largest value of psi
-    std::cout << "psi_max = " << curve.defl.psi_max << std::endl;
-
-    /********************************************************************/
-    /* COMPUTE b VS psi LOOKUP TABLE, GOOD FOR THE SPECIFIED M/R AND mu */
-    /********************************************************************/
-	
-    b_mid = curve.defl.b_max * 0.9; 
-    // since we want to split up the table between coarse and fine spacing. 
-    // 0 - 90% is large spacing, 90% - 100% is small spacing. b_mid is this value at 90%.
-    curve.defl.b_psi[0] = 0.0; // definitions of the actual look-up table for b when psi = 0
-    curve.defl.psi_b[0] = 0.0; // definitions of the actual look-up table for psi when b = 0
-    
-    for ( unsigned int i(1); i < NN+1; i++ ) { /* compute table of b vs psi points */
-        curve.defl.b_psi[i] = b_mid * i / (NN * 1.0);
-        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], rspot, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
-	// calculates the integral
-    }
-
-    // For arcane reasons, the table is not evenly spaced.
-    for ( unsigned int i(NN+1); i < 3*NN; i++ ) { /* compute table of b vs psi points */
-        curve.defl.b_psi[i] = b_mid + (curve.defl.b_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); // spacing for the part where the points are closer together
-        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], rspot, curve.defl.b_max, curve.defl.psi_max, &curve.problem); // referenced same as above
-    }
-    
-    curve.defl.b_psi[3*NN] = curve.defl.b_max;   // maximums
-    curve.defl.psi_b[3*NN] = curve.defl.psi_max;
-    // Finished computing lookup table
-
-    // Print out bending angles
-    //std::cout << "Now print out the bending angles " << std::endl;
-    //Bend(&curve,defltoa);
-
+  
     /****************************/
     /* Initialize time and flux */
     /****************************/
@@ -680,12 +630,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         }
     } 
     
-   
-    /************************************/
-    /* LOCATION OF THE SPOT ON THE STAR */
-    /* FOR ONE OR FIRST HOT SPOT        */
-    /************************************/
-    bool negative_theta(false); // possibly used for a hotspot that is asymmetric over the geometric pole
+ 
 
     /*********************************************/
     /* SPOT IS TRIVIALLY SIZED ON GEOMETRIC POLE */
@@ -705,9 +650,57 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       } // ending Add curves
     } // ending trivial spot on pole
 	
-    // This is the STANDARD CASE, and should be the one that is normally executed.
-    
-    //    std::cout << "Standard Case" << std::endl;
+    /*****************************************/
+    /* SPOT IS SYMMETRIC OVER GEOMETRIC POLE */
+    /*****************************************/
+		
+    else if ( theta_1 == 0 && rho != 0 ) {
+      // Looping through the mesh of the spot
+      for ( unsigned int k(0); k < numtheta; k++ ) {
+	theta_0_1 = theta_1 - rho + k * dtheta + 0.5 * dtheta;   // note: theta_0_1 changes depending on how we've cut up the spot
+	curve.para.theta = theta_0_1;
+	// don't need a phi_edge the way i'm doing the phi_0_1 calculation
+	dphi = Units::PI / numphi;
+	for ( unsigned int j(0); j < numphi; j++ ) {
+	  phi_0_1 = -Units::PI/2 + dphi * j + 0.5 * dphi;
+	  if ( !T_mesh_in ) {
+	    T_mesh[k][j] = spot_temperature;
+	  }
+				
+	  curve.para.dS = pow(rspot,2) * sin(fabs(theta_0_1)) * dtheta * dphi;
+	  // Need to multiply by R^2 here because of my if numtheta=1 statement, 
+	  // which sets dS = true surface area
+	            
+	  // alternative method for computing dS: dS=truesurfarea/pow(numtheta,2);
+					
+	  if ( numtheta == 1 ) 
+	    curve.para.dS = trueSurfArea;
+	  if ( NS_model == 1 || NS_model == 2)
+	    curve.para.dS /= curve.para.cosgamma;
+	  curve.para.temperature = T_mesh[k][j];
+	  curve.para.phi_0 = phi_0_1;
+	  // Calling two very important routines in Chi.cpp:
+	  curve = ComputeAngles(&curve, defltoa);  // Computing the parameters it needs to compute the light curve; defltoa has the routines for what we want to do
+	  curve = ComputeCurve(&curve);
+			
+	  if (curve.para.temperature == 0.0) { 
+	    for (unsigned int i(0); i < numbins; i++) {
+	      for (unsigned int p(0); p < numbands; p++)
+		curve.f[p][i] = 0.0;  // if temperature is 0, then there is no flux!
+	    }
+	  }
+	  // Add curves, load into Flux array
+	  for (unsigned int i(0); i < numbins; i++) {
+	    for (unsigned int p(0); p < numbands; p++) {
+	      Flux[p][i] += curve.f[p][i];
+	    }
+	  } // ending Add curves
+	}
+      }
+    } // ending symmetric spot over pole
+    else{
+
+      //    std::cout << "Standard Case" << std::endl;
 		
     if ( T_mesh_in ) {
       std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
@@ -868,10 +861,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }
       
 
-      } // closing for loop through theta divisions
-    } // end loop through pieces		 
+    } // closing for loop through theta divisions
+    }		 
 	
-     // End Standard Case
+    } // End Standard Case
 
     /********************************************************************************/
     /* SECOND HOT SPOT -- Can handle going over geometric pole, but not well-tested */

@@ -24,8 +24,8 @@ double ChiSquare( class DataStruct* obsdata, class LightCurve* curve );
 class LightCurve ComputeAngles( class LightCurve* incurve,
 				                class OblDeflectionTOA* defltoa );
 
-void Bend ( class LightCurve* incurve,
-	    class OblDeflectionTOA* defltoa);
+class LightCurve Bend ( class LightCurve* incurve,
+			class OblDeflectionTOA* defltoa);
 
 // Calculates the light curve, when given all the angles
 class LightCurve ComputeCurve( class LightCurve* angles );

@@ -401,9 +401,6 @@ double OblDeflectionTOA::psi_max_outgoing ( const double& b, const double& rspot
   	
   	double psi = Integration( rspot, get_rfinal(), OblDeflectionTOA_psi_integrand_wrapper );
 					
-	std::cout << "Psi_max: b/r = " << b/rspot << " rspot = " << rspot << " r_final = " << get_rfinal() << std::endl;
-	std::cout << "psi = " << psi << std::endl;
-
   	return psi;
 }
 
@@ -424,8 +421,6 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
   	double psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX_1 );
 	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX );
 					
-	std::cout << "Psi_max_u: b/r = " << b/rspot << " rspot = " << rspot << " r_final = " << get_rfinal() << std::endl;
-	std::cout << "psi = " << psi << std::endl;
 
   	return psi;
 }

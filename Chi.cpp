@@ -11,6 +11,10 @@
 */
 /***************************************************************************************/
 
+// Changes
+// 2016-08-05 - SMM: Function Bend creates the look-up table of bending angles
+
+
 #include "matpack.h"
 #include <exception>
 #include <cmath>
@@ -497,11 +501,11 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 /* pass: incurve = contains needed values like mass, radius, inclination, theta_0     */
 /*       defltoa =                                                                    */
 /**************************************************************************************/
-void Bend ( class LightCurve* incurve,
+class LightCurve Bend ( class LightCurve* incurve,
 				                 class OblDeflectionTOA* defltoa) {
 
 	/*******************************************/
-	/* VARIABLE DECLARATIONS FOR ComputeAngles */
+	/* VARIABLE DECLARATIONS FOR Bend          */
 	/*******************************************/
 	
     class LightCurve curve;
@@ -509,27 +513,27 @@ void Bend ( class LightCurve* incurve,
 
     std::ofstream bend;      // output stream; printing information to the output file
 
+    int printflag(0); // Set to 1 if you want to print out stuff to a file.
+
     double 
       eps,
-           mass,                      // Mass of the star, in M_sun
-           radius,                    // Radius of the star (at whatever little bit we're evaluating at)
+      mass,                      // Mass of the star, in M_sun
+      radius,                    // Radius of the star (at whatever little bit we're evaluating at)
       mass_over_r,
-           alpha(0.0),                // Zenith angle, in radians
-           sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
-           cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
-           b(0.0),                    // Photon's impact parameter
+      alpha(0.0),                // Zenith angle, in radians
+      sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
+      cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
+      b(0.0),                    // Photon's impact parameter
       psi(0.0),
-      b_max,
-      psi_max,
       toa_val(0.0),              // Time of arrival, MLCB38
       dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
       dcosa_dcosp;
           
     unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
-    numbins = 1000;
+    numbins = 100;
 
 
-    std::cout << "Entering Bend" << std::endl;
+    //std::cout << "Entering Bend" << std::endl;
 
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
@@ -539,75 +543,102 @@ void Bend ( class LightCurve* incurve,
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
 
-    b_max = curve.defl.b_max;
-    // psi_max = curve.defl.psi_max;
-
-    psi_max = defltoa->psi_max_outgoing_u(b_max,radius, &curve.problem);
-    std::cout << "BEND: psi_max = " << psi_max << std::endl;
-
-    //initial assumptions
-    curve.problem = false;
+   /**********************************************************/
+    /* Compute maximum deflection for purely outgoing photons */
+    /**********************************************************/
 	
-    // Open output file and print out header
+    double  b_mid;  // the value of b, the impact parameter, at 90% of b_max
+    curve.defl.b_max =  defltoa->bmax_outgoing(radius); // telling us the largest value of b
+    curve.defl.psi_max = defltoa->psi_max_outgoing_u(curve.defl.b_max,radius,&curve.problem); // telling us the largest value of psi
 
-    bend.open("bend.txt", std::ios_base::trunc);
-    bend.precision(10);
-    bend << "# Mass = " <<  Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun "    << std::endl;
-    bend << "# R_sp = " << Units::nounits_to_cgs(radius, Units::LENGTH )*1.0e-5 << " km " << std::endl;
-    bend << "# M/R = " << curve.para.mass_over_r << std::endl;
-    bend << "# R/M = " << 1.0/curve.para.mass_over_r << std::endl;
-    bend << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
+    /********************************************************************/
+    /* COMPUTE b VS psi LOOKUP TABLE, GOOD FOR THE SPECIFIED M/R AND mu */
+    /********************************************************************/
+	
+    b_mid = curve.defl.b_max * 0.9; 
+    // since we want to split up the table between coarse and fine spacing. 
+    // 0 - 90% is large spacing, 90% - 100% is small spacing. b_mid is this value at 90%.
+    curve.defl.b_psi[0] = 0.0; // definitions of the actual look-up table for b when psi = 0
+    curve.defl.psi_b[0] = 0.0; // definitions of the actual look-up table for psi when b = 0
+    
+    for ( unsigned int i(1); i < NN+1; i++ ) { /* compute table of b vs psi points */
+        curve.defl.b_psi[i] = b_mid * i / (NN * 1.0);
+        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
+	// calculates the integral
+    }
 
-    for (unsigned int i(0); i < numbins; i++ ) { 
+    // For arcane reasons, the table is not evenly spaced.
+    for ( unsigned int i(NN+1); i < 3*NN; i++ ) { /* compute table of b vs psi points */
+        curve.defl.b_psi[i] = b_mid + (curve.defl.b_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); 
+	// spacing for the part where the points are closer together
+        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); // referenced same as above
+    }
+    
+    curve.defl.b_psi[3*NN] = curve.defl.b_max;   // maximums
+    curve.defl.psi_b[3*NN] = curve.defl.psi_max;
+    // Finished computing lookup table
+    
+    if (printflag){
 
-      alpha = i/(numbins-1.0) * Units::PI/2.0; 
-      sinalpha = sin(alpha);
-      cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
+      //initial assumptions
+      curve.problem = false;
+	
+      // Open output file and print out header
 
-      b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
- 
-      psi = defltoa->psi_outgoing_u( b, radius, b_max, psi_max, &curve.problem);
+      bend.open("bend.txt", std::ios_base::trunc);
+      bend.precision(10);
+      bend << "# Mass = " <<  Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun "    << std::endl;
+      bend << "# R_sp = " << Units::nounits_to_cgs(radius, Units::LENGTH )*1.0e-5 << " km " << std::endl;
+      bend << "# M/R = " << curve.para.mass_over_r << std::endl;
+      bend << "# R/M = " << 1.0/curve.para.mass_over_r << std::endl;
+      bend << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
 
-      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	               
-      toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
+      for (unsigned int i(0); i < numbins; i++ ) { 
 
-      std::cout << "bend: alpha = " << alpha << " b/r = " << b/radius << " psi = " << psi << " dpsi = " << dpsi_db_val << std::endl; 
+	alpha = i/(numbins-1.0) * Units::PI/2.0; 
+	sinalpha = sin(alpha);
+	cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
 
-      if (psi==0 && alpha == 0)
-	dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
-      	//dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r));
-      else
-	dcosa_dcosp = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
-
-       if (cosalpha == 0){
-
-	eps = 5e-7;
-	b = b_max * sqrt(1.0 - eps);
-	psi = defltoa->psi_outgoing_u( b, radius, b_max, psi_max, &curve.problem);
+	b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+	psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
 	dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(psi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
+	toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
 
-	b = b_max;
-	psi = defltoa->psi_outgoing_u( b, radius, b_max, psi_max, &curve.problem);
+	if (psi==0 && alpha == 0)
+	  dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
+      	//dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r));
+	else
+	  dcosa_dcosp = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+
+	if (cosalpha == 0){
+	  eps = 5e-7;
+	  b = curve.defl.b_max * sqrt(1.0 - eps);
+	  psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+	  dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(psi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
+
+	  b = curve.defl.b_max;
+	  psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
 
 	}
 		
-      bend 
-	//<< i << " " 
-	<< alpha << " " 
-	<< b/radius << " " 
-	//	<< cosalpha << " "
-	<< psi << " " 
-	//<< cos(psi) << " "
-	//<< 1.0/dcosa_dcosp << " " 
-	<< dcosa_dcosp << " " 
-	//<< Units::nounits_to_cgs(toa_val,Units::TIME)  << " " 
-	<< toa_val / radius 
-	<< std::endl;
+	bend 
+	  //<< i << " " 
+	  << alpha << " " 
+	  << b/radius << " " 
+	  //	<< cosalpha << " "
+	  << psi << " " 
+	  //<< cos(psi) << " "
+	  //<< 1.0/dcosa_dcosp << " " 
+	  << dcosa_dcosp << " " 
+	  //<< Units::nounits_to_cgs(toa_val,Units::TIME)  << " " 
+	  << toa_val / radius 
+	  << std::endl;
 	       			   
+      }
     }
 
+    return curve;
 
 } // End Bend
 
@@ -2476,6 +2507,10 @@ double calcreq( double omega, double mass, double theta_0, double rspot ) {
 	  
 	return req;
 } // end calcreq
+
+
+
+
 
 // end Chi.cpp
 
