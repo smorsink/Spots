@@ -16,6 +16,7 @@
 
 // Changes
 // 2016-08-05 - SMM: Added a function to Chi.cpp called Bend. Bend computes the look-up table for the bending angles. Removed the section of code in Spot.cpp where this is computed. 
+// 2016-08-05 - SMM: Bend is now called one time each latitude
 
 
 // INCLUDE ALL THE THINGS! 
@@ -59,15 +60,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     mass,                       // Mass of the star, in M_sun
     rspot(0.0),                      // Radius of the star at the spot, in km
-    mass_over_r, // Dimensionless mass divided by radius ratio
+    mass_over_req, // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
     bbrat(1.0),                 // Ratio of blackbody to Compton scattering effects, unitless
     ts(0.0),                    // Phase shift or time off-set from data; Used in chi^2 calculation
     spot_temperature(0.0),      // Inner temperature of the spot, in the star's frame, in keV
-    phi_0_1,                    // Equatorial azimuth at the center of the piece of the spot that we're looking at
     phi_0_2,                    // Equatorial azimuth at the center of the piece of the second hot spot that we're looking at
-    theta_0_1,                  // Latitude at the center of the piece of the spot we're looking at
     theta_0_2,                  // Latitude at the center of the piece of the second hot spot that we're looking at
     rho(0.0),                   // Angular radius of the inner bullseye part of the spot, in degrees (converted to radians)
     dphi(1.0),                  // Each chunk of azimuthal angle projected onto equator, when broken up into the bins (see numphi)
@@ -429,7 +428,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
 
-    mass_over_r = mass/(req) * Units::GMC2;
+    mass_over_req = mass/(req) * Units::GMC2;
     incl_1 *= (Units::PI / 180.0);  // radians
     if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
     theta_1 *= (Units::PI / 180.0); // radians
@@ -443,14 +442,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
 	
-     std::cout << "Dimensionless: Mass = " << mass << " Radius = " << req << " M/R = " << mass/req << std::endl; 
+     std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
 
     /**********************************/
     /* PASS VALUES INTO THE STRUCTURE */
     /**********************************/    	
     
     curve.para.mass = mass;
-    curve.para.mass_over_r = mass_over_r;
+    curve.para.mass_over_r = mass_over_req;
     curve.para.omega = omega;
     curve.para.radius = req;
     curve.para.req = req;
@@ -607,15 +606,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // defltoa is a structure that "points" to routines in the file "OblDeflectionTOA.cpp"
     // used to compute deflection angles and times of arrivals 
     // defltoa is the deflection time of arrival
-    OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_r, rspot); 
+    OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
     // defltoa is a pointer (of type OblDeclectionTOA) to a group of functions
 
     // Values we need in some of the formulas.
     cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
     curve.para.cosgamma = cosgamma;
 
-    std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
-    curve = Bend(&curve,defltoa);
+
 
   
     /****************************/
@@ -630,75 +628,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         }
     } 
     
- 
-
-    /*********************************************/
-    /* SPOT IS TRIVIALLY SIZED ON GEOMETRIC POLE */
-    /*********************************************/
-		
-    if ( theta_1 == 0 && rho == 0 ) {
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	for ( unsigned int p(0); p < numbands; p++ )
-	  curve.f[p][i] = 0.0;
-      }
-      
-      // Add curves, load into Flux array
-      for (unsigned int i(0); i < numbins; i++) {
-	for (unsigned int p(0); p < numbands; p++) {
-	  Flux[p][i] += curve.f[p][i];
-	}
-      } // ending Add curves
-    } // ending trivial spot on pole
 	
-    /*****************************************/
-    /* SPOT IS SYMMETRIC OVER GEOMETRIC POLE */
-    /*****************************************/
-		
-    else if ( theta_1 == 0 && rho != 0 ) {
-      // Looping through the mesh of the spot
-      for ( unsigned int k(0); k < numtheta; k++ ) {
-	theta_0_1 = theta_1 - rho + k * dtheta + 0.5 * dtheta;   // note: theta_0_1 changes depending on how we've cut up the spot
-	curve.para.theta = theta_0_1;
-	// don't need a phi_edge the way i'm doing the phi_0_1 calculation
-	dphi = Units::PI / numphi;
-	for ( unsigned int j(0); j < numphi; j++ ) {
-	  phi_0_1 = -Units::PI/2 + dphi * j + 0.5 * dphi;
-	  if ( !T_mesh_in ) {
-	    T_mesh[k][j] = spot_temperature;
-	  }
-				
-	  curve.para.dS = pow(rspot,2) * sin(fabs(theta_0_1)) * dtheta * dphi;
-	  // Need to multiply by R^2 here because of my if numtheta=1 statement, 
-	  // which sets dS = true surface area
-	            
-	  // alternative method for computing dS: dS=truesurfarea/pow(numtheta,2);
-					
-	  if ( numtheta == 1 ) 
-	    curve.para.dS = trueSurfArea;
-	  if ( NS_model == 1 || NS_model == 2)
-	    curve.para.dS /= curve.para.cosgamma;
-	  curve.para.temperature = T_mesh[k][j];
-	  curve.para.phi_0 = phi_0_1;
-	  // Calling two very important routines in Chi.cpp:
-	  curve = ComputeAngles(&curve, defltoa);  // Computing the parameters it needs to compute the light curve; defltoa has the routines for what we want to do
-	  curve = ComputeCurve(&curve);
-			
-	  if (curve.para.temperature == 0.0) { 
-	    for (unsigned int i(0); i < numbins; i++) {
-	      for (unsigned int p(0); p < numbands; p++)
-		curve.f[p][i] = 0.0;  // if temperature is 0, then there is no flux!
-	    }
-	  }
-	  // Add curves, load into Flux array
-	  for (unsigned int i(0); i < numbins; i++) {
-	    for (unsigned int p(0); p < numbands; p++) {
-	      Flux[p][i] += curve.f[p][i];
-	    }
-	  } // ending Add curves
-	}
-      }
-    } // ending symmetric spot over pole
-    else{
+
 
       //    std::cout << "Standard Case" << std::endl;
 		
@@ -754,28 +685,22 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	std::cout << "k=" << k << " thetak = " << thetak << std::endl;
 	dphi = 2.0*Units::PI/(numbins*1.0);
 
+	// What is the value of radius at this angle?
+	// For spherical star, rspot = req;
+	rspot = req; // Spherical star
+	curve.para.radius = rspot; // load rspot into structure
+	curve.para.mass_over_r = mass_over_req * req/rspot;
+	std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+	curve = Bend(&curve,defltoa);
+
 	if ( (pieces==2 && p==1) || (pieces==1)){
 	  double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));
-	  /*std::cout << "cos(rho) = " << cos(rho)
-		    << " cos(th_1) = " << cos(theta_1)
-		    << " cos(th_k) = " << cos(thetak)
-		    << " Numerator = " << cos(rho) - cos(theta_1)*cos(thetak)
-		    << " sin(th_1) = " << sin(theta_1)
-		    << " sin(th_k) = " << sin(thetak)
-		    << " Denominator = " << sin(theta_1)*sin(thetak)
-		    << " cos(phi_e) = " << cos_phi_edge << std::endl;
-	  */
 	  if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) 
 	    cos_phi_edge = 1.0;
 
 	  if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
 	    phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude theta_0_2
-	  // dphi = 2.0 * phi_edge / ( numphi * 1.0 );
-	    /*
-	    std::cout << "phi_edge = " << phi_edge 
-		      << "numphi = " << numphi
-		      << " delta(phi)= " << dphi << std::endl;
-	    */
+	 
 	  }
 	  else {  // trying to divide by zero
 	    throw( Exception(" Tried to divide by zero in calculation of phi_edge_2. Likely, theta_0_2 = 0. Exiting.") );
@@ -784,10 +709,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}
       
 	numphi = 2.0*phi_edge/dphi;
-	/*
-	std::cout << "2.0*phi_edge = " << 2.0*phi_edge << " numphi=" << numphi << "  numphi*dphi=" << numphi*dphi << std::endl;
-	std::cout << " Diff = " << 2.0*phi_edge - numphi*dphi << std::endl;
-	*/
 	phishift = 2.0*phi_edge - numphi*dphi;
 
 	curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
@@ -807,13 +728,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		  
 	phij = -phi_edge + (j+0.5)*dphi;
 	curve.para.phi_0 = phij;
-	/*
-	std::cout << "k=" << k 
-		  << " theta-k = " << thetak
-		  << " j=" << j 
-		  << " phi-j = " << phij
-		  << " dS = " << curve.para.dS << std::endl;
-	*/
+
 	if ( NS_model == 1 || NS_model == 2 )
 	  curve.para.dS /= curve.para.cosgamma;
 
@@ -838,9 +753,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  }
 	} // ending Add curves
       } // end for-j-loop
-      // Add in the missing bit.
-
-      
+      // Add in the missing bit.      
       if (phishift != 0.0){ // Add light from last bin, which requires shifting
       	for ( unsigned int i(0); i < numbins; i++ ) {
 	  int q(i+numphi-1);
@@ -855,16 +768,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    	     
 	curve = ShiftCurve(&curve,phishift);
        
-      for( unsigned int p(0); p < numbands; p++ )
-	for ( unsigned int i(0); i < numbins; i++ ) 
-	  Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
+	for( unsigned int p(0); p < numbands; p++ )
+	  for ( unsigned int i(0); i < numbins; i++ ) 
+	    Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
       }
       
 
-    } // closing for loop through theta divisions
+      } // closing for loop through theta divisions
     }		 
 	
-    } // End Standard Case
+    // End Standard Case
 
     /********************************************************************************/
     /* SECOND HOT SPOT -- Can handle going over geometric pole, but not well-tested */
