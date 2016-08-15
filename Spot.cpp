@@ -58,6 +58,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
+    d_theta_2(0.0),
+    d_incl_2(0.0),
     mass,                       // Mass of the star, in M_sun
     rspot(0.0),                      // Radius of the star at the spot, in km
     mass_over_req, // Dimensionless mass divided by radius ratio
@@ -159,6 +161,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                theta_is_set = true;
 	                break;
 
+		case 'E':  // Offset emission angle of the second spot (degrees), latitude
+	                sscanf(argv[i+1], "%lf", &d_theta_2);
+	                break;      
+
 	    case 'f':  // Spin frequency (Hz)
 	                sscanf(argv[i+1], "%lf", &omega);
 	                omega_is_set = true;
@@ -177,6 +183,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%lf", &incl_1);
 	                incl_is_set = true;
 	                break;
+
+	    // Offset inclination angle set as case L
 	            
 	    case 'I': // Name of input file
 	            	sscanf(argv[i+1], "%s", data_file);
@@ -189,6 +197,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	          	          
 	    case 'l':  // Time shift, phase shift.
 	                sscanf(argv[i+1], "%lf", &ts);
+	                break;
+
+	    case 'L':  // Offset inclination angle of the observer (degrees)
+	                sscanf(argv[i+1], "%lf", &d_incl_2);
 	                break;
 
 	    case 'k': // Background in low energy band (between 0 and 1)
@@ -432,7 +444,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     incl_1 *= (Units::PI / 180.0);  // radians
     if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
     theta_1 *= (Units::PI / 180.0); // radians
-    theta_2 = theta_1; // radians
+    theta_2 = theta_1+d_theta_2; // radians
     //rho *= (Units::PI / 180.0);  // rho is input in radians
     mu_1 = cos( theta_1 );
     mu_2 = mu_1; 
@@ -700,7 +712,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
 	    phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude theta_0_2
-	 
+	    std::cout << phi_edge << std::endl;
 	  }
 	  else {  // trying to divide by zero
 	    throw( Exception(" Tried to divide by zero in calculation of phi_edge_2. Likely, theta_0_2 = 0. Exiting.") );
@@ -779,13 +791,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	
     // End Standard Case
 
-    /********************************************************************************/
-    /* SECOND HOT SPOT -- Can handle going over geometric pole, but not well-tested */
-    /********************************************************************************/
+    /**********************************************************/
+    /* SECOND HOT SPOT -- Mirroring of first hot spot         */
+    /**********************************************************/
 
     if ( two_spots ) {
-    	incl_2 = Units::PI - incl_1; // keeping theta the same, but changing inclination
+    	incl_2 = Units::PI - incl_1 + d_incl_2; // keeping theta the same, but changing inclination
     	curve.para.incl = incl_2;
+    	theta_2 = theta_1 + d_theta_2;
     	curve.para.theta = theta_2;  // keeping theta the same, but changing inclination
     	cosgamma = model->cos_gamma(mu_2);
     	curve.para.cosgamma = cosgamma;
@@ -801,201 +814,150 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     		trueSurfArea = 2 * Units::PI * pow(rspot,2) * (1 - cos(rho));
     	}
     		
-    	/****************************************************************/
-	/* SECOND HOT SPOT -- SPOT IS TRIVIALLY SIZED ON GEOMETRIC POLE */
-	/****************************************************************/
-		
-	if ( theta_2 == 0 && rho == 0 ) {
+    if ( T_mesh_in ) {
+      std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
+      spot_temperature = 2;
+    }
+    curve.para.temperature = spot_temperature;
+
+    int pieces;
+    //Does the spot go over the pole?
+    if ( rho > theta_2){ // yes
+      pieces=2;
+    }
+    else //no
+      pieces=1;
+
+    //std::cout << "pieces = " << pieces << std::endl;
+
+    for (unsigned int p(0);p<pieces;p++){
+
+      double deltatheta = 2.0*rho/numtheta;
+
+      if (pieces==2){
+		if (p==0)
+	  		deltatheta = (rho-theta_2)/numtheta;
+		else
+	  		deltatheta = (2.0*theta_2)/numtheta;
+      }
+      
+      std::cout << "numtheta=" << numtheta
+		<< " theta = " << theta_2
+		<< " delta(theta) = " << deltatheta << std::endl;
+     
+      // Looping through the mesh of the spot
+      for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+	//for (unsigned int k(0); k < 6; k++) { // Loop through the circles
+	std::cout << "k=" << k << std::endl;
+
+	double thetak = theta_2 - rho + (k+0.5)*deltatheta; 
+	double phi_edge, phij;
+
+	if (pieces==2){
+	  if (p==0){
+	    thetak = (k+0.5)*deltatheta;
+	    phi_edge = Units::PI;
+	  }
+	  else {
+	    thetak = rho - theta_2 + (k+0.5)*deltatheta;
+	  }
+	}
+
+	std::cout << "k=" << k << " thetak = " << thetak << std::endl;
+	dphi = 2.0*Units::PI/(numbins*1.0);
+
+	// What is the value of radius at this angle?
+	// For spherical star, rspot = req;
+	rspot = req; // Spherical star
+	curve.para.radius = rspot; // load rspot into structure
+	curve.para.mass_over_r = mass_over_req * req/rspot;
+	std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+	curve = Bend(&curve,defltoa);
+
+	if ( (pieces==2 && p==1) || (pieces==1)){
+	  double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(thetak))/(sin(theta_2)*sin(thetak)) * -1;
+	  std::cout << cos_phi_edge << std::endl;
+	  if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) 
+	    cos_phi_edge = 1.0;
+
+	  if ( fabs( sin(theta_2) * sin(thetak) ) > 0.0) { // checking for a divide by 0
+	    phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude theta_0_2
+	    std::cout << phi_edge << std::endl;
+	  }
+	  else {  // trying to divide by zero
+	    throw( Exception(" Tried to divide by zero in calculation of phi_edge_2. Likely, theta_0_2 = 0. Exiting.") );
+	    return -1;
+	  }
+	} 
+	numphi = 2.0*(Units::PI-phi_edge)/dphi;
+	phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
+
+	curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+	curve.para.theta = thetak;
+
+	if (numtheta==1){
+	  numphi=1;
+	  phi_edge=-1*Units::PI;
+	  dphi=0.0;
+	  phishift = 0.0;
+	  curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+	}
+       
+
+      for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
+	//  for ( unsigned int j(numphi-1); j < numphi; j++ ) {   // looping through the phi divisions
+		  
+	phij = phi_edge + (j+0.5)*dphi;
+	curve.para.phi_0 = phij;
+
+	if ( NS_model == 1 || NS_model == 2 )
+	  curve.para.dS /= curve.para.cosgamma;
+
+
+	if ( j==0){ // Only do computation if its the first phi bin - otherwise just shift
+	  curve = ComputeAngles(&curve, defltoa); 
+	  curve = ComputeCurve(&curve);
+	}
+	
+	if ( curve.para.temperature == 0.0 ) { 
 	  for ( unsigned int i(0); i < numbins; i++ ) {
 	    for ( unsigned int p(0); p < numbands; p++ )
 	      curve.f[p][i] = 0.0;
 	  }
-	    
-	  // Add curves, load into Flux array
-	  for (unsigned int i(0); i < numbins; i++) {
-	    for (unsigned int p(0); p < numbands; p++) {
-	      Flux[p][i] += curve.f[p][i];
-	    }
-	  } // ending Add curves
-	      	
-	} // ending trivial spot on pole
-    
-    	/************************************************************/
-	/* SECOND HOT SPOT -- SPOT IS SYMMETRIC OVER GEOMETRIC POLE */
-	/************************************************************/
-		
-	else if ( theta_2 == 0 && rho != 0 ) {
-	  // Looping through the mesh of the spot
-	  for ( unsigned int k(0); k < numtheta; k++ ) {
-	    theta_0_2 = theta_2 - rho + k * dtheta + 0.5 * dtheta;   // note: theta_0_2 changes depending on how we've cut up the spot
-	    curve.para.theta = theta_0_2;
-	    // don't need a phi_edge the way i'm doing the phi_0_2 calculation
-	    dphi = Units::PI / numphi;
-	    for ( unsigned int j(0); j < numphi; j++ ) {
-	      phi_0_2 = -Units::PI/2 + dphi * j + 0.5 * dphi; // don't need to change phase because its second hot spot, because it's symmetric over the spin axis
-	      if ( !T_mesh_in ) {
-		T_mesh[k][j] = spot_temperature;
-	      }
-					
-	      curve.para.dS = pow(rspot,2) * sin(fabs(theta_0_2)) * dtheta * dphi;
-	      // Need to multiply by R^2 here because of my if numtheta=1 statement, 
-	      // which sets dS = true surface area
-					
-	      if ( numtheta == 1 ) 
-		curve.para.dS = trueSurfArea;
-	      if ( NS_model == 1 || NS_model == 2)
-		curve.para.dS /= curve.para.cosgamma;
-	      curve.para.temperature = T_mesh[k][j];
-	      curve.para.phi_0 = phi_0_2;
-	      curve = ComputeAngles(&curve, defltoa);  // Computing the parameters it needs to compute the light curve; defltoa has the routines for what we want to do
-	      curve = ComputeCurve(&curve);
-	      
-	      if (curve.para.temperature == 0.0) { 
-		for (unsigned int i(0); i < numbins; i++) {
-		  for (unsigned int p(0); p < numbands; p++)
-		    curve.f[p][i] = 0.0;  // if temperature is 0, then there is no flux!
-		}
-	      }
-	      // Add curves, load into Flux array
-	      for (unsigned int i(0); i < numbins; i++) {
-		for (unsigned int p(0); p < numbands; p++) {
-		  Flux[p][i] += curve.f[p][i];
-		}
-	      } // ending Add curves
-				
-	    }
+	}
+	// Add curves, load into Flux array
+	for ( unsigned int i(0); i < numbins; i++ ) {
+	  int q(i+j);
+	  if (q>=numbins) q+=-numbins;
+	  for ( unsigned int p(0); p < numbands; p++ ) {
+	    Flux[p][i] += curve.f[p][q];
 	  }
-	} // ending symmetric spot over pole
-    
-    	/****************************************************************/
-	/* SECOND HOT SPOT -- SPOT IS ASYMMETRIC OVER GEOMETRIC POLE */
-	/****************************************************************/
-		
-	//THIS NEEDS TO BE FIXED IN THE SAME WAY THAT THE OTHER ASYMMETRIC ONE WAS!
-		
-	else if ( (theta_2 - rho) <= 0 ) {
-	  // Looping through the mesh of the spot
-	  for (unsigned int k(0); k < numtheta; k++) { // looping through the theta divisions
-	    theta_0_2 = theta_2 - rho + 0.5 * dtheta + k * dtheta;   // note: theta_0_2 changes depending on how we've cut up the spot
-	    if (theta_0_2 == 0.0) 
-	      theta_0_2 = 0.0 + DBL_EPSILON;
-	    curve.para.theta = theta_0_2;   // passing this value into curve theta, so that we can use it in another routine; somewhat confusing names
-        
-	    double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(theta_0_2))/(sin(theta_2)*sin(theta_0_2));
-	    if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) 
-	      cos_phi_edge = 1.0;
-        
-	    if ( fabs( sin(theta_2) * sin(theta_0_2) ) > 0.0) { // checking for a divide by 0
-	      phi_edge_2 = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude theta_0_2
-	      dphi = 2.0 * phi_edge_2 / ( numphi * 1.0 );
-	    }
-	    else {  // trying to divide by zero
-	      throw( Exception(" Tried to divide by zero in calculation of phi_edge_2. Likely, theta_0_2 = 0. Exiting.") );
-	      return -1;
-	    }
-
-	    for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
-	      phi_0_2 = Units::PI -phi_edge_2 + 0.5 * dphi + j * dphi;   // phi_0_2 is at the center of the piece of the spot that we're looking at; defined as distance from the y-axis as projected onto the equator
-	      if ( !T_mesh_in ) {
-		T_mesh[k][j] = spot_temperature;
-	      }
-			 	
-	      curve.para.dS = pow(rspot,2) * sin(fabs(theta_0_2)) * dtheta * dphi;
-	      // Need to multiply by R^2 here because of my if numtheta=1 statement, 
-	      // which sets dS = true surface area
-            	
-	      if( numtheta == 1 ) 
-		curve.para.dS = trueSurfArea;
-	      if ( NS_model == 1 || NS_model == 2 )
-		curve.para.dS /= curve.para.cosgamma;
-	      curve.para.temperature = T_mesh[k][j];
-	      curve.para.phi_0 = phi_0_2;
-	      
-	      curve = ComputeAngles(&curve, defltoa);  // Computing the parameters it needs to compute the light curve; defltoa has the routines for what we want to do
-	      curve = ComputeCurve(&curve);
-	        	
-	      if ( curve.para.temperature == 0.0 ) { 
-		for ( unsigned int i(0); i < numbins; i++ ) {
-		  for ( unsigned int p(0); p < numbands; p++ )
-		    curve.f[p][i] = 0.0;
-		}
-	      }
-	      // Add curves, load into Flux array
-	      for ( unsigned int i(0); i < numbins; i++ ) {
-		for ( unsigned int p(0); p < numbands; p++ ) {
-		  Flux[p][i] += curve.f[p][i];
-		}
-	      } // ending Add curves
-       	
-	    } // closing for loop through phi divisions
-	  } // closing for loop through theta divisions
-	} // ending antisymmetric spot over pole
-
-	/***********************************************************/
-	/* SECOND HOT SPOT -- SPOT DOES NOT GO OVER GEOMETRIC POLE */
-	/***********************************************************/
-    
-	else {
-	  // Looping through the mesh of the second spot
-	  printf("Working on the 2nd spot!!!\n");
-
-	  for ( unsigned int k(0); k < numtheta; k++ ) { // looping through the theta divisions
-	    theta_0_2 = theta_2 - rho + 0.5 * dtheta + k * dtheta;   // note: theta_0_2 changes depending on how we've cut up the spot
-	    curve.para.theta = theta_0_2;   // passing this value into curve theta, so that we can use it in another routine; somewhat confusing names
-	    //std::cout //<< "\n " k = " << k << ", theta_0_2 = " << theta_0_2 * 180.0 / Units::PI << std::endl;
+	} // ending Add curves
+      } // end for-j-loop
+      // Add in the missing bit.      
+      if (phishift != 0.0){ // Add light from last bin, which requires shifting
+      	for ( unsigned int i(0); i < numbins; i++ ) {
+	  int q(i+numphi-1);
+	  if (q>=numbins) q+=-numbins;
+	  for ( unsigned int p(0); p < numbands; p++ ) {
+	    Temp[p][i] = curve.f[p][q];
+	  }
+	}
+	for (unsigned int p(0); p < numbands; p++ )
+	  for ( unsigned int i(0); i < numbins; i++ ) 
+	    curve.f[p][i] = Temp[p][i];	  
+   	     
+	curve = ShiftCurve(&curve,phishift);
        
-	    double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(theta_0_2))/(sin(theta_2)*sin(theta_0_2));
-	    if ( cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) 
-	      cos_phi_edge = 1.0;
-       
-	    if ( fabs( sin(theta_2) * sin(theta_0_2) ) > 0.0 ) { // checking for a divide by 0
-	      phi_edge_2 = acos ( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude theta_0_2
-	      dphi = 2.0 * phi_edge_2 / ( numphi * 1.0 ); // want to keep the same dphi as before
-	    }
-	    else {  // trying to divide by zero
-	      throw( Exception(" Tried to divide by zero in calculation of phi_edge_2. \n Check values of sin(theta_2) and sin(theta_0_2). Exiting.") );
-	      return -1;
-	    }     
-        
-	    for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
-	      phi_0_2 = Units::PI - phi_edge_2 + 0.5 * dphi + j * dphi;
-	      if ( !T_mesh_in ) {
-		T_mesh[k][j] = spot_temperature;
-	      }
-           
-	      curve.para.temperature = T_mesh[k][j];
-	      curve.para.phi_0 = phi_0_2;
-	      curve.para.dS = pow(rspot,2) * sin(fabs(theta_0_2)) * dtheta * dphi; // assigning partial dS here
-	      if( numtheta == 1 ) 
-		curve.para.dS = trueSurfArea;
-	      if ( NS_model == 1 || NS_model == 2 )
-		curve.para.dS /= curve.para.cosgamma;
-           			
-	      curve = ComputeAngles(&curve, defltoa);  // Computing the parameters it needs to compute the light curve; defltoa has the routines for what we want to do
-	      curve = ComputeCurve(&curve);            // Compute Light Curve, for each separate mesh bit
-        	
-	      if ( curve.para.temperature == 0.0 ) { 
-		for ( unsigned int i(0); i < numbins; i++ ) {
-		  for ( unsigned int p(0); p < numbands; p++ )
-		    curve.f[p][i] += 0.0;
-		}
-	      }
-	      // Add curves, load into Flux array
-	      for ( unsigned int i(0); i < numbins; i++ ) {
-		for ( unsigned int p(0); p < numbands; p++ ) {
+	for( unsigned int p(0); p < numbands; p++ )
+	  for ( unsigned int i(0); i < numbins; i++ ) 
+	    Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
+      }
+      
 
-		  printf("i=%d Flux1=%g Flux2=%g ",i, Flux[p][i], curve.f[p][i]);
-		  Flux[p][i] += curve.f[p][i];
-		  printf(" Flux(1+2)=%g \n",Flux[p][i]);
-		}
-	      } // closing Add curves
-		      
-	    } // closing for loop through phi divisions
-	  } // closing for loop through theta divisions
-	} // closing spot doesn't go over geometric pole
-    		
-    } // closing if two spots
-	
+      } // closing for loop through theta divisions
+    }
+}
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.

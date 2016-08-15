@@ -245,6 +245,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     } // closing For-Loop-1
 
     int j(0);
+
 	
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2
         int sign(0);
@@ -295,21 +296,29 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*b_k.at(3)/
                 	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
         } // ending psi.at(i) < curve.defl.psi_max
-        
+
         /***********************************************/
 	/* FINDING IF A SOLUTION EXISTS, SETTING FLAGS */
 	/***********************************************/
-		
+
         result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
         		 curve.defl.psi_max, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
         		 &curve.problem );
-        if ( result == false ) { 
+
+        if ( result == false && i == 0) { 
             curve.visible[i] = false;
-            curve.t_o[i] = curve.t[i] + curve.t_o[i-1] - curve.t[i-1] ;
+            curve.t_o[i] = 0.0;
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
         }
-		
+
+        else if ( result == false ) { 
+            curve.visible[i] = false;
+            curve.t_o[i] = curve.t[i] + curve.t_o[i-1] - curve.t[i-1];
+            curve.dOmega_s[i] = 0.0;
+            curve.eclipse = true;
+        }
+
         else { // there is a solution
             b = bval;
             if ( sign < 0 ) { // if the photon is initially ingoing (only a problem in oblate models)
@@ -339,6 +348,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    /*                   						  cosdelta */
 	    /*                							  cosbeta  */
 	    /*******************************************************/
+
 
             sinalpha =  b * sqrt( 1.0 - 2.0 * mass_over_r ) / radius;  // PG4, reconfigured
             cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
