@@ -568,7 +568,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* START SETTING THINGS UP */
     /***************************/ 
 
-    rspot = req;
+    //rspot = req;
 
     /*********************************************************************************/
     /* Set up model describing the shape of the NS; oblate, funky quark, & spherical */
@@ -601,7 +601,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         return -1;
     }
 
-    printf("R_Spot = %g; R_eq = %g \n", Units::nounits_to_cgs( rspot, Units::LENGTH ), Units::nounits_to_cgs( req, Units::LENGTH ));
+    printf("R_Spot = %g; R_eq = %g \n", rspot, req);
 
 
 
@@ -661,8 +661,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	std::cout << "numtheta=" << numtheta << " theta = " << theta_1 << " delta(theta) = " << deltatheta << std::endl;
      
     // Looping through the mesh of the spot
-      	//for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-      	for (unsigned int k(numtheta-1); k < numtheta; k++) { // Loop through the circles
+      	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+	  //for (unsigned int k(numtheta-1); k < numtheta; k++) { // Loop through the circles
 			std::cout << "k=" << k << std::endl;
 
 			double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
@@ -685,7 +685,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			// For spherical star, rspot = req;
 
 			mu_1 = cos(thetak);
-			if (mu_1 < DBL_EPSILON) mu_1 = 0.0;
+			if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 			rspot = model->R_at_costheta(mu_1);
 
 			std::cout << "Spot: req = " << req 
@@ -838,7 +838,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 				// What is the value of radius at this angle?
 				mu_1 = cos(thetak);
-				if (mu_1 < DBL_EPSILON) mu_1 = 0.0;
+				if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 				rspot = model->R_at_costheta(mu_1);
 				// Values we need in some of the formulas.
 				cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
