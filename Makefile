@@ -7,9 +7,15 @@
 # The code is not thoroughly tested or guaranteed for
 # any particular use.
 
-CC=g++
-#CCFLAGS=-Wall -pedantic -O3
-CCFLAGS=-Wall -pedantic -O3 -std=c++11
+#Albert's version of the flags
+#CC=g++
+#CCFLAGS=-Wall -pedantic -O3 -std=c++11
+
+#Sharon needs to use the following:
+CC=c++
+CCFLAGS=-Wall -pedantic -O3 -stdlib=libc++ -std=c++11
+
+
 LDFLAGS=-lm
 
 NAMES=spot
