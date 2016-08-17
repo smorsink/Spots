@@ -580,13 +580,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         /*model = new PolyOblModelNHQS( rspot, req,
 		   		    PolyOblModelBase::zetaparam(mass,req),
 				    PolyOblModelBase::epsparam(omega, mass, req) );*/
-      model = new PolyOblModelNHQS( rspot, req,
+      model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
-        model = new PolyOblModelCFLQS( rspot, req,
+        model = new PolyOblModelCFLQS( req,
 				     PolyOblModelBase::zetaparam(mass,rspot),
 				     PolyOblModelBase::epsparam(omega, mass, rspot) );
     }
@@ -609,7 +609,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // defltoa is a structure that "points" to routines in the file "OblDeflectionTOA.cpp"
     // used to compute deflection angles and times of arrivals 
     // defltoa is the deflection time of arrival
-    OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
+    //OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
     // defltoa is a pointer (of type OblDeclectionTOA) to a group of functions
 
     // Values we need in some of the formulas.
@@ -661,7 +661,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	std::cout << "numtheta=" << numtheta << " theta = " << theta_1 << " delta(theta) = " << deltatheta << std::endl;
      
     // Looping through the mesh of the spot
-      	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+      	//for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+      	for (unsigned int k(numtheta-1); k < numtheta; k++) { // Loop through the circles
 			std::cout << "k=" << k << std::endl;
 
 			double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
@@ -686,6 +687,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			mu_1 = cos(thetak);
 			if (mu_1 < DBL_EPSILON) mu_1 = 0.0;
 			rspot = model->R_at_costheta(mu_1);
+
+			std::cout << "Spot: req = " << req 
+				  <<"rspot = " << rspot << std::endl;
+
 			// Values we need in some of the formulas.
 			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
 			curve.para.cosgamma = cosgamma;
@@ -770,7 +775,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				for( unsigned int p(0); p < numbands; p++ )
 	  				for ( unsigned int i(0); i < numbins; i++ ) Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
       		} //end of last bin  
+	delete defltoa;
+
       	} // closing for loop through theta divisions
+
+
     } // End Standard Case of first spot
 
     /**********************************************************/
@@ -1096,7 +1105,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     out.close();
     
-    delete defltoa;
+    
     delete model;
     return 0;
 } 

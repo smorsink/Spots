@@ -16,8 +16,8 @@
 
 #include "PolyOblModelCFLQS.h"
 
-PolyOblModelCFLQS::PolyOblModelCFLQS(const double& Rspot_nounits, const double& Req_nounits, const double& zeta, const double& eps )
-  : PolyOblModelBase(Rspot_nounits, Req_nounits, zeta, eps) { }
+PolyOblModelCFLQS::PolyOblModelCFLQS (const double& Req_nounits, const double& zeta, const double& eps )
+  : PolyOblModelBase( Req_nounits, zeta, eps) { }
 
 double PolyOblModelCFLQS::a0() const {
   double eps(this->get_eps());

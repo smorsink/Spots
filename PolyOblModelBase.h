@@ -29,7 +29,7 @@ class PolyOblModelBase : public OblModelBase {
   		double z(const double& costheta) const;
 
  	public:
-  		PolyOblModelBase( const double& Rspot_nounits, const double& Req_nounits, const double& zeta, const double& eps );
+  		PolyOblModelBase(const double& Req_nounits, const double& zeta, const double& eps );
   		double R_at_costheta( const double& costheta ) const throw(std::exception);
   		double Dtheta_R( const double& costheta ) const throw(std::exception);
   		double f(const double& costheta)  const throw(std::exception);

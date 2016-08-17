@@ -20,7 +20,7 @@
 
 class PolyOblModelCFLQS : public PolyOblModelBase {
  	public:
-  		PolyOblModelCFLQS( const double& Rspot_nounits, const double& Req_nounits, const double& zeta, const double& eps );
+  		PolyOblModelCFLQS(const double& Req_nounits, const double& zeta, const double& eps );
  	protected:
   		double a0() const;
   		double a2() const;

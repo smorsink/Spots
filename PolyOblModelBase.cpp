@@ -17,9 +17,8 @@
 #include <cmath>
 #include "Exception.h"
 
-PolyOblModelBase::PolyOblModelBase( const double& Rspot_nounits_value, 
-				    const double& Req_nounits_value, const double& zetaval, const double& epsval )
-  : Rspot_nounits(Rspot_nounits_value), Req_nounits(Req_nounits_value), zeta(zetaval), eps(epsval) { }
+PolyOblModelBase::PolyOblModelBase( const double& Req_nounits_value, const double& zetaval, const double& epsval )
+  : Req_nounits(Req_nounits_value), zeta(zetaval), eps(epsval) { }
 
 double PolyOblModelBase::R_at_costheta( const double& costheta ) const throw(std::exception) {
   	// Return R(theta) in "nounits".

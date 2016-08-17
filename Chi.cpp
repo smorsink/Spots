@@ -1677,7 +1677,7 @@ class OblDeflectionTOA* recalc( class LightCurve* curve, double omega, double ma
     std::cout << "req_recalc = " << req << std::endl;
     */
     OblModelBase* model;
-    model = new PolyOblModelNHQS( rspot, req,
+    model = new PolyOblModelNHQS( req,
 				PolyOblModelBase::zetaparam(mass,req),
 				PolyOblModelBase::epsparam(omega, mass, req)
 				);

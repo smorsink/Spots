@@ -15,8 +15,8 @@
 
 #include "PolyOblModelNHQS.h"
 
-PolyOblModelNHQS::PolyOblModelNHQS( const double& Rspot_nounits, const double& Req_nounits, const double& zeta, const double& eps )
-  : PolyOblModelBase(Rspot_nounits, Req_nounits, zeta, eps) { }
+PolyOblModelNHQS::PolyOblModelNHQS( const double& Req_nounits, const double& zeta, const double& eps )
+  : PolyOblModelBase( Req_nounits, zeta, eps) { }
 
 double PolyOblModelNHQS::a0() const {
   //double eps(this->get_eps());

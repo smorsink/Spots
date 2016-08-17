@@ -434,7 +434,7 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
 				       const double& cos_theta, bool *prob ) const {
   //costheta_check( cos_theta );
   
-  	double rspot ( modptr->R_at_costheta( cos_theta ) );
+  double rspot ( modptr->R_at_costheta( fabs(cos_theta) ) );
   	//double dummy;
   	 std::cout << "psi_ingoing: cos_theta = " << cos_theta << " b = " << b << " r = " << rspot << std::endl;
 	

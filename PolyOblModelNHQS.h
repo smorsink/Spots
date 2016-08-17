@@ -21,7 +21,7 @@
 
 class PolyOblModelNHQS : public PolyOblModelBase {
  	public:
-  		PolyOblModelNHQS( const double& Rspot_nounits, const double& Req_nounits, 
+  		PolyOblModelNHQS(  const double& Req_nounits, 
   						  const double& zeta, const double& eps );
  	protected:
   	double a0() const;
