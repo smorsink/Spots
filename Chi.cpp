@@ -160,25 +160,26 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     curve = *incurve;
 
     double theta_0,                   // Emission angle (latitude) of the spot, in radians          
-           incl,                      // inclination angle of the observer, in radians
-           mass,                      // Mass of the star, in M_sun
-           radius,                    // Radius of the star (at whatever little bit we're evaluating at)
+      incl,                      // inclination angle of the observer, in radians
+      mass,                      // Mass of the star, in M_sun
+      radius,                    // Radius of the star (at whatever little bit we're evaluating at)
       mass_over_r,
-           omega,                     // Spin frequency of the neutron star, in Hz
-           cosgamma,                  // Cos of the angle between the radial vector and the surface normal vector
-           shift_t,                   // Time off-set from data
-           b_guess(0.0),              // Impact parameter; starting off with reasonable guess then refining it
-           mu(1.0),                   // = cos(theta_0), unitless
-           speed(0.0),                // Velocity of the spot, defined in MLCB34
-           alpha(0.0),                // Zenith angle, in radians
-           sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
-           cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
-           b(0.0),                    // Photon's impact parameter
-           toa_val(0.0),              // Time of arrival, MLCB38
-           dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
-           phi_0,                     // Azimuthal location of the spot, in radians
-           dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
-           distance;                  // Distance from Earth to NS, inputted in meters
+      red,                       // red=1+z=(1-2M/R)^{-1/2}
+      omega,                     // Spin frequency of the neutron star, in Hz
+      cosgamma,                  // Cos of the angle between the radial vector and the surface normal vector
+      shift_t,                   // Time off-set from data
+      b_guess(0.0),              // Impact parameter; starting off with reasonable guess then refining it
+      mu(1.0),                   // = cos(theta_0), unitless
+      speed(0.0),                // Velocity of the spot, defined in MLCB34
+      alpha(0.0),                // Zenith angle, in radians
+      sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
+      cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
+      b(0.0),                    // Photon's impact parameter
+      toa_val(0.0),              // Time of arrival, MLCB38
+      dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
+      phi_0,                     // Azimuthal location of the spot, in radians
+      dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
+      distance;                  // Distance from Earth to NS, inputted in meters
 
     double eps, epspsi,dcosa_dcosp;
            
@@ -187,7 +188,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
     bool ingoing(false);
-    bool infile_is_set(false);
 
     std::vector< double > phi_em(numbins, 0.0);   // Azimuth as measured from the star's emission frame; one for each phase bin
     std::vector< double > psi(numbins, 0.0);      // Bending angle, as defined in MLCB20
@@ -212,12 +212,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     mass = curve.para.mass;
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
+    red = 1.0/sqrt(1.0-2.0*mass_over_r);
     omega = curve.para.omega;
     cosgamma = curve.para.cosgamma;  // for spherical, cosgamma = 0
     distance = curve.para.distance;
     shift_t = curve.para.ts;
-    infile_is_set = curve.flags.infile_is_set;
-    speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
+    //infile_is_set = curve.flags.infile_is_set;
+    //speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
+    speed = omega*radius*sin(theta_0)*red; // MLCB34
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
@@ -238,7 +240,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-1
         // SMM: Added an offset of phi_0
         // SMM: Time is normalized to the spin period so 0 < t_e < 1 
-        // curve.t[i] = i/(1.0*numbins) + shift_t; (This is computed in Spot.cpp)
         phi_em.at(i) = phi_0 + (2.0*Units::PI) * curve.t[i]; // phi_em is the same thing as "phi" in PG; changes with t
         psi.at(i) = acos(cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i))); // PG1; this theta_0 is the theta_0 from spot.cpp
        
@@ -258,6 +259,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         /**************************************************************************/
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
+
+	std::cout << " i=" << i
+		  << " psi=" << psi.at(i)
+		  << " psi_max=" << curve.defl.psi_max << std::endl;
 
         if ( psi.at(i) < curve.defl.psi_max ) {
             if ( psi.at(i) > curve.defl.psi_b[j] )
@@ -350,7 +355,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    /*******************************************************/
 
 
-            sinalpha =  b * sqrt( 1.0 - 2.0 * mass_over_r ) / radius;  // PG4, reconfigured
+	    sinalpha =  b / (red*radius);  // PG4, reconfigured
             cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
             alpha    = asin( sinalpha );
             

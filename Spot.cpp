@@ -63,6 +63,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mass,                       // Mass of the star, in M_sun
     rspot(0.0),                      // Radius of the star at the spot, in km
     mass_over_req, // Dimensionless mass divided by radius ratio
+    rot_par,// Dimensionless rotation parameter = omega^2 R^3/M
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
     bbrat(1.0),                 // Ratio of blackbody to Compton scattering effects, unitless
@@ -447,6 +448,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
+
+    rot_par = pow(omega*req,2)/mass_over_req;
 	
      std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
 
@@ -473,11 +476,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E_band_upper_2 = E_band_upper_2;
     curve.para.distance = distance;
     curve.numbins = numbins;
-    //curve.para.rsc = r_sc;
-    //curve.para.Isc = I_sc;
 
-    //numphi = numtheta; // code currently only handles a square mesh over the hotspot
-  
     curve.flags.ignore_time_delays = ignore_time_delays;
     curve.flags.spectral_model = spectral_model;
     curve.flags.beaming_model = beaming_model;
@@ -569,12 +568,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* START SETTING THINGS UP */
     /***************************/ 
 
-    // Change to computation of rspot!!!!
-
-    // Calculate the Equatorial Radius of the star.
-    //req = calcreq( omega, mass, theta_1, rspot );  // implementation of MLCB11
-
-    //rspot = req;
+    rspot = req;
 
     /*********************************************************************************/
     /* Set up model describing the shape of the NS; oblate, funky quark, & spherical */
@@ -583,9 +577,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     OblModelBase* model;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
-        model = new PolyOblModelNHQS( rspot, req,
+        /*model = new PolyOblModelNHQS( rspot, req,
 		   		    PolyOblModelBase::zetaparam(mass,req),
-				    PolyOblModelBase::epsparam(omega, mass, req) );
+				    PolyOblModelBase::epsparam(omega, mass, req) );*/
+      model = new PolyOblModelNHQS( rspot, req,
+		   		    mass_over_req,
+				    rot_par );
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
@@ -685,9 +682,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 			// What is the value of radius at this angle?
 			// For spherical star, rspot = req;
-			rspot = req; // Spherical star
+
+			mu_1 = cos(thetak);
+			if (mu_1 < DBL_EPSILON) mu_1 = 0.0;
+			rspot = model->R_at_costheta(mu_1);
+			// Values we need in some of the formulas.
+			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+			curve.para.cosgamma = cosgamma;
+
 			curve.para.radius = rspot; // load rspot into structure
 			curve.para.mass_over_r = mass_over_req * req/rspot;
+
+			OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 			std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 			curve = Bend(&curve,defltoa);
 
@@ -822,10 +828,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				dphi = 2.0*Units::PI/(numbins*1.0);
 
 				// What is the value of radius at this angle?
-				// For spherical star, rspot = req;
-				rspot = req; // Spherical star
+				mu_1 = cos(thetak);
+				if (mu_1 < DBL_EPSILON) mu_1 = 0.0;
+				rspot = model->R_at_costheta(mu_1);
+				// Values we need in some of the formulas.
+				cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+				curve.para.cosgamma = cosgamma;
+
 				curve.para.radius = rspot; // load rspot into structure
 				curve.para.mass_over_r = mass_over_req * req/rspot;
+				OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+
 				std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 				curve = Bend(&curve,defltoa);
 

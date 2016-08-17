@@ -26,12 +26,13 @@ double PolyOblModelBase::R_at_costheta( const double& costheta ) const throw(std
   	// note that the user supplies cos(theta) and not theta.
 
   	if (costheta == 0.0)
-    	return double( get_Req_nounits()*( 1.0 + a0() + a2()*(-0.5) + a4()*(3.0/8.0) ) ); 
+	  return double( get_Req_nounits()*( 1.0 + a0() + a2()*(-0.5) + a4()*(3.0/8.0) ) ); 
+	//return double( get_Req_nounits());
   	else{
     	if (costheta == 1.0)
       		return double( get_Req_nounits()*( 1.0 + a0() + a2() + a4() ) );  
     	else
-      		return double( get_Rspot_nounits() );
+      		return double( get_Req_nounits()*( 1.0 + a0()*P0(costheta) + a2()*P2(costheta) + a4()*P4(costheta) ));
   	}
 
     //return double( get_Req_nounits()*( 1.0 + a0()*P0(costheta) + a2()*P2(costheta) + a4()*P4(costheta) ) ); 
