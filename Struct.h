@@ -64,6 +64,7 @@ struct Flags {
 	bool ignore_time_delays;      // if we should ignore time delays
 	unsigned int spectral_model;  // stating which model we're using -- definitions of models given elsewhere
 	unsigned int beaming_model;   // stating which model we're using -- definitions of models given elsewhere
+  unsigned int ns_model; // Shape model: 3=spherical; 1=oblate
 };
 
 
