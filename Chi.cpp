@@ -244,20 +244,18 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     } // closing For-Loop-1
 
     int j(0);
+    double bmin(0), psimin(0);
 
     // Check to see if this is an oblate star
     // If it is oblate compute the values of b_min, psi_max_in
-    if (curve.flags.ns_model == 1){
-
-      double bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
-
-      double psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
-
+    if (curve.flags.ns_model != 3){
+      bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
+      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
       std::cout << "Oblate! b_min_ingoing = " << bmin 
 		<< " psi_min_ingoing = " << psimin
 		<< std::endl;
-
     }
+    
 
 
 	
@@ -320,7 +318,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	/***********************************************/
 
         result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
-        		 curve.defl.psi_max, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
+				      curve.defl.psi_max,bmin,psimin, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
         		 &curve.problem );
 
         if ( result == false && i == 0) { 

@@ -472,10 +472,12 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
 // if the photon is initially ingoing a calculation is done
 /*****************************************************/
 bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b,
-									int& rdot, const double& bmax_out, 
-									const double& psi_out_max, const double& b_guess, 
-									const double& psi_guess, const double& b2, 
-									const double& psi2, bool *prob ) {
+				    int& rdot, const double& bmax_out, 
+				    const double& psi_out_max,
+				    const double& bmin, const double& psimin,
+				    const double& b_guess, 
+				    const double& psi_guess, const double& b2, 
+				    const double& psi2, bool *prob ) {
   //costheta_check( cos_theta );
 
   // return bool indicating whether a solution was found.
@@ -537,8 +539,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
   	else { // psi > psi_out_max 
 	  // Test to see if ingoing photons are allowed
 	  bool ingoing_allowed( this->ingoing_allowed(cos_theta) );
-	  double bmin_in,    //
-	    psi_in_max; //
+	  
 
 	  /*std::cout << "b_from_psi: psi > psi_out_max" 
 		    << " psi=" << psi 
@@ -546,16 +547,16 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 		    << std::endl;*/
 
 	  if ( ingoing_allowed ) {
-	    bmin_in = bmin_ingoing( rspot, cos_theta );
+	    //bmin_in = bmin_ingoing( rspot, cos_theta );
        
-	    psi_in_max = psi_ingoing( bmin_in, bmax_out, psi_out_max, cos_theta, &curve.problem );
-	    std::cout << "psi_in_max=" << psi_in_max << std::endl;
+	    //psi_in_max = psi_ingoing( bmin_in, bmax_out, psi_out_max, cos_theta, &curve.problem );
+	    //std::cout << "psi_in_max=" << psimin << std::endl;
 
-	    if ( psi > psi_in_max ) {
+	    if ( psi > psimin ) {
 	      return false;
 	    }
-	    else if ( psi == psi_in_max ) {
-	      b = bmin_in;
+	    else if ( psi == psimin ) {
+	      b = bmin;
 	      rdot = -1;
 	      return true;
 	    }
@@ -564,15 +565,15 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      OblDeflectionTOA_costheta_value = cos_theta;
 	      OblDeflectionTOA_psi_value = psi;
 
-	      std::cout << "bmin_in=" << bmin_in << " bmax_out=" << bmax_out <<std::endl;
+	      std::cout << "bmin_in=" << bmin << " bmax_out=" << bmax_out <<std::endl;
 
-	      bcand = MATPACK::FindZero(bmin_in, bmax_out,
+	      bcand = MATPACK::FindZero(bmin, bmax_out,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
 	      std::cout << "b-cand=" << bcand << std::endl;
 
  
-	      if( fabs(bmin_in - bcand) <= std::numeric_limits<double>::epsilon() || fabs(bmax_out - bcand) <= std::numeric_limits<double>::epsilon() ) { // this indicates no soln
+	      if( fabs(bmin - bcand) <= std::numeric_limits<double>::epsilon() || fabs(bmax_out - bcand) <= std::numeric_limits<double>::epsilon() ) { // this indicates no soln
 		std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): ingoing returned no solution?" << std::endl;
 		*prob = true;
 		b = -7888.0;

@@ -100,8 +100,9 @@ class OblDeflectionTOA {
 				     const double& cos_theta, bool *prob ) const;
   		bool b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b, 
   		                  int& rdot, const double& bmax_out, const double& psi_out_max, 
-		   				  const double& b_guess, const double& psi_guess,
-		   				  const double& b2, const double&psi2, bool *prob );
+				  const double& bmin, const double& psimin,
+				  const double& b_guess, const double& psi_guess,
+				  const double& b2, const double&psi2, bool *prob );
   		double dpsi_db_outgoing ( const double& b, const double& rspot, bool *prob );
   		double dpsi_db_ingoing ( const double& b, const double& rspot, const double& cos_theta, bool *prob ); //changed GC
 
