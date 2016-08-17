@@ -69,7 +69,8 @@ class OblDeflectionTOA {
   		double toa_integrand ( const double& b, const double& r ) const;
   		double toa_integrand_minus_b0 ( const double& b, const double& r ) const;
   		double rcrit_zero_func( const double& rc, const double& b ) const;
-  		double b_from_psi_ingoing_zero_func ( const double& b, const double& cos_theta, 
+  		double b_from_psi_ingoing_zero_func ( const double& b, const double& bmax, const double& psimax,
+						      const double& cos_theta, 
   								              const double& psi) const;
   		double b_from_psi_outgoing_zero_func ( const double& b, const double& cos_theta, 
   		                                       const double& psi, const double& b_max, 
@@ -95,7 +96,8 @@ class OblDeflectionTOA {
   		double psi_outgoing ( const double& b, const double& rspot, const double& b_max, 
   		                      const double& psi_max, bool *prob ) const;
   		double psi_max_outgoing ( const double& b, const double& rspot, bool *prob );
-  		double psi_ingoing ( const double& b, const double& cos_theta, bool *prob ) const;
+  		double psi_ingoing ( const double& b, const double& bmax, const double& psimax,
+				     const double& cos_theta, bool *prob ) const;
   		bool b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b, 
   		                  int& rdot, const double& bmax_out, const double& psi_out_max, 
 		   				  const double& b_guess, const double& psi_guess,

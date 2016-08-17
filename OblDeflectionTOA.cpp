@@ -192,6 +192,8 @@ double OblDeflectionTOA_rcrit_zero_func_wrapper ( double rc ) {
 /***********************************************************/
 double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper ( double b ) {
   	return double ( OblDeflectionTOA_object->b_from_psi_ingoing_zero_func( b, 
+									       OblDeflectionTOA_b_max_value,
+									       OblDeflectionTOA_psi_max_value,
 						OblDeflectionTOA_costheta_value,
 						OblDeflectionTOA_psi_value ) );
 }
@@ -428,7 +430,8 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
 
 /*****************************************************/
 /*****************************************************/
-double OblDeflectionTOA::psi_ingoing ( const double& b, const double& cos_theta, bool *prob ) const {
+double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, const double& psimax, 
+				       const double& cos_theta, bool *prob ) const {
   //costheta_check( cos_theta );
   
   	double rspot ( modptr->R_at_costheta( cos_theta ) );
@@ -438,6 +441,8 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& cos_theta,
   	// set globals
   	OblDeflectionTOA_object = this;
   	OblDeflectionTOA_b_value = b;
+	OblDeflectionTOA_b_max_value = bmax;
+	OblDeflectionTOA_psi_max_value = psimax;
 
 	std::cout << "psi_ingoing: b__max = " << OblDeflectionTOA_b_max_value << std::endl;
  
@@ -543,7 +548,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  if ( ingoing_allowed ) {
 	    bmin_in = bmin_ingoing( rspot, cos_theta );
        
-	    psi_in_max = psi_ingoing( bmin_in, cos_theta, &curve.problem );
+	    psi_in_max = psi_ingoing( bmin_in, bmax_out, psi_out_max, cos_theta, &curve.problem );
 	    std::cout << "psi_in_max=" << psi_in_max << std::endl;
 
 	    if ( psi > psi_in_max ) {
@@ -923,10 +928,10 @@ double OblDeflectionTOA::rcrit_zero_func ( const double& rc, const double& b ) c
 /*****************************************************/
 // used in oblate shape of star
 /*****************************************************/
-double OblDeflectionTOA::b_from_psi_ingoing_zero_func ( const double& b, 
+double OblDeflectionTOA::b_from_psi_ingoing_zero_func ( const double& b, const double& bmax, const double& psimax,
 							const double& cos_theta, 
 							const double& psi ) const { 
-  return double( psi - this->psi_ingoing(b, cos_theta, &curve.problem) );
+  return double( psi - this->psi_ingoing(b, bmax, psimax, cos_theta, &curve.problem) );
 }
 
 /*****************************************************/
