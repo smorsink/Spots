@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Scripts to run NICER code tests -- Sharon's computer settings
+# Albert's Test Scripts -- Settings for his computer
 times
-base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master"
+base="/Users/kitung/Desktop/thesis_material/"
+exe_dir="$base/Sharon_codes"
 #pwd
 make spot
 times
@@ -29,7 +29,7 @@ inclination=90 # in degrees
 emission=90 # in degrees
 rho=1e-2  # in radians
 phaseshift=0.0 # this is used when comparing with data
-temp=0.35 # in keV (Surface temperature)
+temp=0.1 # in keV (Surface temperature)
 #distance=3.08567758e20 # 10 kpc in meters
 distance=6.1713552e18 # 200 pc in meters
 
@@ -40,10 +40,11 @@ if test ! -d "$out_dir"
 fi
 
 # TEST 1 = 1 Hz, tiny spot
-numtheta=1 # number of theta bins; for a small spot, only need one
-out_file="$out_dir/test1.txt"
+#numtheta=1 # number of theta bins; for a small spot, only need one
+#numphi=1
+#out_file="$out_dir/test1.txt"
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
 #times
 
 # TEST 2 = 1 Hz, big spot
@@ -100,6 +101,6 @@ emission=20 # in degrees
 beaming=4   # Helium
 out_file="$out_dir/test6.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -P "$numphi" -s "$spectraltype" -S "$numbands" -g "$beaming"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -P "$numphi" -s "$spectraltype" -S "$numbands" -g "$beaming"
 
 times
