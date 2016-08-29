@@ -160,26 +160,25 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     curve = *incurve;
 
     double theta_0,                   // Emission angle (latitude) of the spot, in radians          
-      incl,                      // inclination angle of the observer, in radians
-      mass,                      // Mass of the star, in M_sun
-      radius,                    // Radius of the star (at whatever little bit we're evaluating at)
+           incl,                      // inclination angle of the observer, in radians
+           mass,                      // Mass of the star, in M_sun
+           radius,                    // Radius of the star (at whatever little bit we're evaluating at)
       mass_over_r,
-      red,                       // red=1+z=(1-2M/R)^{-1/2}
-      omega,                     // Spin frequency of the neutron star, in Hz
-      cosgamma,                  // Cos of the angle between the radial vector and the surface normal vector
-      shift_t,                   // Time off-set from data
-      b_guess(0.0),              // Impact parameter; starting off with reasonable guess then refining it
-      mu(1.0),                   // = cos(theta_0), unitless
-      speed(0.0),                // Velocity of the spot, defined in MLCB34
-      alpha(0.0),                // Zenith angle, in radians
-      sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
-      cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
-      b(0.0),                    // Photon's impact parameter
-      toa_val(0.0),              // Time of arrival, MLCB38
-      dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
-      phi_0,                     // Azimuthal location of the spot, in radians
-      dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
-      distance;                  // Distance from Earth to NS, inputted in meters
+           omega,                     // Spin frequency of the neutron star, in Hz
+           cosgamma,                  // Cos of the angle between the radial vector and the surface normal vector
+           shift_t,                   // Time off-set from data
+           b_guess(0.0),              // Impact parameter; starting off with reasonable guess then refining it
+           mu(1.0),                   // = cos(theta_0), unitless
+           speed(0.0),                // Velocity of the spot, defined in MLCB34
+           alpha(0.0),                // Zenith angle, in radians
+           sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
+           cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
+           b(0.0),                    // Photon's impact parameter
+           toa_val(0.0),              // Time of arrival, MLCB38
+           dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
+           phi_0,                     // Azimuthal location of the spot, in radians
+           dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
+           distance;                  // Distance from Earth to NS, inputted in meters
 
     double eps, epspsi,dcosa_dcosp;
            
@@ -188,6 +187,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
     bool ingoing(false);
+    bool infile_is_set(false);
 
     std::vector< double > phi_em(numbins, 0.0);   // Azimuth as measured from the star's emission frame; one for each phase bin
     std::vector< double > psi(numbins, 0.0);      // Bending angle, as defined in MLCB20
@@ -212,14 +212,12 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     mass = curve.para.mass;
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
-    red = 1.0/sqrt(1.0-2.0*mass_over_r);
     omega = curve.para.omega;
     cosgamma = curve.para.cosgamma;  // for spherical, cosgamma = 0
     distance = curve.para.distance;
     shift_t = curve.para.ts;
-    //infile_is_set = curve.flags.infile_is_set;
-    //speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
-    speed = omega*radius*sin(theta_0)*red; // MLCB34
+    infile_is_set = curve.flags.infile_is_set;
+    speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
@@ -235,28 +233,18 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     /* COMPUTE EMISSION TIME, PHASE BINS, AND LIGHT BENDING */
     /********************************************************/
 
+
+
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-1
         // SMM: Added an offset of phi_0
         // SMM: Time is normalized to the spin period so 0 < t_e < 1 
+        // curve.t[i] = i/(1.0*numbins) + shift_t; (This is computed in Spot.cpp)
         phi_em.at(i) = phi_0 + (2.0*Units::PI) * curve.t[i]; // phi_em is the same thing as "phi" in PG; changes with t
         psi.at(i) = acos(cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i))); // PG1; this theta_0 is the theta_0 from spot.cpp
        
     } // closing For-Loop-1
 
     int j(0);
-    double bmin(0), psimin(0);
-
-    // Check to see if this is an oblate star
-    // If it is oblate compute the values of b_min, psi_max_in
-    if (curve.flags.ns_model != 3){
-      bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
-      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
-      std::cout << "Oblate! b_min_ingoing = " << bmin 
-		<< " psi_min_ingoing = " << psimin
-		<< std::endl;
-    }
-    
-
 
 	
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2
@@ -270,10 +258,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         /**************************************************************************/
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
-
-	std::cout << " i=" << i
-		  << " psi=" << psi.at(i)
-		  << " psi_max=" << curve.defl.psi_max << std::endl;
 
         if ( psi.at(i) < curve.defl.psi_max ) {
             if ( psi.at(i) > curve.defl.psi_b[j] )
@@ -318,7 +302,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	/***********************************************/
 
         result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
-				      curve.defl.psi_max,bmin,psimin, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
+        		 curve.defl.psi_max, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
         		 &curve.problem );
 
         if ( result == false && i == 0) { 
@@ -366,7 +350,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    /*******************************************************/
 
 
-	    sinalpha =  b / (red*radius);  // PG4, reconfigured
+            sinalpha =  b * sqrt( 1.0 - 2.0 * mass_over_r ) / radius;  // PG4, reconfigured
             cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
             alpha    = asin( sinalpha );
             
@@ -1677,7 +1661,7 @@ class OblDeflectionTOA* recalc( class LightCurve* curve, double omega, double ma
     std::cout << "req_recalc = " << req << std::endl;
     */
     OblModelBase* model;
-    model = new PolyOblModelNHQS( req,
+    model = new PolyOblModelNHQS( rspot, req,
 				PolyOblModelBase::zetaparam(mass,req),
 				PolyOblModelBase::epsparam(omega, mass, req)
 				);
@@ -1775,9 +1759,9 @@ int Round(int n, double z, std::vector<double> v){
 }
 
 // values at which the hydrogen intensities are calculated (from Slavko)
-const std::vector<double> mu { 1.000,0.950,0.900,0.800,0.700,0.600,0.500,0.400,0.300,0.200,0.100,0.005 };
-const std::vector<double> logt { 5.55E0,5.65E0,5.75E0,5.85E0,5.95E0,6.05E0,6.15E0,6.25E0,6.35E0,6.45E0 };
-const std::vector<double> lsgrav { 13.50E0,13.70E0,13.90E0,14.10E0,14.30E0,14.50E0,14.70E0,14.9E0,15.10E0,15.30E0,15.50E0 };
+//const std::vector<double> mu { 1.000,0.950,0.900,0.800,0.700,0.600,0.500,0.400,0.300,0.200,0.100,0.005 };
+//const std::vector<double> logt { 5.55E0,5.65E0,5.75E0,5.85E0,5.95E0,6.05E0,6.15E0,6.25E0,6.35E0,6.45E0 };
+//const std::vector<double> lsgrav { 13.50E0,13.70E0,13.90E0,14.10E0,14.30E0,14.50E0,14.70E0,14.9E0,15.10E0,15.30E0,15.50E0 };
 std::vector<double> F,FF,FFF,FFFF,I,II,III,IIII;
 double X, Y, X1, Y1, X2, Y2;
 
@@ -1785,26 +1769,61 @@ double X, Y, X1, Y1, X2, Y2;
 // Read the four hydrogen intensity files to peform the four point interpolation
 void Read_NSATMOS(double T, double M, double R){
     
-    double delta, lgrav, lt, temp;
-    int i_lgrav, i_lt, n_lgrav, n_lt;
-    char s1[40],s2[40],s3[40],s4[40];
-    
+    double delta, lgrav, lt, temp, dump, logt[10], lsgrav[11];
+    int i_lgrav, i_lt(0), n_lgrav, n_lt, size_logt(10), size_lsgrav(11), size_mu(12);
+    char s1[40],s2[40],s3[40],s4[40], atmodir[1024], cwd[1024];
+
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+    ifstream H_atmo_para;
+    H_atmo_para.open("nsatmos-info.txt");
+
+    if(H_atmo_para.is_open()){
+        //logt
+        for (int i = 1; i <= size_logt; i++){
+            H_atmo_para >> temp;
+            logt[i-1] = temp;    
+        }
+
+        //lgrav
+        for (int i = 1; i <= size_lsgrav; i++){
+            H_atmo_para >> temp;
+            lsgrav[i-1] = temp;
+        }
+
+        //discarding mu choices
+        for (int i = 1; i <= size_mu; i++){
+            H_atmo_para >> dump;
+        }
+    H_atmo_para.close();
+    }
+
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
     lgrav = log10(delta * Units::G * M / (R * R));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     
-    i_lt = Find(lt,logt);
-    i_lgrav = Find(lgrav,lsgrav);
-    
+    for (int m = 0; m < size_logt; ++m) {
+        if (lt >= logt[m]) {
+            i_lt = m;
+        }
+    } 
+
+    for (int m = 0; m < size_lsgrav; ++m) {
+        if (lgrav >= lsgrav[m]) {
+            i_lgrav = m;
+        }
+    } 
+
     n_lgrav = i_lgrav + 1;
     n_lt = i_lt + 1;
-    
-    sprintf(s1,"nsatmos_edd4.emerg%02d%02d01",n_lt,n_lgrav);
+
+    sprintf(s1,"nsatmos_edd4.emerg%02d%02d01",n_lt,n_lgrav); 
     sprintf(s2,"nsatmos_edd4.emerg%02d%02d01",n_lt+1,n_lgrav);
     sprintf(s3,"nsatmos_edd4.emerg%02d%02d01",n_lt,n_lgrav+1);
-    sprintf(s4,"nsatmos_edd4.emerg%02d%02d01",n_lt+1,n_lgrav+1);
+    sprintf(s4,"nsatmos_edd4.emerg%02d%02d01",n_lt+1,n_lgrav+1); 
     ifstream H_table1;
     H_table1.open(s1);
     ifstream H_table2;
@@ -1857,6 +1876,7 @@ void Read_NSATMOS(double T, double M, double R){
         cout << "NSATMOS files is not found  " << s4 << endl;
     }
     H_table4.close();
+    chdir(cwd);
     
     X = lt;
     Y = lgrav;
@@ -1869,19 +1889,40 @@ void Read_NSATMOS(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double Hydrogen(double E, double cos_theta){
-    double freq, P;
-    double I_int[8],Q[4],R[2];
-    int i_mu(0), n_mu, down, up;
+    double freq, P, temp, dump;
+    double I_int[8],Q[4],R[2],mu[12];
+    int i_mu(0), n_mu, down, up,  size_logt(10), size_lsgrav(11), size_mu(12);
+    char atmodir[1024], cwd[1024];
     
     std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp;
 
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
+
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+    ifstream H_atmo_para;
+    H_atmo_para.open("nsatmos-info.txt");
+
+    if(H_atmo_para.is_open()){
+        //discard logt and lgrav values
+        for (int i = 1; i <= size_logt+size_lsgrav; i++){
+            H_atmo_para >> dump;
+        }
+
+        //mu
+        for (int i = 1; i <= size_mu; i++){
+            H_atmo_para >> temp;
+            mu[i-1] = temp;
+        }
+    H_atmo_para.close();
+    }
     
-    for (int m = 0; m < 12; ++m) {
+    for (int m = 0; m < size_mu; ++m) {
         if (cos_theta <= mu[m]) {
             i_mu = m;
-            }
-        } 
+        }
+    } 
     n_mu = i_mu + 1;
     
    for (int i = 0; i < 2; ++i) {
@@ -1928,6 +1969,7 @@ double Hydrogen(double E, double cos_theta){
         }
         I_int[i+6] = LogInterpolate(freq,FFFF_temp,IIII_temp);
     }
+    chdir(cwd);
 
 
     // Perform the four point linear interpolation
@@ -1957,14 +1999,14 @@ double Hydrogen(double E, double cos_theta){
 
 // Read the helium intensity file, set to 4 sets of intensity based on combinations of parameters of nearest 2 logt and 2 lgrav,
 // which can be used to peform the four point interpolation.
-const std::vector<double> mu_he {1,0.99995,0.9998,0.99875,0.996195,0.984808,0.965926,0.939693,0.906308,0.866025,0.819152,0.766044,0.707107,0.642787,0.573577,0.499998,0.422622,0.342021,0.258816,0.173652,0.0871556,0.00999616,9.63268e-05};
-const std::vector<double> logt_he {5.50515,5.60206,5.69897,5.79934,5.89763,6,6.11394,6.20412,6.30103,6.39794,6.50515,6.60206,6.69897};
-const std::vector<double> lsgrav_he {13.6021,13.7993,14,14.2041,14.3802,14.6021,14.7993,14.8976};
+//const std::vector<double> mu_he {1,0.99995,0.9998,0.99875,0.996195,0.984808,0.965926,0.939693,0.906308,0.866025,0.819152,0.766044,0.707107,0.642787,0.573577,0.499998,0.422622,0.342021,0.258816,0.173652,0.0871556,0.00999616,9.63268e-05};
+//const std::vector<double> logt_he {5.50515,5.60206,5.69897,5.79934,5.89763,6,6.11394,6.20412,6.30103,6.39794,6.50515,6.60206,6.69897};
+//const std::vector<double> lsgrav_he {13.6021,13.7993,14,14.2041,14.3802,14.6021,14.7993,14.8976};
 void Read_NSX(double T, double M, double R){
  
-    double delta, temp, dump, lt, lgrav;
-    int i_lt, i_lgrav, n_lt, n_lgrav, skip_to, skip_two, size_logt, size_lsgrav, size_mu, size_ener, size_set;
-    char name[40];
+    double delta, lt, lgrav, temp, dump, logt[13], lsgrav[8];
+    int size_logt(13), size_lsgrav(8), size_mu(23), i_lt, i_lgrav, n_lt, n_lgrav, size_ener(125), size_set, skip_to, skip_two;
+    char atmodir[1024], cwd[1024];
     std::vector<double> freq;
 
     //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
@@ -1973,18 +2015,53 @@ void Read_NSX(double T, double M, double R){
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
     lgrav = log10(delta * Units::G * M / (R * R));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
-    
-    //Use Find to determine i_lt, i_lgrav, n_lt, n_grav.
-    i_lt = Find(lt,logt_he);
-    i_lgrav = Find(lgrav,lsgrav_he);
+
+    //obtain helium atmosphere parameters
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+    ifstream He_atmo_para;
+    He_atmo_para.open("nsx-info.txt");
+
+    if(He_atmo_para.is_open()){
+        //logt
+        for (int i = 1; i <= size_logt; i++){
+            He_atmo_para >> temp;
+            logt[i-1] = temp;    
+        }
+
+        //lgrav
+        for (int i = 1; i <= size_lsgrav; i++){
+            He_atmo_para >> temp;
+            lsgrav[i-1] = temp;
+        }
+
+        //discarding mu choices
+        for (int i = 1; i <= size_mu; i++){
+            He_atmo_para >> dump;
+        }
+    He_atmo_para.close();
+    }
+
+    for (int m = 0; m < 10; ++m) {
+        if (lt >= logt[m]) {
+            i_lt = m;
+        }
+    } 
+
+    for (int m = 0; m < 11; ++m) {
+        if (lgrav >= lsgrav[m]) {
+            i_lgrav = m;
+        }
+    } 
+
     n_lt = i_lt+1;
     n_lgrav = i_lgrav+1;
  
 
-    //Open helium spectra file
+    //Open helium spectra file    
     ifstream He_table1;
-    sprintf(name, "nsx_He_2.out");
-    He_table1.open(name);
+    He_table1.open("nsx_He_2.out");
 
 
     if(He_table1.is_open()){
@@ -2066,88 +2143,110 @@ void Read_NSX(double T, double M, double R){
         cout << "NSX_file is not found" << endl;
     }
     He_table1.close();
+    chdir(cwd);
     
     X = lt;
     Y = lgrav;
     
-    X1 = logt_he[i_lt];
-    Y1 = lsgrav_he[i_lgrav];
-    X2 = logt_he[i_lt + 1];
-    Y2 = lsgrav_he[i_lgrav + 1];  
+    X1 = logt[i_lt];
+    Y1 = lsgrav[i_lgrav];
+    X2 = logt[i_lt + 1];
+    Y2 = lsgrav[i_lgrav + 1];  
 
 }
 
 // Calculate the final interpolated intensity
 double Helium(double E, double cos_theta){
-    double freq, P;
-    double I_int[8],Q[4],R[2];
+    double freq, P, size_logt(13), size_lsgrav(8), size_mu(23), temp, dump;
+    double I_int[8],Q[4],R[2],mu[23];
     int i_mu(0), down, mid, up;
+    char atmodir[1024], cwd[1024];
     
     std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
 
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
-    
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+    ifstream He_atmo_para;
+    He_atmo_para.open("nsx-info.txt");
+
+    if(He_atmo_para.is_open()){
+        //discard logt and lsgrav choices
+        for (int i = 1; i <= size_logt+size_lsgrav; i++){
+            He_atmo_para >> dump;
+        }
+
+        //mu
+        for (int i = 1; i <= size_mu; i++){
+            He_atmo_para >> temp;
+            mu[i-1] = temp;
+        }
+    He_atmo_para.close();
+    }
+
+
+
     //finding mu value 
-    for (int m = 0; m < 23; ++m) {
-
-        if (cos_theta <= mu_he[m]) {
+    for (int m = 0; m < size_mu; ++m) {
+        if (cos_theta <= mu[m]) {
             i_mu = m;
-            }
         }
+    }
  
-        down = i_mu * 125;
-        mid = down + 125;
-        up = mid + 125;       
+    down = i_mu * 125;
+    mid = down + 125;
+    up = mid + 125;       
 
-        for (int j = down; j < mid; ++j) {
-            I_temp.push_back(I[j]);
-        }
-        for (int j = mid; j < up; ++j){
-            Iv_temp.push_back(I[j]);
-        }
-        F_temp = F;
-        I_int[0] = LogInterpolate(freq,F_temp,I_temp);
-        I_int[1] = LogInterpolate(freq,F_temp,Iv_temp);
-        //cout << i_mu << " " << down << " " << I[down] << endl;
+    for (int j = down; j < mid; ++j) {
+        I_temp.push_back(I[j]);
+    }
+    for (int j = mid; j < up; ++j){
+        Iv_temp.push_back(I[j]);
+    }
+    F_temp = F;
+    I_int[0] = LogInterpolate(freq,F_temp,I_temp);
+    I_int[1] = LogInterpolate(freq,F_temp,Iv_temp);
 
-        for (int j = down; j < mid; ++j) {
-            II_temp.push_back(II[j]);
-        }
-        for (int j = mid; j < up; ++j){
-            IIv_temp.push_back(II[j]);
-        }
-        FF_temp = F;
-        I_int[2] = LogInterpolate(freq,FF_temp,II_temp);
-        I_int[3] = LogInterpolate(freq,FF_temp,IIv_temp);   
+    for (int j = down; j < mid; ++j) {
+        II_temp.push_back(II[j]);
+    }
+    for (int j = mid; j < up; ++j){
+        IIv_temp.push_back(II[j]);
+    }
+    FF_temp = F;
+    I_int[2] = LogInterpolate(freq,FF_temp,II_temp);
+    I_int[3] = LogInterpolate(freq,FF_temp,IIv_temp);   
 
 
-        for (int j = down; j < mid; ++j) {
-            III_temp.push_back(III[j]);
-        }
-        for (int j = mid; j < up; ++j) {
-            IIIv_temp.push_back(III[j]);
-        }
-        FFF_temp = F;
-        I_int[4] = LogInterpolate(freq,FFF_temp,III_temp);
-        I_int[5] = LogInterpolate(freq,FFF_temp,IIIv_temp);
+    for (int j = down; j < mid; ++j) {
+        III_temp.push_back(III[j]);
+    }
+    for (int j = mid; j < up; ++j) {
+        IIIv_temp.push_back(III[j]);
+    }
+    FFF_temp = F;
+    I_int[4] = LogInterpolate(freq,FFF_temp,III_temp);
+    I_int[5] = LogInterpolate(freq,FFF_temp,IIIv_temp);
     
 
-        for (int j = down; j < mid; ++j) {
-            IIII_temp.push_back(IIII[j]);
-        }
-        for (int j = mid; j < up; ++j) {
-            IIIIv_temp.push_back(IIII[j]);
-        }
-        FFFF_temp = F;
-        I_int[6] = LogInterpolate(freq,FFFF_temp,IIII_temp);
-        I_int[7] = LogInterpolate(freq,FFFF_temp,IIIIv_temp);
+    for (int j = down; j < mid; ++j) {
+        IIII_temp.push_back(IIII[j]);
+    }
+    for (int j = mid; j < up; ++j) {
+        IIIIv_temp.push_back(IIII[j]);
+    }
+    FFFF_temp = F;
+    I_int[6] = LogInterpolate(freq,FFFF_temp,IIII_temp);
+    I_int[7] = LogInterpolate(freq,FFFF_temp,IIIIv_temp);
+    chdir(cwd);
 
     // Perform the four point linear interpolation
-    Q[0] = LogLinear(cos_theta,mu_he[i_mu],I_int[0],mu_he[i_mu+1],I_int[1]);
-    Q[1] = LogLinear(cos_theta,mu_he[i_mu],I_int[2],mu_he[i_mu+1],I_int[3]);
-    Q[2] = LogLinear(cos_theta,mu_he[i_mu],I_int[4],mu_he[i_mu+1],I_int[5]);
-    Q[3] = LogLinear(cos_theta,mu_he[i_mu],I_int[6],mu_he[i_mu+1],I_int[7]); 
+    Q[0] = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[i_mu+1],I_int[1]);
+    Q[1] = LogLinear(cos_theta,mu[i_mu],I_int[2],mu[i_mu+1],I_int[3]);
+    Q[2] = LogLinear(cos_theta,mu[i_mu],I_int[4],mu[i_mu+1],I_int[5]);
+    Q[3] = LogLinear(cos_theta,mu[i_mu],I_int[6],mu[i_mu+1],I_int[7]); 
 
     R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
     R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
