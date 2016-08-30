@@ -1758,13 +1758,9 @@ int Round(int n, double z, std::vector<double> v){
     }
 }
 
-// values at which the hydrogen intensities are calculated (from Slavko)
-//const std::vector<double> mu { 1.000,0.950,0.900,0.800,0.700,0.600,0.500,0.400,0.300,0.200,0.100,0.005 };
-//const std::vector<double> logt { 5.55E0,5.65E0,5.75E0,5.85E0,5.95E0,6.05E0,6.15E0,6.25E0,6.35E0,6.45E0 };
-//const std::vector<double> lsgrav { 13.50E0,13.70E0,13.90E0,14.10E0,14.30E0,14.50E0,14.70E0,14.9E0,15.10E0,15.30E0,15.50E0 };
+// Set up hydrogen/helium arrays and dummy variables
 std::vector<double> F,FF,FFF,FFFF,I,II,III,IIII;
 double X, Y, X1, Y1, X2, Y2;
-
 
 // Read the four hydrogen intensity files to peform the four point interpolation
 void Read_NSATMOS(double T, double M, double R){
@@ -1773,6 +1769,7 @@ void Read_NSATMOS(double T, double M, double R){
     int i_lgrav, i_lt(0), n_lgrav, n_lt, size_logt(10), size_lsgrav(11), size_mu(12);
     char s1[40],s2[40],s3[40],s4[40], atmodir[1024], cwd[1024];
 
+    //Read in hydrogen atmosphere parameters
     getcwd(cwd, sizeof(cwd));
     sprintf(atmodir,"%s/atmosphere",cwd);
     chdir(atmodir);
@@ -1799,6 +1796,7 @@ void Read_NSATMOS(double T, double M, double R){
     H_atmo_para.close();
     }
 
+    //Find correct logt and lgrav paramter choice
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
@@ -1820,6 +1818,7 @@ void Read_NSATMOS(double T, double M, double R){
     n_lgrav = i_lgrav + 1;
     n_lt = i_lt + 1;
 
+    //Load hydrogen atmosphere files
     sprintf(s1,"nsatmos_edd4.emerg%02d%02d01",n_lt,n_lgrav); 
     sprintf(s2,"nsatmos_edd4.emerg%02d%02d01",n_lt+1,n_lgrav);
     sprintf(s3,"nsatmos_edd4.emerg%02d%02d01",n_lt,n_lgrav+1);
@@ -1893,11 +1892,12 @@ double Hydrogen(double E, double cos_theta){
     double I_int[8],Q[4],R[2],mu[12];
     int i_mu(0), n_mu, down, up,  size_logt(10), size_lsgrav(11), size_mu(12);
     char atmodir[1024], cwd[1024];
-    
     std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp;
 
+    //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
+    //Read in atmosphere parameters
     getcwd(cwd, sizeof(cwd));
     sprintf(atmodir,"%s/atmosphere",cwd);
     chdir(atmodir);
@@ -1918,6 +1918,7 @@ double Hydrogen(double E, double cos_theta){
     H_atmo_para.close();
     }
     
+    //Find proper mu choice
     for (int m = 0; m < size_mu; ++m) {
         if (cos_theta <= mu[m]) {
             i_mu = m;
@@ -1925,6 +1926,7 @@ double Hydrogen(double E, double cos_theta){
     } 
     n_mu = i_mu + 1;
     
+    //Read and interpolate to proper frequency 
    for (int i = 0; i < 2; ++i) {
        down = (i_mu + i) * 128;
        up = down + 128;
@@ -1972,17 +1974,20 @@ double Hydrogen(double E, double cos_theta){
     chdir(cwd);
 
 
-    // Perform the four point linear interpolation
+    // Perform interpolation to correct mu (cos_theta)
     Q[0] = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[i_mu+1],I_int[1]);
     Q[1] = LogLinear(cos_theta,mu[i_mu],I_int[2],mu[i_mu+1],I_int[3]);
     Q[2] = LogLinear(cos_theta,mu[i_mu],I_int[4],mu[i_mu+1],I_int[5]);
     Q[3] = LogLinear(cos_theta,mu[i_mu],I_int[6],mu[i_mu+1],I_int[7]); 
 
+    // Interpolation to local gravity
     R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
     R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
 
+    // Interpolation to temperature
     P = LogLinear(X,X1,R[0],X2,R[1]);
 
+    // Set to zero at small angle
     if (cos_theta < 0.005) P = 0;
 
     return P;
@@ -2161,11 +2166,12 @@ double Helium(double E, double cos_theta){
     double I_int[8],Q[4],R[2],mu[23];
     int i_mu(0), down, mid, up;
     char atmodir[1024], cwd[1024];
-    
     std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
 
+    // Convert energy to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
+    // Read in helium atmosphere parameter choices
     getcwd(cwd, sizeof(cwd));
     sprintf(atmodir,"%s/atmosphere",cwd);
     chdir(atmodir);
@@ -2186,8 +2192,6 @@ double Helium(double E, double cos_theta){
     He_atmo_para.close();
     }
 
-
-
     //finding mu value 
     for (int m = 0; m < size_mu; ++m) {
         if (cos_theta <= mu[m]) {
@@ -2199,6 +2203,7 @@ double Helium(double E, double cos_theta){
     mid = down + 125;
     up = mid + 125;       
 
+    //Read and interpolate to correct frequency
     for (int j = down; j < mid; ++j) {
         I_temp.push_back(I[j]);
     }
@@ -2242,17 +2247,20 @@ double Helium(double E, double cos_theta){
     I_int[7] = LogInterpolate(freq,FFFF_temp,IIIIv_temp);
     chdir(cwd);
 
-    // Perform the four point linear interpolation
+    // Interpolate to chosen mu
     Q[0] = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[i_mu+1],I_int[1]);
     Q[1] = LogLinear(cos_theta,mu[i_mu],I_int[2],mu[i_mu+1],I_int[3]);
     Q[2] = LogLinear(cos_theta,mu[i_mu],I_int[4],mu[i_mu+1],I_int[5]);
     Q[3] = LogLinear(cos_theta,mu[i_mu],I_int[6],mu[i_mu+1],I_int[7]); 
 
+    // Interpolate to chosen local gravity
     R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
     R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
 
+    // Interpolate to chosen temperature
     P = LogLinear(X,X1,R[0],X2,R[1]);
 
+    // Set to zero at small angle
     if (cos_theta < 9.63268e-05) P = 0;
 
     return P;
