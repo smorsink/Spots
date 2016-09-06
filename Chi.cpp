@@ -1765,9 +1765,10 @@ double X, Y, X1, Y1, X2, Y2;
 // Read the four hydrogen intensity files to peform the four point interpolation
 void Read_NSATMOS(double T, double M, double R){
     
-    double delta, lgrav, lt, temp, dump, logt[10], lsgrav[11];
+    double delta, lgrav, lt, temp, dump;
     int i_lgrav, i_lt(0), n_lgrav, n_lt, size_logt(10), size_lsgrav(11), size_mu(12);
     char s1[40],s2[40],s3[40],s4[40], atmodir[1024], cwd[1024];
+    std::vector<double> logt, lsgrav; 
 
     //Read in hydrogen atmosphere parameters
     getcwd(cwd, sizeof(cwd));
@@ -1780,13 +1781,13 @@ void Read_NSATMOS(double T, double M, double R){
         //logt
         for (int i = 1; i <= size_logt; i++){
             H_atmo_para >> temp;
-            logt[i-1] = temp;    
+            logt.push_back(temp);  
         }
 
         //lgrav
         for (int i = 1; i <= size_lsgrav; i++){
             H_atmo_para >> temp;
-            lsgrav[i-1] = temp;
+            lsgrav.push_back(temp);
         }
 
         //discarding mu choices
@@ -1803,17 +1804,8 @@ void Read_NSATMOS(double T, double M, double R){
     lgrav = log10(delta * Units::G * M / (R * R));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     
-    for (int m = 0; m < size_logt; ++m) {
-        if (lt >= logt[m]) {
-            i_lt = m;
-        }
-    } 
-
-    for (int m = 0; m < size_lsgrav; ++m) {
-        if (lgrav >= lsgrav[m]) {
-            i_lgrav = m;
-        }
-    } 
+    i_lt = Find(lt,logt);
+    i_lgrav = Find(lgrav,lsgrav);
 
     n_lgrav = i_lgrav + 1;
     n_lt = i_lt + 1;
@@ -1889,10 +1881,10 @@ void Read_NSATMOS(double T, double M, double R){
 // Calculate the final interpolated intensity
 double Hydrogen(double E, double cos_theta){
     double freq, P, temp, dump;
-    double I_int[8],Q[4],R[2],mu[12];
+    double I_int[8],Q[4],R[2];
     int i_mu(0), n_mu, down, up,  size_logt(10), size_lsgrav(11), size_mu(12);
     char atmodir[1024], cwd[1024];
-    std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp;
+    std::vector<double> mu, F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp;
 
     //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
@@ -1913,7 +1905,7 @@ double Hydrogen(double E, double cos_theta){
         //mu
         for (int i = 1; i <= size_mu; i++){
             H_atmo_para >> temp;
-            mu[i-1] = temp;
+            mu.push_back(temp);
         }
     H_atmo_para.close();
     }
@@ -1923,7 +1915,7 @@ double Hydrogen(double E, double cos_theta){
         if (cos_theta <= mu[m]) {
             i_mu = m;
         }
-    } 
+    }
     n_mu = i_mu + 1;
     
     //Read and interpolate to proper frequency 
@@ -2009,10 +2001,10 @@ double Hydrogen(double E, double cos_theta){
 //const std::vector<double> lsgrav_he {13.6021,13.7993,14,14.2041,14.3802,14.6021,14.7993,14.8976};
 void Read_NSX(double T, double M, double R){
  
-    double delta, lt, lgrav, temp, dump, logt[13], lsgrav[8];
+    double delta, lt, lgrav, temp, dump;
     int size_logt(13), size_lsgrav(8), size_mu(23), i_lt, i_lgrav, n_lt, n_lgrav, size_ener(125), size_set, skip_to, skip_two;
     char atmodir[1024], cwd[1024];
-    std::vector<double> freq;
+    std::vector<double> freq, logt, lsgrav;
 
     //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
     M = Units::nounits_to_cgs(M, Units::MASS);
@@ -2032,13 +2024,13 @@ void Read_NSX(double T, double M, double R){
         //logt
         for (int i = 1; i <= size_logt; i++){
             He_atmo_para >> temp;
-            logt[i-1] = temp;    
+            logt.push_back(temp); 
         }
 
         //lgrav
         for (int i = 1; i <= size_lsgrav; i++){
             He_atmo_para >> temp;
-            lsgrav[i-1] = temp;
+            lsgrav.push_back(temp);
         }
 
         //discarding mu choices
@@ -2048,17 +2040,8 @@ void Read_NSX(double T, double M, double R){
     He_atmo_para.close();
     }
 
-    for (int m = 0; m < 10; ++m) {
-        if (lt >= logt[m]) {
-            i_lt = m;
-        }
-    } 
-
-    for (int m = 0; m < 11; ++m) {
-        if (lgrav >= lsgrav[m]) {
-            i_lgrav = m;
-        }
-    } 
+    i_lt = Find(lt,logt);
+    i_lgrav = Find(lgrav,lsgrav);
 
     n_lt = i_lt+1;
     n_lgrav = i_lgrav+1;
