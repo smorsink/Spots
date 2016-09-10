@@ -95,7 +95,7 @@ double Helium(double E, double cos_theta);
 double EnergyBandFlux( double T, double E1, double E2 );
 
 // flux from a specific energy band, for atmosphere models
-double AtmosEBandFlux( double model, double cos_theta, double E1, double E2 );
+double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E2 );
 
 // flux from a blackbody (bolometric, p = 0)
 double BlackBody( double T, double E );

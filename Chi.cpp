@@ -748,64 +748,51 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
 
     if ( curve.dOmega_s[i] != 0.0 ) {
-    /*
-	if ( curve.flags.beaming_model == 1 ) {
-	  gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
-	}
-	else
-	  gray = 1.0; // Isotropic, the same at all angles
-    */ // Graybody factor set in beaming model cases, otherwise is 1
 
 	if (std::isnan(gray) || gray == 0) std::cout << "gray = " << gray << std::endl;
 	if (std::isnan(curve.eta[i]) || curve.eta[i] == 0) std::cout << "eta[i="<<i<<"] = " << curve.eta[i] << std::endl;
 	if (std::isnan(redshift) || redshift == 0) std::cout << "redshift = " << redshift << std::endl;
 
-
+    /*******************************************************************/
+    /* COMPUTING BLACKBODY LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0 */
+    /*      First computes in [erg/(s cm^2 Hz), converts to            */
+    /*      photons/(s cm^2 keV)                                       */
+    /*******************************************************************/
 	if (curve.flags.spectral_model == 0){ // Monochromatic Observation
     
-    if (curve.flags.beaming_model == 0){ // Blackbody, no beaming
-	/*******************************************************************/
-	/* COMPUTING BLACKBODY LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0 */
-	/*      First computes in [erg/(s cm^2 Hz), converts to            */
-	/*		photons/(s cm^2 keV)                               */
-	/*******************************************************************/
-	  //std::cout << "E_obs = " << E0 << std::endl;
+        if (curve.flags.beaming_model == 0){ // Blackbody, no beaming
+	       // Moonochromatic light curve in energy flux erg/(s cm^2 Hz)
+            curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+	       // Units: erg/(s cm^2 Hz)
+	       //Convert to photons/(s cm^2 keV)
+	        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+	    }
 
-	  // Moonochromatic light curve in energy flux erg/(s cm^2 Hz)
-	  gray = 1;
-      curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-	  // Units: erg/(s cm^2 Hz)
-	  //Convert to photons/(s cm^2 keV)
-	  curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+        if (curve.flags.beaming_model == 1){ // Blackbody, graybody factor
+            gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+            curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+        }
 
-	  if (curve.f[0][i] != 0.0) nullcurve[0] = false;
-	}
+        if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
+        }
 
-    if (curve.flags.beaming_model == 1){ // Blackbody, graybody factor
-        gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
-        // Moonochromatic light curve in energy flux erg/(s cm^2 Hz)
-        curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-        // Units: erg/(s cm^2 Hz)
-        //Convert to photons/(s cm^2 keV)
-        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-        if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+        if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
+            curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
+        }
+
+        if (curve.flags.beaming_model == 4){ // Helium Atmosphere
+            curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
+        }
     }
 
-    if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
-    }
-
-    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-        curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-    }
-
-    if (curve.flags.beaming_model == 4){ // Helium Atmosphere
-        curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-    }
-
-    }
-
+    /***********************/
+    /* FUNNY LINE EMISSION */
+    /***********************/
 	if (curve.flags.spectral_model == 1){ // Funny Line Emission for NICER
 
         for (unsigned int p=0; p<numbands; p++){
@@ -826,6 +813,33 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
         }
 	}
 
+    /*******************************************************************/
+    /* COMPUTING BLACKBODY LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0 */
+    /*      First computes in [erg/(s cm^2 Hz), converts to            */
+    /*      photons/(s cm^2 keV)                                       */
+    /*******************************************************************/
+
+    if (curve.flags.spectral_model == 2){ // Integrated Flux of Energy Bands
+        double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+
+        for (unsigned int p = 0; p<numbands; p++){
+            if (curve.flags.beaming_model == 0){ //blackbody
+                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
+            }
+
+            if (curve.flags.beaming_model == 1){ //blackbody with graybody
+                gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+                curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
+            }
+            if (curve.flags.beaming_model == 3){ //hydrogen
+                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+            }
+            if (curve.flags.beaming_model == 4){ //helium
+                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+            }
+        }
+    }
+
 	if (curve.flags.spectral_model == 7) { // Not Used Right Now.
 			
 	  /*******************************************/
@@ -834,7 +848,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  /*******************************************/
     		
 	  // Bolometric Light Curve for energy flux erg/(cm^2 s)
-	  curve.f[0][i] =  bolo * gray * curve.dOmega_s[i] * pow(curve.eta[i],5) * pow(redshift,-4); // Units: erg/(cm^2 s)
+	  curve.f[0][i] = bolo * gray * curve.dOmega_s[i] * pow(curve.eta[i],5) * pow(redshift,-4); // Units: erg/(cm^2 s)
 
 	  // Bolometric Light Curve for photon number flux photons/(cm^2 s)
 	  curve.f[0][i] = bolo * gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3); // Units: photons/(cm^2 s)
@@ -2408,13 +2422,13 @@ double EnergyBandFlux( double T, double E1, double E2 ) {
 /*       E1 = lower bound of energy band in keV * redshift / eta                      */
 /*       E2 = upper bound of energy band in keV * redshift / eta                      */
 /**************************************************************************************/
-double AtmosEBandFlux( double model, double cos_theta, double E1, double E2 ) {
+double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E2 ) {
 
     /********************************************/
     /* VARIABLE DECLARATIONS FOR AtmosEBandFlux */
     /********************************************/
     
-    int n_steps(3000);       // total number of steps
+    int n_steps(100);       // total number of steps
     double step_size;           // step size in energy scale
     double current_e;           // central energy of current step
     double e_l, e_m, e_u;       // lower, middle, and upper energy values of Simpson's rule
@@ -2424,7 +2438,7 @@ double AtmosEBandFlux( double model, double cos_theta, double E1, double E2 ) {
     
     step_size = (E2-E1)/n_steps;
 
-    if (model == 0){
+    if (model == 3){ //Hydrogen
         for (int j = 1; j <= n_steps; j++){
             
             current_e = step_size*(j-1+1/2) + E1;
@@ -2432,12 +2446,11 @@ double AtmosEBandFlux( double model, double cos_theta, double E1, double E2 ) {
             e_m = (current_e);
             e_u = (current_e+step_size/2);
             current_n = step_size * (1/3*Hydrogen(e_l,cos_theta)/e_l + 4/3*Hydrogen(e_m,cos_theta)/e_m + 1/3*Hydrogen(e_u,cos_theta)/e_u);
-            e_u = current_e + step_size/2;
-            current_n = step_size * (1/3*BlackBody(0.1,e_l)/e_l + 4/3*BlackBody(0.1,e_m)/e_m + 1/3*BlackBody(0.1,e_u)/e_u);
             flux += current_n;
             
         }
-    }else{
+    }
+    if (model == 4){ //Helium
         for (int j = 1; j <= n_steps; j++){
             current_e = step_size*(j-1+1/2) + E1;
             e_l = (current_e-step_size/2);

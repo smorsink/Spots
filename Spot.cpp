@@ -53,17 +53,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   std::ofstream out;      // output stream; printing information to the output file
   std::ofstream testout;  // testing output stream;
   std::ofstream param_out;// piping out the parameters and chisquared
-    
-  double incl_1(90.0),               // Inclination angle of the observer, in degrees
+  
+
+  double incl_1(90.0),          // Inclination angle of the observer, in degrees
     incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     d_theta_2(0.0),
     d_incl_2(0.0),
     mass,                       // Mass of the star, in M_sun
-    rspot(0.0),                      // Radius of the star at the spot, in km
-    mass_over_req, // Dimensionless mass divided by radius ratio
-    rot_par,// Dimensionless rotation parameter = omega^2 R^3/M
+    rspot(0.0),                 // Radius of the star at the spot, in km
+    mass_over_req,              // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
     bbrat(1.0),                 // Ratio of blackbody to Compton scattering effects, unitless
@@ -87,7 +87,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     E_band_upper_2(6.0),        // Upper bound of second energy band to calculate flux over, in keV.
     background[NCURVES],
     T_mesh[30][30],             // Temperature mesh over the spot; same mesh as theta and phi bins, assuming square mesh
-    chisquared(1.0),             // The chi^2 of the data; only used if a data file of fluxes is inputed
+    chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e22),        // Distance from earth to the NS, in meters; default is 10kpc
     B;                          // from param_degen/equations.pdf 2
    
@@ -121,8 +121,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 ignore_time_delays(false),  // True if we are ignoring time delays
     	 T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
     	 normalize_flux(false),      // True if we are normalizing the output flux to 1
-    	 E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
-    	 E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
+    	 //E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
+    	 //E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
     	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
     	 only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
     	 pd_neg_soln(false);
@@ -249,6 +249,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%u", &spectral_model);
 			// 0 = blackbody
 			// 1 = thin line for nicer
+	        // 2 = integrated flux for energy bands
 			break;
 			
 	    case 'S': // Number of Energy bands
@@ -264,23 +265,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                break;
 	            
 	    case 'u': // Lower limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E1);
+	            	sscanf(argv[i+1], "%lf", &E_band_lower_1);
 	            	//E_band_lower_1_set = true;
 	            	break;
 	            
 	    case 'U': // Upper limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E2);
+	            	sscanf(argv[i+1], "%lf", &E_band_upper_1);
 	            	//E_band_upper_1_set = true;
 	            	break;
 	                
-	    case 'v': // Lower limit of second energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_lower_2);
-	            	E_band_lower_2_set = true;
+	    case 'v': // NICER funny line E1
+	            	sscanf(argv[i+1], "%lf", &E1);
 	            	break;
 	            	
-	    case 'V': // Upper limit of second energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_upper_2);
-	            	E_band_upper_2_set = true;
+	    case 'V': // NICER funny line E2
+	            	sscanf(argv[i+1], "%lf", &E2);
 	            	break;
 	            
 	    case 'x': // Scattering radius, in kpc
@@ -448,8 +447,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
-
-    rot_par = pow(omega*req,2)/mass_over_req;
 	
      std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
 
@@ -476,7 +473,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E_band_upper_2 = E_band_upper_2;
     curve.para.distance = distance;
     curve.numbins = numbins;
+    //curve.para.rsc = r_sc;
+    //curve.para.Isc = I_sc;
 
+    //numphi = numtheta; // code currently only handles a square mesh over the hotspot
+  
     curve.flags.ignore_time_delays = ignore_time_delays;
     curve.flags.spectral_model = spectral_model;
     curve.flags.beaming_model = beaming_model;
@@ -495,6 +496,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       curve.para.E2 = E2; // Highest Energy in keV
       curve.para.DeltaE = DeltaE; // Delta(E) in keV
     }
+
 
     // initialize background
     for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
@@ -568,6 +570,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* START SETTING THINGS UP */
     /***************************/ 
 
+    // Change to computation of rspot!!!!
+
+    // Calculate the Equatorial Radius of the star.
+    //req = calcreq( omega, mass, theta_1, rspot );  // implementation of MLCB11
+
     //rspot = req;
 
     /*********************************************************************************/
@@ -577,16 +584,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     OblModelBase* model;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
-        /*model = new PolyOblModelNHQS( rspot, req,
+        model = new PolyOblModelNHQS( rspot, req,
 		   		    PolyOblModelBase::zetaparam(mass,req),
-				    PolyOblModelBase::epsparam(omega, mass, req) );*/
-      model = new PolyOblModelNHQS( req,
-		   		    mass_over_req,
-				    rot_par );
+				    PolyOblModelBase::epsparam(omega, mass, req) );
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
-        model = new PolyOblModelCFLQS( req,
+        model = new PolyOblModelCFLQS( rspot, req,
 				     PolyOblModelBase::zetaparam(mass,rspot),
 				     PolyOblModelBase::epsparam(omega, mass, rspot) );
     }
@@ -601,7 +605,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         return -1;
     }
 
-    printf("R_Spot = %g; R_eq = %g \n", rspot, req);
+    printf("R_Spot = %g; R_eq = %g \n", Units::nounits_to_cgs( rspot, Units::LENGTH ), Units::nounits_to_cgs( req, Units::LENGTH ));
 
 
 
@@ -609,7 +613,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // defltoa is a structure that "points" to routines in the file "OblDeflectionTOA.cpp"
     // used to compute deflection angles and times of arrivals 
     // defltoa is the deflection time of arrival
-    //OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
+    OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
     // defltoa is a pointer (of type OblDeclectionTOA) to a group of functions
 
     // Values we need in some of the formulas.
@@ -662,7 +666,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
      
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-	  //for (unsigned int k(numtheta-1); k < numtheta; k++) { // Loop through the circles
 			std::cout << "k=" << k << std::endl;
 
 			double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
@@ -683,22 +686,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 			// What is the value of radius at this angle?
 			// For spherical star, rspot = req;
-
-			mu_1 = cos(thetak);
-			if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
-			rspot = model->R_at_costheta(mu_1);
-
-			std::cout << "Spot: req = " << req 
-				  <<"rspot = " << rspot << std::endl;
-
-			// Values we need in some of the formulas.
-			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-			curve.para.cosgamma = cosgamma;
-
+			rspot = req; // Spherical star
 			curve.para.radius = rspot; // load rspot into structure
 			curve.para.mass_over_r = mass_over_req * req/rspot;
-
-			OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 			std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 			curve = Bend(&curve,defltoa);
 
@@ -775,11 +765,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				for( unsigned int p(0); p < numbands; p++ )
 	  				for ( unsigned int i(0); i < numbins; i++ ) Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
       		} //end of last bin  
-	delete defltoa;
-
       	} // closing for loop through theta divisions
-
-
     } // End Standard Case of first spot
 
     /**********************************************************/
@@ -837,17 +823,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				dphi = 2.0*Units::PI/(numbins*1.0);
 
 				// What is the value of radius at this angle?
-				mu_1 = cos(thetak);
-				if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
-				rspot = model->R_at_costheta(mu_1);
-				// Values we need in some of the formulas.
-				cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-				curve.para.cosgamma = cosgamma;
-
+				// For spherical star, rspot = req;
+				rspot = req; // Spherical star
 				curve.para.radius = rspot; // load rspot into structure
 				curve.para.mass_over_r = mass_over_req * req/rspot;
-				OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-
 				std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 				curve = Bend(&curve,defltoa);
 
@@ -1095,6 +1074,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
+    if (curve.flags.spectral_model==2){
+    	double E_diff;
+		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+    	for (unsigned int k(0); k < numbands; k++){
+      		out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+    	}
+      	out << "%" << std::endl;
+      	for ( unsigned int i(0); i < numbins; i++ ) {
+        	out << curve.t[i]<< "\t" ;
+			for ( unsigned int p(0); p < numbands; p++ ) { 
+            	out << curve.f[p][i] << "\t" ;
+        	}
+			out << i;
+        	out << std::endl;
+      	}
+    }
+
+
 
       //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
       //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
@@ -1105,7 +1102,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     out.close();
     
-    
+    delete defltoa;
     delete model;
     return 0;
 } 
