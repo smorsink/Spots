@@ -3,11 +3,11 @@
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
 base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master"
+exe_dir="$base/Spot-master-old"
 #pwd
 make spot
 times
-out_dir="$exe_dir/NICER"
+out_dir="$exe_dir/OBLATE"
 
 
 normalizeFlux=false  # false = no, true = yes; still need to add or remove -N flag in command line (-N means yes)
@@ -18,11 +18,11 @@ NS_model=1     # 1 (oblate) or 3 (spherical); don't use 2
 numbins=128    # phase bins
 numbands=1     # energy bands
 spectraltype=0 # Blackbody observed at one Energy
-beaming=0      # Blackbody, no beaming
+beaming=0      # isotropic emission, no beaming
 
 
 # doubles -- using "e" notation
-spin=1 # in Hz
+spin=600 # in Hz
 mass=1.4 # in Msun
 radius=12 # in km
 inclination=90 # in degrees
@@ -39,67 +39,123 @@ if test ! -d "$out_dir"
    	then mkdir -p "$out_dir"
 fi
 
-# TEST 1 = 1 Hz, tiny spot
+# TEST OS1a = 600 Hz, tiny spot; oblate
 numtheta=1 # number of theta bins; for a small spot, only need one
-out_file="$out_dir/obl1.txt"
+out_file="$out_dir/os1a.txt"
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
 #times
 
-# TEST 2 = 1 Hz, big spot
-#numtheta=50
-#rho=1
-#out_file="$out_dir/test2.txt"
+# TEST OS1b = 600 Hz, big spot
+NS_model=1
+numtheta=320
+rho=1.0
+out_file="$out_dir/os1b.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -P "$numphi" -g "$gray" -s "$spectraltype" -S "$numbands"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -P "$numphi" -g "$beaming" -s "$spectraltype" -S "$numbands"
 #times
 
-# TEST 3 = 200 Hz, tiny spot
-#numtheta=1 # number of theta bins; for a small spot, only need one
-#numphi=1
-#numbins=128
-#spin=200
-#rho=1e-2
-#out_file="$out_dir/test3.txt"
+# TEST OS1c = 200 Hz, tiny spot; oblate
+numtheta=1 # number of theta bins; for a small spot, only need one
+rho=1e-2  # in radians
+spin=200
+out_file="$out_dir/os1c.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
 #times
 
-# TEST 4 = 200 Hz, big spot
-#numtheta=50 # number of theta bins; for a small spot, only need one
-#numphi=16
-#spin=200
-#rho=1
-#out_file="$out_dir/test4.txt"
+# TEST OS1d = 1 Hz, large spot; oblate
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=1.0
+out_file="$out_dir/os1d.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
+
+# TEST SP1d = 1 Hz, large spot; sphere
+NS_model=3
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=1.0
+out_file="$out_dir/sp1d.txt"
+## RUNNING THE CODE
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
 #times
 
-# TEST 5 = 400 Hz, big spot
-#numbins=32
-#numtheta=50 # number of theta bins; for a small spot, only need one
-#numphi=16
-#spin=400
-#rho=1
-#inclination=30 # in degrees
-#emission=60 # in degrees
-#out_file="$out_dir/test5.txt"
+# TEST OS1e = 600 Hz, large spot; oblate
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
+inclination=30 # in degrees
+emission=60 # in degrees
+out_file="$out_dir/os1e.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$gray" -s "$spectraltype" -S "$numbands"
-#times
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
 
-# TEST 6 = 400 Hz, big spot
-
-numbins=128
-numtheta=50 # number of theta bins; for a small spot, only need one
-numphi=20
-spin=400
-rho=1
+# TEST OS1f = 600 Hz, large spot; oblate
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
 inclination=80 # in degrees
 emission=20 # in degrees
-beaming=4   # Helium
-out_file="$out_dir/test6.txt"
+beaming=0
+out_file="$out_dir/os1f.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -P "$numphi" -s "$spectraltype" -S "$numbands" -g "$beaming"
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
 
+# TEST OS1g = 600 Hz, large spot; oblate; cos^2 beaming
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
+inclination=30 # in degrees
+emission=60 # in degrees
+beaming=5
+out_file="$out_dir/os1g.txt"
+## RUNNING THE CODE
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
+
+# TEST OS1h = 600 Hz, large spot; oblate; sin^2 beaming
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
+inclination=30 # in degrees
+emission=60 # in degrees
+beaming=6
+out_file="$out_dir/os1h.txt"
+## RUNNING THE CODE
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
+
+# TEST OS1i = 600 Hz, large spot; oblate
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
+inclination=80 # in degrees
+emission=20 # in degrees
+beaming=5
+out_file="$out_dir/os1i.txt"
+## RUNNING THE CODE
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
+times
+
+# TEST OS1j = 600 Hz, large spot; oblate
+NS_model=1
+numtheta=40 # number of theta bins; for a small spot, only need one
+rho=1  # in radians
+spin=600
+inclination=80 # in degrees
+emission=20 # in degrees
+beaming=6
+out_file="$out_dir/os1j.txt"
+## RUNNING THE CODE
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands"
 times
