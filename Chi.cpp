@@ -754,7 +754,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	if (std::isnan(redshift) || redshift == 0) std::cout << "redshift = " << redshift << std::endl;
 
     /*******************************************************************/
-    /* COMPUTING BLACKBODY LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0 */
+    /* COMPUTING LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0           */
     /*      First computes in [erg/(s cm^2 Hz), converts to            */
     /*      photons/(s cm^2 keV)                                       */
     /*******************************************************************/
