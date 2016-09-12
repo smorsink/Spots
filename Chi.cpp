@@ -814,9 +814,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	}
 
     /*******************************************************************/
-    /* COMPUTING BLACKBODY LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0 */
-    /*      First computes in [erg/(s cm^2 Hz), converts to            */
-    /*      photons/(s cm^2 keV)                                       */
+    /* COMPUTING BLACKBODY LIGHT CURVE FOR INTEGRATED FLUX             */
+    /* Units: photons/(cm^2 s)                                         */
     /*******************************************************************/
 
     if (curve.flags.spectral_model == 2){ // Integrated Flux of Energy Bands
