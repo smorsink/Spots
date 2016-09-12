@@ -584,13 +584,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     OblModelBase* model;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
-        model = new PolyOblModelNHQS( rspot, req,
+        model = new PolyOblModelNHQS( req,
 		   		    PolyOblModelBase::zetaparam(mass,req),
 				    PolyOblModelBase::epsparam(omega, mass, req) );
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
-        model = new PolyOblModelCFLQS( rspot, req,
+        model = new PolyOblModelCFLQS( req,
 				     PolyOblModelBase::zetaparam(mass,rspot),
 				     PolyOblModelBase::epsparam(omega, mass, rspot) );
     }

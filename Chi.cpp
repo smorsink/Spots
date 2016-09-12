@@ -22,6 +22,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <unistd.h>
 #include "Chi.h"
 #include "OblDeflectionTOA.h"
 #include "OblModelBase.h"
@@ -246,6 +247,21 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
     int j(0);
 
+    double bmin, psimin;
+
+    // Check to see if this is an oblate star
+    // If it is oblate compute the values of b_min, psi_max_in
+    if (curve.flags.ns_model != 3){
+      bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
+      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
+      std::cout << "Oblate! b_min_ingoing = " << bmin 
+		<< " psi_min_ingoing = " << psimin
+		<< " b_max_outgoing = " << curve.defl.b_max
+		<< " psi_max = " << curve.defl.psi_max
+		<< std::endl;
+    }
+    
+
 	
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2
         int sign(0);
@@ -302,8 +318,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	/***********************************************/
 
         result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
-        		 curve.defl.psi_max, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
-        		 &curve.problem );
+				      curve.defl.psi_max, bmin,psimin, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
+				      &curve.problem );
 
         if ( result == false && i == 0) { 
             curve.visible[i] = false;
@@ -1674,7 +1690,7 @@ class OblDeflectionTOA* recalc( class LightCurve* curve, double omega, double ma
     std::cout << "req_recalc = " << req << std::endl;
     */
     OblModelBase* model;
-    model = new PolyOblModelNHQS( rspot, req,
+    model = new PolyOblModelNHQS( req,
 				PolyOblModelBase::zetaparam(mass,req),
 				PolyOblModelBase::epsparam(omega, mass, req)
 				);
