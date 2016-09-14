@@ -181,7 +181,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
            distance;                  // Distance from Earth to NS, inputted in meters
 
-    double eps, epspsi,dcosa_dcosp;
+    double eps, epspsi,dcosa_dcosp, red;
            
     unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
     numbins = curve.numbins;
@@ -213,12 +213,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     mass = curve.para.mass;
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
+    red = 1.0/sqrt(1.0-2.0*mass_over_r);
     omega = curve.para.omega;
     cosgamma = curve.para.cosgamma;  // for spherical, cosgamma = 0
     distance = curve.para.distance;
     shift_t = curve.para.ts;
     infile_is_set = curve.flags.infile_is_set;
-    speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
+    //speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
+    speed = omega*radius*sin(theta_0)*red; // MLCB34
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
@@ -246,8 +248,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     } // closing For-Loop-1
 
     int j(0);
-
-    double bmin, psimin;
+    double bmin(0), psimin(0);
 
     // Check to see if this is an oblate star
     // If it is oblate compute the values of b_min, psi_max_in
@@ -436,7 +437,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 	            if ( ingoing ) {
 	             //  std::cout << "Ingoing b = " << b << std::endl;
-		      dpsi_db_val = defltoa->dpsi_db_ingoing( b, radius, mu, &curve.problem );
+		      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
                 else {
@@ -785,11 +786,20 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
             if (curve.f[0][i] != 0.0) nullcurve[0] = false;
 	    }
 
-        if (curve.flags.beaming_model == 1){ // Blackbody, graybody factor
-            gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
-            curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 6 ){ // Blackbody, graybody factor
+	  //            gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+
+	  if (curve.flags.beaming_model == 1)
+	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+	  if (curve.flags.beaming_model == 5)
+	    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
+	  if (curve.flags.beaming_model == 6)
+	    gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
+
+
+	  curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+	  curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+	  if (curve.f[0][i] != 0.0) nullcurve[0] = false;
         }
 
         if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
