@@ -17,7 +17,7 @@
 // Changes
 // 2016-08-05 - SMM: Added a function to Chi.cpp called Bend. Bend computes the look-up table for the bending angles. Removed the section of code in Spot.cpp where this is computed. 
 // 2016-08-05 - SMM: Bend is now called one time each latitude
-
+// 2016-09-19 - SMM: This version should do large spots correctly! However 2nd spot hasn't been changed.
 
 // INCLUDE ALL THE THINGS! 
 // If you do not get this reference, see 
@@ -92,7 +92,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     B;                          // from param_degen/equations.pdf 2
    
 
-  double E0, E1, E2, DeltaE;
+  double E0, E1, E2, DeltaE, rot_par;
     
   unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
@@ -585,10 +585,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     OblModelBase* model;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
-        model = new PolyOblModelNHQS( req,
-		   		    PolyOblModelBase::zetaparam(mass,req),
-				    PolyOblModelBase::epsparam(omega, mass, req) );
-        printf("Oblate Neutron Hybrid Quark Star. ");
+
+      std::cout << " Oblate Neutron Star" << std::endl;
+      model = new PolyOblModelNHQS( req,
+		   		    mass_over_req,
+				    rot_par );
+
+       
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
@@ -609,20 +612,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         return -1;
     }
 
-    printf("R_Spot = %g; R_eq = %g \n", Units::nounits_to_cgs( rspot, Units::LENGTH ), Units::nounits_to_cgs( req, Units::LENGTH ));
-
-
+ 
 
 
     // defltoa is a structure that "points" to routines in the file "OblDeflectionTOA.cpp"
     // used to compute deflection angles and times of arrivals 
     // defltoa is the deflection time of arrival
-    OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
+    //OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
     // defltoa is a pointer (of type OblDeclectionTOA) to a group of functions
 
     // Values we need in some of the formulas.
-    cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-    curve.para.cosgamma = cosgamma;
+    //cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+    //curve.para.cosgamma = cosgamma;
 
 
 
@@ -690,10 +691,33 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 			// What is the value of radius at this angle?
 			// For spherical star, rspot = req;
-			rspot = req; // Spherical star
+
+			mu_1 = cos(thetak);
+			if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
+
+			if ( mu_1 < 0.0){
+			  std::cout << "Southern Hemisphere!" << std::endl;
+			  mu_1 = fabs(mu_1);
+			  thetak = Units::PI - thetak;
+			  curve.para.incl = Units::PI - incl_1;
+			}
+
+			if (NS_model != 3)
+			  rspot = model->R_at_costheta(mu_1);
+			else
+			  rspot = req;
+
+			std::cout << "Spot: req = " << req 
+				  <<"rspot = " << rspot << std::endl;
+
+			// Values we need in some of the formulas.
+			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+			curve.para.cosgamma = cosgamma;
+
 			curve.para.radius = rspot; // load rspot into structure
 			curve.para.mass_over_r = mass_over_req * req/rspot;
-			std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+
+			OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 			curve = Bend(&curve,defltoa);
 
 			if ( (pieces==2 && p==1) || (pieces==1)){ //crescent-shaped 2nd piece, or the one circular piece if spot doesn't go over pole
@@ -723,12 +747,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  			curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
 			}
        
+			if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
 
-      		for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+			for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
 			  	phij = -phi_edge + (j+0.5)*dphi;
 				curve.para.phi_0 = phij;
 
-				if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
+			
 
 				//Heart of spot, calculate curve for the first phi bin - otherwise just shift
 				if ( j==0){ 
@@ -769,6 +794,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				for( unsigned int p(0); p < numbands; p++ )
 	  				for ( unsigned int i(0); i < numbins; i++ ) Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
       		} //end of last bin  
+		delete defltoa;
       	} // closing for loop through theta divisions
     } // End Standard Case of first spot
 
@@ -831,6 +857,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				rspot = req; // Spherical star
 				curve.para.radius = rspot; // load rspot into structure
 				curve.para.mass_over_r = mass_over_req * req/rspot;
+
+				OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 				std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 				curve = Bend(&curve,defltoa);
 
@@ -1106,7 +1134,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     out.close();
     
-    delete defltoa;
+    //delete defltoa;
     delete model;
     return 0;
 } 
