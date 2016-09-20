@@ -14,6 +14,7 @@
 /***************************************************************************************/
 
 #include "PolyOblModelNHQS.h"
+#include <iostream>
 
 PolyOblModelNHQS::PolyOblModelNHQS( const double& Req_nounits, const double& zeta, const double& eps )
   : PolyOblModelBase( Req_nounits, zeta, eps) { }
@@ -26,8 +27,11 @@ double PolyOblModelNHQS::a0() const {
 }
 
 double PolyOblModelNHQS::a2() const {
+
   double eps(this->get_eps());
   double zeta(this->get_zeta());
+
+  // std::cout << "a2 = ...!" << " eps = " << eps << std::endl; 
   //return double(-0.39*eps + 0.29*zeta*eps + 0.13*eps*eps); // Old value
   return double(2.0/3.0 * eps * (-0.788 + 1.030 * zeta));
 }

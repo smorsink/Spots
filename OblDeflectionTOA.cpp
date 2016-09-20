@@ -99,18 +99,19 @@ double OblDeflectionTOA_psi_ingoing_integrand_wrapper_u ( double u,  bool *prob 
 }
 
 
+
 /************************************************************/
 /* OblDeflectionTOA_dpsi_db_integrand_wrapper:              */
 /*                                                          */
 /* Passed r (NS radius, unitless), *prob (problem toggle)   */
 /* Returns integrand if it is not nan.                      */
 /************************************************************/
-double OblDeflectionTOA_dpsi_db_integrand_wrapper ( double r, bool *prob ) {
-	double integrand( OblDeflectionTOA_object->dpsi_db_integrand( OblDeflectionTOA_b_value, r ) );
+double OblDeflectionTOA_dpsi_db_integrand_wrapper_u ( double u, bool *prob ) {
+	double integrand( OblDeflectionTOA_object->dpsi_db_integrand_u( OblDeflectionTOA_b_over_r, u ) );
   
   	if ( std::isnan(integrand) ) {
-    	std::cout << "dpsi_db integrand is nan!" << std::endl;
-    	std::cout << "r (km) = " << Units::nounits_to_cgs(r, Units::LENGTH)/1.0e5 << std::endl;
+    	std::cout << "dpsi_db_u integrand is nan!" << std::endl;
+    	std::cout << "u (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
     	std::cerr << "ERROR in OblDeflectionTOA_dpsi_db_integrand_wrapper(): returned NaN." << std::endl;
     	*prob = true;
     	integrand = -7888.0;
@@ -126,8 +127,8 @@ double OblDeflectionTOA_dpsi_db_integrand_wrapper ( double r, bool *prob ) {
 /* Passed r (NS radius, unitless), *prob (problem toggle)   */
 /* Returns integrand if it is not nan.                      */
 /************************************************************/
-double OblDeflectionTOA_dpsi_db_integrand_wrapper_u ( double u, bool *prob ) {
-	double integrand( OblDeflectionTOA_object->dpsi_db_integrand_u( OblDeflectionTOA_b_over_r, u ) );
+double OblDeflectionTOA_dpsi_db_ingoing_integrand_wrapper_u ( double u, bool *prob ) {
+	double integrand( OblDeflectionTOA_object->dpsi_db_ingoing_integrand_u( OblDeflectionTOA_b_over_r, u ) );
   
   	if ( std::isnan(integrand) ) {
     	std::cout << "dpsi_db_u integrand is nan!" << std::endl;
@@ -255,12 +256,12 @@ const double OblDeflectionTOA::RFINAL_MASS_MULTIPLE = 1.0e7;
 //const double OblDeflectionTOA::DIVERGENCE_GUARD = 2.0e-2; // set to 0 to turn off
 const double OblDeflectionTOA::DIVERGENCE_GUARD = 0.0;
 const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_MAX = 100000;
-const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_MAX_1 = 1000;
-const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N = 1000;
-const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_1 = 1000;
+const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_MAX_1 = 10000;
+const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N = 2000;
+const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_1 = 2000;
 const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_INGOING_N = 400;
-const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 4.0; 
-//const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 8.0;
+//const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 4.0; 
+const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 4.0;
 
 OblDeflectionTOA::OblDeflectionTOA ( OblModelBase* modptr, const double& mass_nounits, const double& mass_over_r_nounits, const double& radius_nounits ) 
   : r_final( RFINAL_MASS_MULTIPLE * mass_nounits ) {
@@ -349,7 +350,7 @@ double OblDeflectionTOA::rcrit ( const double& b, const double& cos_theta, bool 
 				modptr->R_at_costheta(0.0),
 				OblDeflectionTOA_rcrit_zero_func_wrapper);*/ // rcrit_guess
 
-	candidate = MATPACK::FindZero(0.95*r,
+	candidate = MATPACK::FindZero(0.5*r,
 				      r,
 				      OblDeflectionTOA_rcrit_zero_func_wrapper); // rcrit_guess
  
@@ -442,7 +443,7 @@ double OblDeflectionTOA::deltapsi_outgoing_u ( const double& b, const double& rs
 
     if ( b != 0.0 ) {
       //psi = Integration( 0.0, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u ); // integrating from r_surf to ~infinity
-      if ( b > 0.995*b_max){
+      if ( b > 0.99*b_max){
 	//double split(1.0 + (rspot-rcrit)/2.0);  	
 	psi = Integration( 1.0, rspot/rcrit,  OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
 	//	psi += Integration( 1.0, split,  OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
@@ -488,7 +489,7 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
   	OblDeflectionTOA_object = this;
   	OblDeflectionTOA_b_over_r = b/rspot;
 
-	double split(0.0);  	
+	double split(0.9);  	
   	double psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX_1 );
 	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX*10 );
 					
@@ -503,7 +504,7 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
   double psi, psi_in, rcrit;
   double rspot ( modptr->R_at_costheta( fabs(cos_theta) ) );
   	//double dummy;
-  std::cout << "psi_ingoing: b = " << b << " bmax = " << bmax << std::endl;
+  // std::cout << "psi_ingoing: b = " << b << " bmax = " << bmax << std::endl;
 	
   	// set globals
   	OblDeflectionTOA_object = this;
@@ -518,7 +519,7 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
 
 	  rcrit = this->rcrit( b, cos_theta, &curve.problem );
 
-	  std::cout << "rspot = " << rspot << " rcrit = " << rcrit << std::endl;
+	  //std::cout << "rspot = " << rspot << " rcrit = " << rcrit << std::endl;
 
 	 
 	  OblDeflectionTOA_b_over_r = b/rcrit;
@@ -639,12 +640,12 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      OblDeflectionTOA_costheta_value = cos_theta;
 	      OblDeflectionTOA_psi_value = psi;
 
-	      std::cout << "bmin_in=" << bmin << " bmax_out=" << bmax_out <<std::endl;
+	      //std::cout << "bmin_in=" << bmin << " bmax_out=" << bmax_out <<std::endl;
 
 	      bcand = MATPACK::FindZero(bmin, bmax_out,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
-	      std::cout << "b-cand=" << bcand << std::endl;
+	      //std::cout << "b-cand=" << bcand << std::endl;
 
  
 	      if( fabs(bmin - bcand) <= std::numeric_limits<double>::epsilon() || fabs(bmax_out - bcand) <= std::numeric_limits<double>::epsilon() ) { // this indicates no soln
@@ -670,36 +671,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
   	return false;
 }
 
-/*****************************************************/
-// warning: this integral will diverge near bmax_out. You can't remove
-  	// the divergence in the same manner as the one for the deflection.
-  	// check the output!
-/*****************************************************/
-double OblDeflectionTOA::dpsi_db_outgoing( const double& b, const double& rspot, bool *prob ) {
-  	//costheta_check(cos_theta);
-  
-  	double dummy; //
 
-  	if ( (b > bmax_outgoing(rspot) || b < 0.0) ) { 
-    	std::cerr << "ERROR inOblDeflectionTOA::dpsi_db_outgoing(): b out-of-range." << std::endl;
-    	std::cerr << "b = " << b << ", bmax = " << bmax_outgoing(rspot) << ", |b - bmax| = " << fabs(b - bmax_outgoing(rspot)) << std::endl;
-    	*prob = true;
-    	dummy = -7888.0;
-    	return dummy;
-  	}
-  
-  	// set globals
-  	OblDeflectionTOA_object = this;
-  	OblDeflectionTOA_b_value = b;
-
-  	//double rsurf = modptr->R_at_costheta(cos_theta);
-
-  	//rsurf = rspot;
-
-  	double dpsidb = Integration( rspot, get_rfinal(), OblDeflectionTOA_dpsi_db_integrand_wrapper );
-  	
-  	return dpsidb;
-}
 
 /*****************************************************/
 // warning: this integral will diverge near bmax_out. You can't remove
@@ -759,19 +731,27 @@ double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b, const double& rspo
   	return dpsidb;
 }
 
-/*****************************************************/
-// warning: i would have preferred to do this directly,
-// but the integrand diverges at rcrit, and so it is difficult
-// to see how to get the boundary term of this derivative to
-// come out properly. however, we have a closed-form analytical
-// approximation of the integral between rcrit and Rsurf, 
-// so we use it instead for the derivative.
-/*****************************************************/
-double OblDeflectionTOA::dpsi_db_ingoing( const double& b, const double& rspot, const double& cos_theta, bool *prob ) {
 
-  	double value ( this->dpsi_db_outgoing_u( b, rspot, &curve.problem ) );
+double OblDeflectionTOA::dpsi_db_ingoing_u( const double& b, const double& rspot, const double& cos_theta, bool *prob ) {
 
-	return value;
+  double dpsidb_in;
+  	OblDeflectionTOA_object = this;
+  	OblDeflectionTOA_b_value = b;
+
+  
+	double rcrit = this->rcrit( b, cos_theta, &curve.problem );
+ 
+
+	//	double bmax(rspot/sqrt(1.0-2.0*get_mass_over_r()));
+
+	OblDeflectionTOA_b_over_r = b/rcrit;
+
+	dpsidb_in = 2.0/rcrit * Integration( rcrit/rspot, 1.0, OblDeflectionTOA_dpsi_db_ingoing_integrand_wrapper_u,10000 );
+	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
+
+	OblDeflectionTOA_b_over_r = b/rspot;
+  	return double( dpsidb_in + this->dpsi_db_outgoing_u( b, rspot, &curve.problem ) );
+
 }
 
 /********************************************************************************/
@@ -842,6 +822,7 @@ double OblDeflectionTOA::toa_outgoing_u ( const double& b, const double& rspot, 
  
   	double rsurf = rspot;
   	//double rpole = modptr->R_at_costheta(1.0);
+	//std::cout << "toa_outgoing_u: " << std::endl;
 	double req = modptr->R_at_costheta(0.0);
 
   	//std::cout << "toa_outgoing: rpole = " << rpole << std::endl;
@@ -945,24 +926,6 @@ double OblDeflectionTOA::toa_ingoing_integrand_minus_b0_u ( const double& b_R, c
   	return integrand;
 }
 
-
-
-/*****************************/
-
-/*****************************************************/
-// integrand for the derivative of equation 20, MLCB
-/*****************************************************/
-double OblDeflectionTOA::dpsi_db_integrand ( const double& b, const double& r ) const { 
-  // double integrand( (1.0 / ( r * r * sqrt( 1.0 - pow( b / r , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) )) ) 
-  //		    + (b * b * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) 
-  //		       / (pow( r , 4.0 ) * pow( 1.0 - pow( b / r , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) , 1.5) ) ) );
-
-  double integrand ( 1.0/(r*r) *  
-		     pow( 1.0 - pow( b / r , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) , -1.5));
-
-  	return integrand;
-}
-
 /*****************************************************/
 // integrand for the derivative of equation 20, MLCB
 /*****************************************************/
@@ -971,10 +934,24 @@ double OblDeflectionTOA::dpsi_db_integrand_u ( const double& b_R, const double& 
   //		    + (b * b * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) 
   //		       / (pow( r , 4.0 ) * pow( 1.0 - pow( b / r , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) , 1.5) ) ) );
 
-  double integrand ( 1.0/get_rspot() *  pow( 1.0 - pow( b_R*u , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * u) , -1.5));
+  double integrand (  1.0/get_rspot() * pow( 1.0 - pow( b_R*u , 2.0 ) * (1.0 - 2.0*get_mass_over_r() * u) , -1.5));
 
   	return integrand;
 }
+
+/*****************************************************/
+// integrand for the derivative of equation 20, MLCB
+/*****************************************************/
+double OblDeflectionTOA::dpsi_db_ingoing_integrand_u ( const double& b_R, const double& u ) const { 
+  //Divide this by r_crit afterwards!!!!!  
+
+  double x( 1.0 - pow( b_R, -2.0)); // x = 2M/rc
+
+  double integrand (   pow( 1.0 - pow( b_R*u , 2.0 ) * (1.0 - x*u) , -1.5));
+
+  	return integrand;
+}
+
 
 
 /*****************************************************/
@@ -1008,7 +985,8 @@ double OblDeflectionTOA::toa_integrand_minus_b0_u ( const double& b_R, const dou
 // used in oblate shape of star
 /*****************************************************/
 double OblDeflectionTOA::rcrit_zero_func ( const double& rc, const double& b ) const { 
-  	return double( rc - b * sqrt( 1.0 - 2.0 * get_mass() / rc ) );
+  //	return double( rc - b * sqrt( 1.0 - 2.0 * get_mass() / rc ) );
+  return double( rc - b * sqrt( 1.0 - 2.0 * get_mass_over_r() *get_rspot() / rc ) );
 }
 
 /*****************************************************/

@@ -447,6 +447,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
+    rot_par = pow(omega*req,2)/mass_over_req;
 	
      std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
 
@@ -591,6 +592,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		   		    mass_over_req,
 				    rot_par );
 
+      //std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
+
        
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
@@ -612,22 +615,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         return -1;
     }
 
- 
-
-
-    // defltoa is a structure that "points" to routines in the file "OblDeflectionTOA.cpp"
-    // used to compute deflection angles and times of arrivals 
-    // defltoa is the deflection time of arrival
-    //OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_req, rspot); 
-    // defltoa is a pointer (of type OblDeclectionTOA) to a group of functions
-
-    // Values we need in some of the formulas.
-    //cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-    //curve.para.cosgamma = cosgamma;
-
-
-
-  
+   
     /****************************/
     /* Initialize time and flux */
     /****************************/
@@ -671,7 +659,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
      
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-			std::cout << "k=" << k << std::endl;
+	  //std::cout << "k=" << k << std::endl;
 
 			double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
 			double phi_edge, phij;
@@ -686,7 +674,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  			}
 			}
 
-			std::cout << "k=" << k << " thetak = " << thetak << std::endl;
+
 			dphi = 2.0*Units::PI/(numbins*1.0);
 
 			// What is the value of radius at this angle?
@@ -694,6 +682,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 			mu_1 = cos(thetak);
 			if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
+
+			std::cout << "k=" << k << " thetak = " << thetak << " mu=" << mu_1 << std::endl;
 
 			if ( mu_1 < 0.0){
 			  std::cout << "Southern Hemisphere!" << std::endl;
@@ -708,7 +698,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			  rspot = req;
 
 			std::cout << "Spot: req = " << req 
-				  <<"rspot = " << rspot << std::endl;
+				  <<" rspot = " << rspot << std::endl;
 
 			// Values we need in some of the formulas.
 			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
@@ -725,7 +715,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  			if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
 				if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
 	    			phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-	    			std::cout << phi_edge << std::endl;
+	    			//std::cout << phi_edge << std::endl;
 	  			}
 	  			else {  // trying to divide by zero
 	    			throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 1. Likely, thetak = 0. Exiting.") );
@@ -981,7 +971,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
-	      << " Msun, r = " << Units::nounits_to_cgs(rspot, Units::LENGTH )*1.0e-5 
+	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
 	      << " km, f = " << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) 
 	      << " Hz, i = " << incl_1 * 180.0 / Units::PI 
 	      << ", e = " << theta_1 * 180.0 / Units::PI 

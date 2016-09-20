@@ -225,7 +225,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
-    std::cout << "ComputeAngles: radius = " << radius << std::endl;
+    //std::cout << "ComputeAngles: radius = " << radius << std::endl;
 
 
     //initial assumptions
@@ -256,7 +256,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     if (curve.flags.ns_model != 3){
       bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
       psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
-      std::cout << "Oblate! b_min_ingoing = " << bmin 
+       std::cout << "ComputeAngles: Oblate! b_min_ingoing = " << bmin 
 		<< " psi_min_ingoing = " << psimin
 		<< " b_max_outgoing = " << curve.defl.b_max
 		<< " psi_max = " << curve.defl.psi_max
@@ -318,6 +318,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         /***********************************************/
 	/* FINDING IF A SOLUTION EXISTS, SETTING FLAGS */
 	/***********************************************/
+
+	//std::cout << "Compute Angles: i = " << i << " psi = " << psi.at(i) << std::endl;
 
         result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
 				      curve.defl.psi_max, bmin,psimin, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
@@ -395,7 +397,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             if ( cosalpha < 0.01 ) {
 	            curve.cosbeta[i] = (Units::PI/2.0 - alpha + sqrt(2) * sqrt(1.0-cosgamma) * cosdelta.at(i));
   			}
-            if ( curve.cosbeta[i] < 0.0 && curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
+            if ( curve.cosbeta[i] < 0.0 || curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
 	            std::cerr << "i = " << i
 	        	          << ", Not visible at phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
 	                   	  << ", cos(beta) = " << curve.cosbeta[i] 
@@ -437,8 +439,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            
 
 	            if ( ingoing ) {
-	             //  std::cout << "Ingoing b = " << b << std::endl;
-		      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+	              //std::cout << "ComputeAngles:Ingoing b = " << b << std::endl;
+		      dpsi_db_val = defltoa->dpsi_db_ingoing_u( b, radius, mu, &curve.problem );
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
                 else {
@@ -455,7 +457,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 		    	eps = 1e-6;
 			b = curve.defl.b_max * sqrt(1.0 - eps);
 			epspsi = defltoa->psi_outgoing( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-			dpsi_db_val = defltoa->dpsi_db_outgoing( b, radius, &curve.problem );
+			dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
 			dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(epspsi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
 
 		  }
@@ -561,7 +563,7 @@ class LightCurve Bend ( class LightCurve* incurve,
     numbins = 100;
 
 
-    //std::cout << "Entering Bend" << std::endl;
+    std::cout << "Entering Bend" << std::endl;
 
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */

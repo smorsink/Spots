@@ -15,6 +15,7 @@
 
 #include "PolyOblModelBase.h"
 #include <cmath>
+#include <iostream>
 #include "Exception.h"
 
 PolyOblModelBase::PolyOblModelBase( const double& Req_nounits_value, const double& zetaval, const double& epsval )
@@ -24,11 +25,14 @@ double PolyOblModelBase::R_at_costheta( const double& costheta ) const throw(std
   	// Return R(theta) in "nounits".
   	// note that the user supplies cos(theta) and not theta.
 
-  	if (costheta == 0.0)
+  //std::cout << "R_at_costheta: costheta = " << costheta << " R = " << get_Req_nounits()*( 1.0 + a0()*P0(costheta) + a2()*P2(costheta) + a4()*P4(costheta) ) << std::endl;
+  // std::cout << " a0 = " << a0() << " a2 = " << a2() << std::endl;
+
+  if (costheta == 0.0) //equator
 	  return double( get_Req_nounits()*( 1.0 + a0() + a2()*(-0.5) + a4()*(3.0/8.0) ) ); 
 	//return double( get_Req_nounits());
   	else{
-    	if (costheta == 1.0)
+	  if (costheta == 1.0) // pole
       		return double( get_Req_nounits()*( 1.0 + a0() + a2() + a4() ) );  
     	else
       		return double( get_Req_nounits()*( 1.0 + a0()*P0(costheta) + a2()*P2(costheta) + a4()*P4(costheta) ));
