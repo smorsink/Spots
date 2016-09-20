@@ -20,7 +20,7 @@ LDFLAGS=-lm
 NAMES=spot
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
-	Chi.o SphericalOblModel.o matpack.o # defining the objects
+	Chi.o Atmo.o SphericalOblModel.o matpack.o # defining the objects
 
 APPOBJ=Spot.o
 
@@ -33,6 +33,7 @@ Spot.o: \
 	Spot.cpp \
 	OblDeflectionTOA.h \
 	Chi.h \
+	Atmo.h \
 	Struct.h \
 	PolyOblModelNHQS.h \
 	PolyOblModelCFLQS.h \
@@ -84,6 +85,15 @@ Chi.o: \
 	Units.h \
 	matpack.h
 	$(CC) $(CCFLAGS) -c Chi.cpp
+
+Atmo.o: \
+	Atmo.h \
+	OblDeflectionTOA.h \
+	Atmo.cpp \
+	OblModelBase.h \
+	Units.h \
+	matpack.h
+	$(CC) $(CCFLAGS) -c Atmo.cpp
 
 
 Units.o: \

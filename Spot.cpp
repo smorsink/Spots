@@ -32,6 +32,7 @@
 #include <string>
 #include "OblDeflectionTOA.h"
 #include "Chi.h"
+#include "Atmo.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
