@@ -1115,6 +1115,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
+    if (curve.flags.spectral_model==3){
+    	double E_diff;
+		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+    	for (unsigned int k(0); k < numbands; k++){
+      		out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+    	}
+      	out << "%" << std::endl;
+      	for ( unsigned int i(0); i < numbins; i++ ) {
+        	out << curve.t[i]<< "\t" ;
+			for ( unsigned int p(0); p < numbands; p++ ) { 
+            	out << curve.f[p][i] << "\t" ;
+        	}
+			out << i;
+        	out << std::endl;
+      	}
+    }
+
+
 
       //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
       //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
