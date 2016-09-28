@@ -229,7 +229,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
         double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
         for (unsigned int p = 0; p<numbands; p++){
             if (curve.flags.beaming_model == 3){ //hydrogen
-                cout << "entering hydrogen remastered routines" << endl;
                 curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
             }
             if (curve.flags.beaming_model == 4){ //helium
@@ -1721,7 +1720,6 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
     //double current_n;           // integrated flux in current step
     double flux(0.0);           // total integrated flux
 
-    cout << "entering hydrogen remastered routines" << endl;
     for (int m = 0; m < ener_size; m++) {
         if (E1 >= Es[m]) {
             e1_dex = m;
@@ -1730,7 +1728,6 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             e2_dex = m;
         }
     }
-    cout << "entering hydrogen remastered routines" << endl;
 
     //calculate number of energy points within band  
     n_steps = e2_dex - e1_dex;
