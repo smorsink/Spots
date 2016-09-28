@@ -48,6 +48,9 @@ void Read_NSATMOS(double T, double M, double R);
 // Hydrogen
 double Hydrogen(double E, double cos_theta);
 
+// Hydrogen
+double Hydrogen2(int E_dex, double cos_theta);
+
 // Reading NSX tables
 void Read_NSX(double T, double M, double R);
 

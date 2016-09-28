@@ -228,6 +228,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     if (curve.flags.spectral_model == 3){ // *exactly* Integrated Flux of Energy Bands
         double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
         for (unsigned int p = 0; p<numbands; p++){
+            if (curve.flags.beaming_model == 3){ //hydrogen
+                cout << "entering hydrogen remastered routines" << endl;
+                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+            }
             if (curve.flags.beaming_model == 4){ //helium
                 curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
             }
@@ -880,6 +884,9 @@ void Read_NSATMOS(double T, double M, double R){
     
     if(H_table1.is_open()){
         while (H_table1 >> temp) {
+            Es.push_back(temp);
+            temp = temp * 1E3 * Units::EV / Units::H_PLANCK;
+            //cout << temp << endl;
             F.push_back(temp);
             H_table1 >> temp;
             I.push_back(temp);
@@ -891,6 +898,7 @@ void Read_NSATMOS(double T, double M, double R){
     
     if(H_table2.is_open()){
         while (H_table2 >> temp) {
+            temp = temp * 1E3 * Units::EV / Units::H_PLANCK;
             FF.push_back(temp);
             H_table2 >> temp;
             II.push_back(temp);
@@ -902,6 +910,7 @@ void Read_NSATMOS(double T, double M, double R){
     
     if(H_table3.is_open()){
         while (H_table3 >> temp) {
+            temp = temp * 1E3 * Units::EV / Units::H_PLANCK;
             FFF.push_back(temp);
             H_table3 >> temp;
             III.push_back(temp);
@@ -913,6 +922,7 @@ void Read_NSATMOS(double T, double M, double R){
     
     if(H_table4.is_open()){
         while (H_table4 >> temp) {
+            temp = temp * 1E3 * Units::EV / Units::H_PLANCK;
             FFFF.push_back(temp);
             H_table4 >> temp;
             IIII.push_back(temp);
@@ -974,8 +984,8 @@ double Hydrogen(double E, double cos_theta){
     
     //Read and interpolate to proper frequency 
    for (int i = 0; i < 2; ++i) {
-       down = (i_mu + i) * 128;
-       up = down + 128;
+       down = (i_mu + i) * 125;
+       up = down + 125;
        //cout << down << endl;
        
         for (int j = down; j < up; ++j) {
@@ -986,8 +996,8 @@ double Hydrogen(double E, double cos_theta){
     }
                     
     for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 128;
-        up = down + 128;
+        down = (i_mu + i) * 125;
+        up = down + 125;
         
         for (int j = down; j < up; ++j) {
             FF_temp.push_back(FF[j]);
@@ -997,8 +1007,8 @@ double Hydrogen(double E, double cos_theta){
     }
     
     for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 128;
-        up = down + 128;
+        down = (i_mu + i) * 125;
+        up = down + 125;
 
         for (int j = down; j < up; ++j) {
             FFF_temp.push_back(FFF[j]);
@@ -1008,8 +1018,8 @@ double Hydrogen(double E, double cos_theta){
     }
     
     for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 128;
-        up = down + 128;
+        down = (i_mu + i) * 125;
+        up = down + 125;
 
         for (int j = down; j < up; ++j) {
             FFFF_temp.push_back(FFFF[j]);
@@ -1031,6 +1041,91 @@ double Hydrogen(double E, double cos_theta){
     R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
 
     // Interpolation to temperature
+    P = LogLinear(X,X1,R[0],X2,R[1]);
+
+    // Set to zero at small angle
+    if (cos_theta < 0.005) P = 0;
+
+    return P;
+}
+
+double Hydrogen2(int E_dex, double cos_theta){
+    double P, size_logt(10), size_lsgrav(11), size_mu(12), temp, dump;
+    double Q[4],R[2],mu[12];
+    int i_mu(0), down, mid, up;
+    char atmodir[1024], cwd[1024];
+    std::vector<double> I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
+
+    // Read in helium atmosphere parameter choices
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+    ifstream H_atmo_para;
+    H_atmo_para.open("nsatmos-info.txt");
+
+    if(H_atmo_para.is_open()){
+        //discard logt and lsgrav choices
+        for (int i = 1; i <= size_logt+size_lsgrav; i++){
+            H_atmo_para >> dump;
+        }
+
+        //mu
+        for (int i = 1; i <= size_mu; i++){
+            H_atmo_para >> temp;
+            mu[i-1] = temp;
+        }
+    H_atmo_para.close();
+    }
+
+    //finding mu value 
+    for (int m = 0; m < size_mu; ++m) {
+        if (cos_theta <= mu[m]) {
+            i_mu = m;
+        }
+    }
+
+    down = i_mu * 125;
+    mid = down + 125;
+    up = mid + 125;       
+
+    //Read and interpolate to correct frequency
+    for (int j = down; j < mid; ++j) {
+        I_temp.push_back(I[j]);
+    }
+    for (int j = mid; j < up; ++j){
+        Iv_temp.push_back(I[j]);
+    } 
+    for (int j = down; j < mid; ++j) {
+        II_temp.push_back(II[j]);
+    }
+    for (int j = mid; j < up; ++j){
+        IIv_temp.push_back(II[j]);
+    }  
+    for (int j = down; j < mid; ++j) {
+        III_temp.push_back(III[j]);
+    }
+    for (int j = mid; j < up; ++j) {
+        IIIv_temp.push_back(III[j]);
+    }
+    for (int j = down; j < mid; ++j) {
+        IIII_temp.push_back(IIII[j]);
+    }
+    for (int j = mid; j < up; ++j) {
+        IIIIv_temp.push_back(IIII[j]);
+    }
+    chdir(cwd);
+
+    // Interpolate to chosen mu
+    Q[0] = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
+    Q[1] = LogLinear(cos_theta,mu[i_mu],II_temp[E_dex],mu[i_mu+1],IIv_temp[E_dex]);
+    Q[2] = LogLinear(cos_theta,mu[i_mu],III_temp[E_dex],mu[i_mu+1],IIIv_temp[E_dex]);
+    Q[3] = LogLinear(cos_theta,mu[i_mu],IIII_temp[E_dex],mu[i_mu+1],IIIIv_temp[E_dex]); 
+
+    // Interpolate to chosen local gravity
+    R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
+    R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
+
+    // Interpolate to chosen temperature
     P = LogLinear(X,X1,R[0],X2,R[1]);
 
     // Set to zero at small angle
@@ -1626,6 +1721,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
     //double current_n;           // integrated flux in current step
     double flux(0.0);           // total integrated flux
 
+    cout << "entering hydrogen remastered routines" << endl;
     for (int m = 0; m < ener_size; m++) {
         if (E1 >= Es[m]) {
             e1_dex = m;
@@ -1634,90 +1730,177 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             e2_dex = m;
         }
     }
-
+    cout << "entering hydrogen remastered routines" << endl;
 
     //calculate number of energy points within band  
     n_steps = e2_dex - e1_dex;
 
-    if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
-        cout << "0 steps" << endl;
-        flux = (E2 - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium(E2,cos_theta) / E2);
+    if (model == 3){ //Hydrogen
+        if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+            cout << "0 steps" << endl;
+            flux = (E2 - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen(E2,cos_theta) / E2);
+        }
+        if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+            cout << "1 steps" << endl;
+            int e_dex = e1_dex+1; // index of the energy point
+            double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
+            flux = (e_m - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(e_dex,cos_theta) / e_m);  // first trapezoid
+            flux += (E2 - e_m) / 2 * (Hydrogen2(e_dex,cos_theta) / e_m + Hydrogen(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+            cout << "2 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = log(e_u)-log(e_l); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Hydrogen2(el_dex,cos_theta) + Hydrogen2(eu_dex,cos_theta)) / 2;                // middle trapezoid, exact
+            flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // last trapezoid
+        }
+        if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
+            cout << "3 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 2; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Hydrogen2(el_dex,cos_theta) + Hydrogen2(em_dex,cos_theta) * 4 + Hydrogen2(eu_dex,cos_theta)) / 3; // Simpson's, exact
+            flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
+            cout << "4 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 3; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Hydrogen2(el_dex,cos_theta) + Hydrogen2(em1_dex,cos_theta) * 3 + Hydrogen2(em2_dex,cos_theta) * 3 + Hydrogen2(eu_dex,cos_theta)) * 3 / 8; // Simpson's 3/8, exact             
+            flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
+            cout << "5 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int em3_dex = e1_dex+4; // index of the fourth energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 4; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Hydrogen2(el_dex,cos_theta) + Hydrogen2(em1_dex,cos_theta) * 4 + Hydrogen2(em2_dex,cos_theta) * 2 + Hydrogen2(em3_dex,cos_theta) * 4 + Hydrogen2(eu_dex,cos_theta)) / 3; // Simpson's "4,2", exact             
+            flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
+            cout << "6 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            int eu1_dex = e2_dex-1; // index of the second last energy point within bandwidth
+            int eu2_dex = e2_dex-2; // index of the third last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / (n_steps-1); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(el_dex,cos_theta) / e_l);  // first trapezoid
+            // Simpson's cubic, exact
+            flux += h * (Hydrogen2(el_dex,cos_theta) * 9 + Hydrogen2(el1_dex,cos_theta) * 28 + Hydrogen2(el2_dex,cos_theta) * 23) / 24; // first three coefficients
+            for (int m = 1; m <= n_steps-6; m++) flux += h * (Hydrogen2(el_dex+m+3,cos_theta)); // middle coefficients
+            flux += h * (Hydrogen2(eu2_dex,cos_theta) * 23 + Hydrogen2(eu1_dex,cos_theta) * 28 + Hydrogen2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
+            // end Simpson's cubic
+            flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid                
+        }
     }
-    if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
-        cout << "1 steps" << endl;
-        int e_dex = e1_dex+1; // index of the energy point
-        double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
-        flux = (e_m - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(e_dex,cos_theta) / e_m);  // first trapezoid
-        flux += (E2 - e_m) / 2 * (Helium2(e_dex,cos_theta) / e_m + Helium(E2,cos_theta) / E2); // second trapezoid
-    }
-    if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
-        cout << "2 steps" << endl;
-        int el_dex = e1_dex+1; // index of the first energy point within bandwidth
-        int eu_dex = e2_dex;   // index of the last energy point within bandwidth
-        double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
-        double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
-        double h = log(e_u)-log(e_l); // difference between log-spaced energy points
-        flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
-        flux += h * (Helium2(el_dex,cos_theta) + Helium2(eu_dex,cos_theta)) / 2;                // middle trapezoid, exact
-        flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // last trapezoid
-    }
-    if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
-        cout << "3 steps" << endl;
-        int el_dex = e1_dex+1; // index of the first energy point within bandwidth
-        int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
-        int eu_dex = e2_dex;   // index of the last energy point within bandwidth
-        double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
-        double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
-        double h = (log(e_u)-log(e_l)) / 2; // difference between log-spaced energy points
-        flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
-        flux += h * (Helium2(el_dex,cos_theta) + Helium2(em_dex,cos_theta) * 4 + Helium2(eu_dex,cos_theta)) / 3; // Simpson's, exact
-        flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
-    }
-    if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
-        cout << "4 steps" << endl;
-        int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
-        int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
-        int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
-        int eu_dex = e2_dex;    // index of the last energy point within bandwidth
-        double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
-        double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
-        double h = (log(e_u)-log(e_l)) / 3; // difference between log-spaced energy points
-        flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
-        flux += h * (Helium2(el_dex,cos_theta) + Helium2(em1_dex,cos_theta) * 3 + Helium2(em2_dex,cos_theta) * 3 + Helium2(eu_dex,cos_theta)) * 3 / 8; // Simpson's 3/8, exact             
-        flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
-    }
-    if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
-        cout << "5 steps" << endl;
-        int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
-        int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
-        int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
-        int em3_dex = e1_dex+4; // index of the fourth energy point within bandwidth        
-        int eu_dex = e2_dex;    // index of the last energy point within bandwidth
-        double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
-        double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
-        double h = (log(e_u)-log(e_l)) / 4; // difference between log-spaced energy points
-        flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
-        flux += h * (Helium2(el_dex,cos_theta) + Helium2(em1_dex,cos_theta) * 4 + Helium2(em2_dex,cos_theta) * 2 + Helium2(em3_dex,cos_theta) * 4 + Helium2(eu_dex,cos_theta)) / 3; // Simpson's "4,2", exact             
-        flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
-    }
-    if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
-        cout << "6 steps" << endl;
-        int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
-        int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
-        int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
-        int eu_dex = e2_dex;    // index of the last energy point within bandwidth
-        int eu1_dex = e2_dex-1; // index of the second last energy point within bandwidth
-        int eu2_dex = e2_dex-2; // index of the third last energy point within bandwidth
-        double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
-        double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
-        double h = (log(e_u)-log(e_l)) / (n_steps-1); // difference between log-spaced energy points
-        flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
-        // Simpson's cubic, exact
-        flux += h * (Helium2(el_dex,cos_theta) * 9 + Helium2(el1_dex,cos_theta) * 28 + Helium2(el2_dex,cos_theta) * 23) / 24; // first three coefficients
-        for (int m = 1; m <= n_steps-6; m++) flux += h * (Helium2(el_dex+m+3,cos_theta)); // middle coefficients
-        flux += h * (Helium2(eu2_dex,cos_theta) * 23 + Helium2(eu1_dex,cos_theta) * 28 + Helium2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
-        // end Simpson's cubic
-        flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid                
+
+
+
+    if (model == 4){ //Helium
+        if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+            cout << "0 steps" << endl;
+            flux = (E2 - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium(E2,cos_theta) / E2);
+        }
+        if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+            cout << "1 steps" << endl;
+            int e_dex = e1_dex+1; // index of the energy point
+            double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
+            flux = (e_m - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(e_dex,cos_theta) / e_m);  // first trapezoid
+            flux += (E2 - e_m) / 2 * (Helium2(e_dex,cos_theta) / e_m + Helium(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+            cout << "2 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = log(e_u)-log(e_l); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Helium2(el_dex,cos_theta) + Helium2(eu_dex,cos_theta)) / 2;                // middle trapezoid, exact
+            flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // last trapezoid
+        }
+        if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
+            cout << "3 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 2; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Helium2(el_dex,cos_theta) + Helium2(em_dex,cos_theta) * 4 + Helium2(eu_dex,cos_theta)) / 3; // Simpson's, exact
+            flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
+            cout << "4 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 3; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Helium2(el_dex,cos_theta) + Helium2(em1_dex,cos_theta) * 3 + Helium2(em2_dex,cos_theta) * 3 + Helium2(eu_dex,cos_theta)) * 3 / 8; // Simpson's 3/8, exact             
+            flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
+            cout << "5 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int em3_dex = e1_dex+4; // index of the fourth energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 4; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (Helium2(el_dex,cos_theta) + Helium2(em1_dex,cos_theta) * 4 + Helium2(em2_dex,cos_theta) * 2 + Helium2(em3_dex,cos_theta) * 4 + Helium2(eu_dex,cos_theta)) / 3; // Simpson's "4,2", exact             
+            flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
+            cout << "6 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            int eu1_dex = e2_dex-1; // index of the second last energy point within bandwidth
+            int eu2_dex = e2_dex-2; // index of the third last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / (n_steps-1); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(el_dex,cos_theta) / e_l);  // first trapezoid
+            // Simpson's cubic, exact
+            flux += h * (Helium2(el_dex,cos_theta) * 9 + Helium2(el1_dex,cos_theta) * 28 + Helium2(el2_dex,cos_theta) * 23) / 24; // first three coefficients
+            for (int m = 1; m <= n_steps-6; m++) flux += h * (Helium2(el_dex+m+3,cos_theta)); // middle coefficients
+            flux += h * (Helium2(eu2_dex,cos_theta) * 23 + Helium2(eu1_dex,cos_theta) * 28 + Helium2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
+            // end Simpson's cubic
+            flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid                
+        }
     }
 
 
