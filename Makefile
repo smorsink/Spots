@@ -13,7 +13,7 @@
 
 #Sharon needs to use the following:
 CC=c++
-CCFLAGS=-Wall -pedantic -O3 -stdlib=libc++
+CCFLAGS=-Wall -pedantic -O3 
 
 LDFLAGS=-lm
 

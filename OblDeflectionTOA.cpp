@@ -28,6 +28,7 @@
 // for this particular case (need to pass a member function
 // to a Matpack routine which does not have a signature to accomodate
 // passing in the object pointer).
+#define EPSILON 1E-15
 
 class LightCurve curve; //Jan 21 (year? prior to 2012)
 
@@ -598,7 +599,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 
 	  bcand = b_guess;
 
-	  if ( fabs(bcand) <= std::numeric_limits<double>::epsilon() || fabs(bmax_out - bcand) <= std::numeric_limits<double>::epsilon() ) { // this indicates no soln
+	  if ( fabs(bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
 	    std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): outgoing returned no solution?" << std::endl;
 	    *prob = true;
 	    b = -7888.0;
@@ -648,7 +649,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      //std::cout << "b-cand=" << bcand << std::endl;
 
  
-	      if( fabs(bmin - bcand) <= std::numeric_limits<double>::epsilon() || fabs(bmax_out - bcand) <= std::numeric_limits<double>::epsilon() ) { // this indicates no soln
+	      if( fabs(bmin - bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
 		std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): ingoing returned no solution?" << std::endl;
 		*prob = true;
 		b = -7888.0;
