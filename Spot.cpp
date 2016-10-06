@@ -450,7 +450,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
 	
-     std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
+    //std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
 
     /**********************************/
     /* PASS VALUES INTO THE STRUCTURE */
@@ -602,14 +602,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         model = new PolyOblModelCFLQS( req,
 				     PolyOblModelBase::zetaparam(mass,rspot),
 				     PolyOblModelBase::epsparam(omega, mass, rspot) );
-        printf("Oblate Colour-Flavour Locked Quark Star. ");
+        //printf("Oblate Colour-Flavour Locked Quark Star. ");
     }
     else if ( NS_model == 3 ) { // Standard spherical model
         // Spherical neutron star
       //req = rspot;
       rspot = req;
         model = new SphericalOblModel( rspot );
-        printf("Spherical Model. ");
+        //printf("Spherical Model. ");
     }
     else {
         throw(Exception("\nInvalid NS_model parameter. Exiting.\n"));
@@ -656,7 +656,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			if (p==0) deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
 			else deltatheta = (2.0*theta_1)/numtheta; //crescent shaped
       	}     
-      	std::cout << "numtheta=" << numtheta << " theta = " << theta_1 << " delta(theta) = " << deltatheta << std::endl;
+      	//std::cout << "numtheta=" << numtheta << " theta = " << theta_1 << " delta(theta) = " << deltatheta << std::endl;
      
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
@@ -684,7 +684,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			mu_1 = cos(thetak);
 			if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 
-			std::cout << "k=" << k << " thetak = " << thetak << " mu=" << mu_1 << std::endl;
+			//std::cout << "k=" << k << " thetak = " << thetak << " mu=" << mu_1 << std::endl;
 
 			if ( mu_1 < 0.0){
 			  std::cout << "Southern Hemisphere!" << std::endl;
@@ -698,8 +698,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			else
 			  rspot = req;
 
-			std::cout << "Spot: req = " << req 
-				  <<" rspot = " << rspot << std::endl;
+			//std::cout << "Spot: req = " << req 
+			//	  <<" rspot = " << rspot << std::endl;
 
 			// Values we need in some of the formulas.
 			cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
@@ -823,11 +823,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				if (p==0) deltatheta = (rho-theta_2)/numtheta;
 				else deltatheta = (2.0*theta_2)/numtheta;
     		}      
-    		std::cout << "numtheta=" << numtheta << " theta = " << theta_2 << " delta(theta) = " << deltatheta << std::endl;
+    		//std::cout << "numtheta=" << numtheta << " theta = " << theta_2 << " delta(theta) = " << deltatheta << std::endl;
      
       		// Looping through the mesh of the spot
     		for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-				std::cout << "k=" << k << std::endl;
+				//std::cout << "k=" << k << std::endl;
 
 				double thetak = theta_2 - rho + (k+0.5)*deltatheta; 
 				double phi_edge, phij;
@@ -840,7 +840,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  				else thetak = rho - theta_2 + (k+0.5)*deltatheta;  	
 				}
 
-				std::cout << "k=" << k << " thetak = " << thetak << std::endl;
+				//std::cout << "k=" << k << " thetak = " << thetak << std::endl;
 				dphi = 2.0*Units::PI/(numbins*1.0);
 
 				// What is the value of radius at this angle?
@@ -850,16 +850,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				curve.para.mass_over_r = mass_over_req * req/rspot;
 
 				OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-				std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+				//std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
 				curve = Bend(&curve,defltoa);
 
 				if ( (pieces==2 && p==1) || (pieces==1)){ //crescent-shaped 2nd piece, or the one circular piece if spot doesn't go over pole
 	  				double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(thetak))/(sin(theta_2)*sin(thetak)) * -1;
-	  				std::cout << cos_phi_edge << std::endl;
+	  				//std::cout << cos_phi_edge << std::endl;
 	  				if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
 					if ( fabs( sin(theta_2) * sin(thetak) ) > 0.0) { // checking for a divide by 0
 	    				phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-	    				std::cout << phi_edge << std::endl;
+	    				//std::cout << phi_edge << std::endl;
 	  				}
 	  				else {  // trying to divide by zero
 	    				throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 2. Likely, thetak = 0. Exiting.") );

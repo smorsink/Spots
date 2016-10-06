@@ -114,12 +114,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
     if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
         Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        cout << "Using hydrogen atmosphere" << endl;
+        //cout << "Using hydrogen atmosphere" << endl;
     }
 
     if (curve.flags.beaming_model == 4){ // Hydrogen Atmosphere
         Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        cout << "Using helium atmosphere" << endl;
+        //cout << "Using helium atmosphere" << endl;
     }
 
     for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
@@ -1734,18 +1734,18 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
 
     if (model == 3){ //Hydrogen
         if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
-            cout << "0 steps" << endl;
+            //cout << "0 steps" << endl;
             flux = (E2 - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen(E2,cos_theta) / E2);
         }
         if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
-            cout << "1 steps" << endl;
+            //cout << "1 steps" << endl;
             int e_dex = e1_dex+1; // index of the energy point
             double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
             flux = (e_m - E1) / 2 * (Hydrogen(E1,cos_theta) / E1 + Hydrogen2(e_dex,cos_theta) / e_m);  // first trapezoid
             flux += (E2 - e_m) / 2 * (Hydrogen2(e_dex,cos_theta) / e_m + Hydrogen(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
-            cout << "2 steps" << endl;
+            //cout << "2 steps" << endl;
             int el_dex = e1_dex+1; // index of the first energy point within bandwidth
             int eu_dex = e2_dex;   // index of the last energy point within bandwidth
             double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
@@ -1756,7 +1756,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // last trapezoid
         }
         if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
-            cout << "3 steps" << endl;
+            //cout << "3 steps" << endl;
             int el_dex = e1_dex+1; // index of the first energy point within bandwidth
             int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
             int eu_dex = e2_dex;   // index of the last energy point within bandwidth
@@ -1768,7 +1768,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
-            cout << "4 steps" << endl;
+            //cout << "4 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
@@ -1781,7 +1781,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
-            cout << "5 steps" << endl;
+            //cout << "5 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
@@ -1795,7 +1795,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Hydrogen2(eu_dex,cos_theta) / e_u + Hydrogen(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
-            cout << "6 steps" << endl;
+            //cout << "6 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
@@ -1819,18 +1819,18 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
 
     if (model == 4){ //Helium
         if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
-            cout << "0 steps" << endl;
+            //cout << "0 steps" << endl;
             flux = (E2 - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium(E2,cos_theta) / E2);
         }
         if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
-            cout << "1 steps" << endl;
+            //cout << "1 steps" << endl;
             int e_dex = e1_dex+1; // index of the energy point
             double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
             flux = (e_m - E1) / 2 * (Helium(E1,cos_theta) / E1 + Helium2(e_dex,cos_theta) / e_m);  // first trapezoid
             flux += (E2 - e_m) / 2 * (Helium2(e_dex,cos_theta) / e_m + Helium(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
-            cout << "2 steps" << endl;
+            //cout << "2 steps" << endl;
             int el_dex = e1_dex+1; // index of the first energy point within bandwidth
             int eu_dex = e2_dex;   // index of the last energy point within bandwidth
             double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
@@ -1841,7 +1841,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // last trapezoid
         }
         if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
-            cout << "3 steps" << endl;
+            //cout << "3 steps" << endl;
             int el_dex = e1_dex+1; // index of the first energy point within bandwidth
             int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
             int eu_dex = e2_dex;   // index of the last energy point within bandwidth
@@ -1853,7 +1853,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
-            cout << "4 steps" << endl;
+            //cout << "4 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
@@ -1866,7 +1866,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
-            cout << "5 steps" << endl;
+            //cout << "5 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
@@ -1880,7 +1880,7 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += (E2 - e_u) / 2 * (Helium2(eu_dex,cos_theta) / e_u + Helium(E2,cos_theta) / E2); // second trapezoid
         }
         if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
-            cout << "6 steps" << endl;
+            //cout << "6 steps" << endl;
             int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
             int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
             int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        

@@ -563,7 +563,7 @@ class LightCurve Bend ( class LightCurve* incurve,
     numbins = 100;
 
 
-    std::cout << "Entering Bend" << std::endl;
+    //std::cout << "Entering Bend" << std::endl;
 
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
