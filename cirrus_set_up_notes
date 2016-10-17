@@ -1,0 +1,112 @@
+We are using Cirrus service of UAlberta. 
+Our aim is to have a cloud computing platform so that the lightcurve codes can be accessed and executed remotely to a cloud server.
+The instance should use 10 CPUs, with enough disk space to fit MATLAB and KDE environment.
+For testing with 1 CPU, flavor c1-4GB-45 is enough.
+For full resources with 10 CPUs, flavor c10-80GB-900 is the minimum one with 10 CPUs.
+
+
+Steps to set up a client: (warning: XQuartz must have been installed for Mac users)
+
+1. Download a client disk image from x2go website
+2. Install and run it
+3. Set up a new session:
+	i) Click the new session icon
+	ii) Host: floating ip address of our instance
+	iii) Login: ubuntu
+	iv) Use RSA/DSA key: find your cloud.key file
+	v) Session type: KDE
+
+
+
+Steps to set up:
+
+1. Create a security group that can be accessed via SSH
+	i) Compute > Access & Security > Security Groups 
+	ii) Create Security Group
+	iii) Manage Rules > Add Rule
+		a) Rule: SSH
+		b) Remote: CIDR
+		c) CIDR:0.0.0.0/0
+	iv) Manage Rules > Add Rule
+		a) Rule: All ICMP
+		b) Remote: CIDR
+		c) CIDR:0.0.0.0/0
+
+2. Generate a key pair from your local machine and uplaod onto server
+	i) On your terminal: ssh-keygen -t rsa -f cloud.key
+	ii) On Cirrus: Compute > Access & Security > Key Pairs
+	iii) Import Key Pair
+		a) Key Pair Name: cloud
+		b) Public Key: type more cloud.key.pub on your terminal, and paste the contents  onto website
+
+3. Allocate a floating IP
+	i) Compute > Access & Security > Floating IPs
+	ii) Allocate IP to Project
+		a) Allocate IP
+
+4. Create an instance
+	i) Compute > Instances 
+	ii) Launch Instance
+		a1)Details > Instance Name
+		a) Details > Flavor: c10-80GB-900 for 10 cores 
+		b) Details > Instance Boot Source: Boot from image
+		c) Details > Image Name: Ubuntu-Trusty-server-cloudimg-amd64-2016-04-11. This is probably some publically available Linux image.
+		d) Access & Security > Key Pair: cloud
+		e) Access & Security > Security Groups: *group name* (Astrophysics project please use "default" security group)
+	iii) Click the arrow botton under Actions column > Associate Floating IP
+(142.244.87.214)
+
+4a. Booting from an snapshot: Replace ii) b) with
+	ii)	b1)Details > Instance Boot Source: Boot from snapshot
+		b2)Details > Instance Snapshot: *snapshot name* (ex. morsink-oct13)
+	Finish the remaining steps. Skip to step 12 for creating usernames.
+
+5. SSH into instance
+	i) chmod 400 cloud.key
+	ii) ssh -i cloud.key ubuntu@"floatingip"
+
+6. Fix host
+	i) sudo nano /etc/hosts
+	ii) add *instance_name* to the end of first line, so it looks like:
+	"127.0.0.1 localhost instance_name"
+
+7. Install git, make, g++, x2go server, KDE core, KDE Desktop Bindings, desktop sharing, gedit
+	i) sudo apt-get update
+	ii) sudo apt-get install git
+	iii) sudo apt-get install make
+	iv) sudo apt-get install g++
+	v) x2go server
+		a) sudo apt-get install software-properties-common
+		b) sudo add-apt-repository ppa:x2go/stable
+		c) sudo apt-get update
+		d) sudo apt-get install x2goserver x2goserver-xsession
+	vi) sudo apt-get install kde-plasma-desktop
+		"and press two enters when pick screen came up"
+	vii) sudo aptitude install plasma-widget-x2go
+	viii) sudo aptitude install x2godesktopsharing
+	ix) sudo apt-get install gedit
+
+8. Compile lightcurve codes
+	i) download lightcurve package: git clone https://github.com/kitung/Spot.git
+	ii) fix path in bash codes
+
+9. Install MATLAB
+	i) download MATLAB installation file
+	ii) obtain a license from OnTheHub of UAlberta
+	iii) install MATLAB per instruction. Check details at https://www.quora.com/How-do-I-download-and-install-MATLAB-on-Ubuntu-14-04
+
+10. Test run the codes
+
+11. Create an image
+	i) Instances > Click the arrow botton under Actions column > Create Snapshot
+	The image created is ~22G.
+
+12. Add username, adjust for login
+	(see notes on using Cirrus in the astrophysics group on GitHub)
+
+13. Re-activate MATLAB
+	Booting an image with MATLAB installed requires activating MATLAB once again. Use the script: /usr/local/MATLAB/R2016b/bin/activate_matlab.sh with MathWorks login information and activation key obtained from ualberta.onthehub.com to activate.
+
+	WARNING: you must associate the activation key with yoru MathWorks account! Do this by logging into MathWorks website.
+	The activation key is 10217-59018-22606-26905-25319 for UAlberta accounts
+
