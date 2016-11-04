@@ -1,38 +1,28 @@
 /***************************************************************************************/
-/*                                   Spot.cpp
+/*                                   SpotMex.cpp
 
     This code produces a pulse profile once a set of parameter describing the star, 
     spectrum, and hot spot have been inputed.
     
-    Based on code written by Coire Cadeau and modified by Sharon Morsink and 
-    Abigail Stevens.
+    This is the matlab executable version of Spot.cpp, by Abigail Stevens (2012/2013)
     
-    PGxx refers to equation xx in Poutanen and Gierlinski 2003, arxiv: 0303084v1
-    MLCBxx refers to equation xx in Morsink, Leahy, Cadeau & Braga 2007, arxiv: 0703123v2
-    
-    (C) Coire Cadeau, 2007; Source (C) Coire Cadeau 2007, all rights reserved.
 */
 /***************************************************************************************/
-
-// Changes
-// 2016-08-05 - SMM: Added a function to Chi.cpp called Bend. Bend computes the look-up table for the bending angles. Removed the section of code in Spot.cpp where this is computed. 
-// 2016-08-05 - SMM: Bend is now called one time each latitude
-// 2016-09-19 - SMM: This version should do large spots correctly! However 2nd spot hasn't been changed.
 
 // INCLUDE ALL THE THINGS! 
 // If you do not get this reference, see 
 //       http://hyperboleandahalf.blogspot.ca/2010/06/this-is-why-ill-never-be-adult.html
 #include <iostream>
-#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <cmath>
 #include <exception>
 #include <vector>
 #include <string>
+#include <string.h>
+#include <stdio.h>
 #include "OblDeflectionTOA.h"
 #include "Chi.h"
-#include "Atmo.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
@@ -41,11 +31,19 @@
 #include "Exception.h"
 #include "Struct.h"
 #include "time.h"
+#include "io64.h"
+#include "mex.h"
+#include <sstream>
+#include "Atmo.h"    
 #include <string.h>
 
 // MAIN
-int main ( int argc, char** argv ) try {  // argc, number of cmd line args; 
-                                          // argv, actual character strings of cmd line args
+
+void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mxArray *theInput[]) {
+//theOutput[] is an array containing Null pointers.  We need to allocate the memory when returning the results
+//numOutputs is the expected number of output pointers, i.e., the number of variables to be returned (unlike C, MatLab can have more than one)
+//theInput[] is an array containing pointers to data of mxArray type
+//numInputs is the number of input pointers, i.e., the number of variables passed to the function
 
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -90,8 +88,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     T_mesh[30][30],             // Temperature mesh over the spot; same mesh as theta and phi bins, assuming square mesh
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e22),        // Distance from earth to the NS, in meters; default is 10kpc
-    B;                          // from param_degen/equations.pdf 2
-   
+    B,                          // from param_degen/equations.pdf 2
+    *curveOut,
+    *chiOut;
 
   double E0, E1, E2, DeltaE, rot_par;
     
@@ -133,243 +132,77 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   class DataStruct obsdata;           // observational data as read in from a file
 
 
-  /*********************************************************/
-  /* READING IN PARAMETERS FROM THE COMMAND LINE ARGUMENTS */
-  /*********************************************************/
+    // Setting up the output parameters
+    int dimSize[2];
+    dimSize[0] = 1;
+    dimSize[1] = 1;
+
+    // output needs to be an array so set it up as a [1,1] array holding one value
+    theOutput[0] = mxCreateNumericArray(2, dimSize, mxDOUBLE_CLASS, mxREAL);
+
+    chiOut = mxGetPr(theOutput[0]);
+
+
+	/********************************************************/
+    /* READ INFORMATION PASSED BY MEX FUNCTION              */
+    /* MAKE SURE CORRECT NUMBER OF PARAMETERS ARE PASSED IN */
+    /********************************************************/
+   
+	if ( numInputs != 23 ) { // need to go through and figure out how many inputs we should have
+		//mexPrintf("numInputs = %d, expecting 23", numInputs);
+		mexErrMsgTxt("Wrong number of inputs.");
+	}
+    printf("right number of inputs %\n");
+	mass = mxGetScalar(theInput[0]); // double
+	req = mxGetScalar(theInput[1]); // radius at the equator; double
+	omega = mxGetScalar(theInput[2]); // spin frequency; double	
+	incl_1 = mxGetScalar(theInput[3]); // inclination angle; double
+	theta_1 = mxGetScalar(theInput[4]); // emission angle; double
+	ts = mxGetScalar(theInput[5]); // phase shift/time shift; double
+	numbins = mxGetScalar(theInput[6]); // int
+	NS_model = mxGetScalar(theInput[7]); // int
+	rho = mxGetScalar(theInput[8]); // spot size in radian; double 
+    spot_temperature = mxGetScalar(theInput[9]); // keV; double
+	distance = mxGetScalar(theInput[10]); // in meters; double
+	numtheta = mxGetScalar(theInput[11]); // int
+	spectral_model = mxGetScalar(theInput[12]); // 3 for new integrated atmosphere scheme; int
+	numbands = mxGetScalar(theInput[13]); // int
+	E_band_lower_1 = mxGetScalar(theInput[14]); // keV; double 
+	E_band_upper_1 = mxGetScalar(theInput[15]); // keV; double
+	beaming_model = mxGetScalar(theInput[16]); // 3 for hydrogen, 4 for helium; int			
+	int spots_2 = mxGetScalar(theInput[17]); // int
+	if (spots_2 == 1)
+		two_spots = false;
+	if (spots_2 == 2) 
+		two_spots = true;
+    std::cout << two_spots << std::endl;
+	//E0 = mxGetScalar(theInput[18]); // monochromatic band energy; double
+	obsdata.t = mxGetPr(theInput[18]); // array of double
+	// To be changed to a for loop that depends on number of bands
+	obsdata.f[0] = mxGetPr(theInput[19]); // array of double
+    obsdata.f[1] = mxGetPr(theInput[20]); // array of double
+    obsdata.err[0] = mxGetPr(theInput[21]); // array of double
+    obsdata.err[1] = mxGetPr(theInput[22]); // array of double
+
+
     
-    for ( int i(1); i < argc; i++ ) {
-        if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
-            switch ( argv[i][1] ) {
-	    case 'a':  // Anisotropy parameter
-	                sscanf(argv[i+1], "%lf", &aniso);
-	                break;
-	            
-	    case 'b': // Blackbody ratio
-	            	sscanf(argv[i+1], "%lf", &bbrat);
-	            	break;
-	            
-	    case 'D':  // Distance to NS
-	            	sscanf(argv[i+1], "%lf", &distance);
-	            	break;
-	                
-	    case 'e':  // Emission angle of the spot (degrees), latitude
-	                sscanf(argv[i+1], "%lf", &theta_1);
-	                theta_is_set = true;
-	                break;
-
-		case 'E':  // Offset emission angle of the second spot (degrees), latitude
-	                sscanf(argv[i+1], "%lf", &d_theta_2);
-	                break;      
-
-	    case 'f':  // Spin frequency (Hz)
-	                sscanf(argv[i+1], "%lf", &omega);
-	                omega_is_set = true;
-	                break;
-
-	    case 'g':  // Spectral Model, beaming (graybody factor)
-	                sscanf(argv[i+1],"%u", &beaming_model);
-	                // 0 = BB, no beaming
-	                // 1 = BB + graybody
-	                // 2 = Fake Spectral Line
-	                // 3 = Hydrogen
-	                // 4 = Helium
-	                break;
-	                
-	    case 'i':  // Inclination angle of the observer (degrees)
-	                sscanf(argv[i+1], "%lf", &incl_1);
-	                incl_is_set = true;
-	                break;
-
-	    // Offset inclination angle set as case L
-	            
-	    case 'I': // Name of input file
-	            	sscanf(argv[i+1], "%s", data_file);
-	            	datafile_is_set = true;
-	            	break;
-	                
-	    case 'j':  // Flag for calculating only the second (antipodal) hot spot
-	            	only_second_spot = true;
-	            	break;
-	          	          
-	    case 'l':  // Time shift, phase shift.
-	                sscanf(argv[i+1], "%lf", &ts);
-	                break;
-
-	    case 'L':  // Offset inclination angle of the observer (degrees)
-	                sscanf(argv[i+1], "%lf", &d_incl_2);
-	                break;
-
-	    case 'k': // Background in low energy band (between 0 and 1)
-	      sscanf(argv[i+1], "%lf", &background[2]);
-	      break;
-
-	    case 'K': // Background in high energy band (between 0 and 1)
-	      sscanf(argv[i+1], "%lf", &background[3]);
-	      break;
-	          	          
-	    case 'm':  // Mass of the star (solar mass units)
-	                sscanf(argv[i+1], "%lf", &mass);
-	                mass_is_set = true;
-	                break;
-	          
-	    case 'n':  // Number of phase or time bins
-	                sscanf(argv[i+1], "%u", &numbins);
-	                break;
-	                
-	    case 'N': // Flag for not normalizing the flux output
-	            	normalize_flux = true;
-	            	break;
-
-	    case 'o':  // Name of output file
-	                sscanf(argv[i+1], "%s", out_file);
-	                break;
-
-	    case 'O':  case 'A': // This option controls the name of the output directory
-	                sscanf(argv[i+1], "%s", out_dir);
-	                break;
-	          
-	    case 'p':  // Angular Radius of spot (radians)
-	                sscanf(argv[i+1], "%lf", &rho);
-	                break;
-
-	    case 'P':  // Number of phi bins 
-	                sscanf(argv[i+1], "%u", &numphi);
-	                break;	          
-
-	    case 'q':  // Oblateness model (default is 1)
-	                sscanf(argv[i+1], "%u", &NS_model);
-	                model_is_set = true;
-	                break;
-	      	          
-	    case 'r':  // Radius of the star at the equator(km)
-	                sscanf(argv[i+1], "%lf", &req);
-	                rspot_is_set = true;
-	                break;
-
-	    case 's':  // Spectral Model
-	                sscanf(argv[i+1], "%u", &spectral_model);
-			// 0 = blackbody
-			// 1 = thin line for nicer
-	        // 2 = integrated flux for energy bands
-			break;
-			
-	    case 'S': // Number of Energy bands
-	      sscanf(argv[i+1], "%u", &numbands);
-	      break;
-
-	    case 't':  // Number of theta bins 
-	                sscanf(argv[i+1], "%u", &numtheta);
-	                break;
-	          
-	    case 'T':  // Temperature of the spot, in the star's frame, in keV
-	                sscanf(argv[i+1], "%lf", &spot_temperature);
-	                break;
-	            
-	    case 'u': // Lower limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_lower_1);
-	            	//E_band_lower_1_set = true;
-	            	break;
-	            
-	    case 'U': // Upper limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_upper_1);
-	            	//E_band_upper_1_set = true;
-	            	break;
-	                
-	    case 'v': // NICER funny line E1
-	            	sscanf(argv[i+1], "%lf", &E1);
-	            	break;
-	            	
-	    case 'V': // NICER funny line E2
-	            	sscanf(argv[i+1], "%lf", &E2);
-	            	break;
-	            
-	    case 'x': // Scattering radius, in kpc
-	            	sscanf(argv[i+1], "%lf", &E0);
-	            	break;
-	            
-	    case 'X': // Scattering intensity, units not specified
-	            	sscanf(argv[i+1], "%lf", &DeltaE);
-	            	break;
-	            	
-	    case 'z': // Input file for temperature mesh
-	            	sscanf(argv[i+1], "%s", T_mesh_file);
-	            	T_mesh_in = true;
-	            	break;
-	            	
-	    case '2': // If the user want two spots
-	            	two_spots = true;
-	            	break;
-	            	
-	            case '3': // Header for file name
-	            	sscanf(argv[i+1],"%s", filenameheader);
-	            	break;
-	            
-	            case '8': // Param_degen gave a negative solution
-	            	pd_neg_soln = true;
-	            	break;
-	            
-                case 'h': default: // Prints help
-       	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
-                              << "-a Anisotropy parameter. [0.586]" << std::endl
-                              << "-b Ratio of blackbody flux to comptonized flux. [1.0]" << std::endl
-                              << "-d Ignores time delays in output (see source). [0]" << std::endl
-                              << "-D Distance from earth to star, in meters. [~10kpc]" << std::endl
-                              << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
-                              << "-f * Spin frequency of star, in Hz." << std::endl
-                              << "-g Graybody factor of beaming model: 0 = isotropic, 1 = Gray Atmosphere. [0]" << std::endl
-		                      << "-i * Inclination of observer, in degrees, between 0 and 90." << std::endl
-                              << "-I Input filename." << std::endl
-		                      << "-j Flag for computing only the second (antipodal) hot spot. [false]" << std::endl
-		                      << "-l Time shift (or phase shift), in seconds." << std::endl
-		                      << "-m * Mass of star in Msun." << std::endl          
-      	  	                  << "-n Number of phase or time bins. [128]" << std::endl
-      	  	                  << "-N Flag for normalizing the flux. Using this sets it to true. [false]" << std::endl
-		                      << "-o Output filename." << std::endl
-		                      << "-O Name of the output directory." << std::endl
-		                      << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
-		                      << "-q * Model of star: [3]" << std::endl
-		                      << "      1 for Neutron/Hybrid quark star poly model" << std::endl
-		                      << "      2 for CFL quark star poly model" << std::endl
-		                      << "      3 for spherical model" << std::endl
-		                      << "-r * Radius of star (at the equator), in km." << std::endl
-		                      << "-s Spectral model of radiation: [0]" << std::endl
-		                      << "      0 for bolometric light curve." << std::endl
-		                      << "      1 for blackbody in monochromatic energy bands (must include T option)." << std::endl
-		                      << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
-		                      << "-T Temperature of the spot, in keV. [2]" << std::endl
-		                      << "-u Low energy band, lower limit, in keV. [2]" << std::endl
-		                      << "-U Low energy band, upper limit, in keV. [3]" << std::endl
-		                      << "-v High energy band, lower limit, in keV. [5]" << std::endl
-		                      << "-V High energy band, upper limit, in keV. [6]" << std::endl
-		                      << "-x Scattering radius, in kpc." << std::endl
-		                      << "-X Scattering intensity, units unspecified." << std::endl
-		                      << "-z Input file name for temperature mesh." << std::endl
-		                      << "-2 Flag for calculating two hot spots, on both magnetic poles. Using this sets it to true. [false]" << std::endl
-		                      << "-3 File name header, for use with Ferret and param_degen." << std::endl
-		                      << "-8 Sets a flag to indicate that param_degen gave a negative solution." << std::endl
-		                      << " Note: '*' next to description means required input parameter." << std::endl
-		                      << std::endl;
-	                return 0;
-            } // end switch	
-        } // end if
-    } // end for
 
     /***********************************************/
     /* CHECKING THAT THE NECESSARY VALUES WERE SET */
     /***********************************************/
-    
+    /*
     if( !( incl_is_set && theta_is_set
 	    && mass_is_set && rspot_is_set
 	    && omega_is_set && model_is_set ) ) {
         throw( Exception(" Not all required parameters were specified. Exiting.\n") );
         return -1;
     }
-    
+    */
    
-    /***************************************************************/
-    /* READING TEMPERATURE VALUES FROM AN INPUT FILE, IF SPECIFIED */
-    /***************************************************************/
-	
+    /*******************************************************************/
+    /* READING TEMPERATURE VALUES FROM AN INPUT FILE, NOT USED FOR NOW */
+    /*******************************************************************/
+	/*
     if ( T_mesh_in ) {
     	std::ifstream inStream(T_mesh_file);
     	std::cout << "** Tmeshfile name = " << T_mesh_file << std::endl;
@@ -406,11 +239,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     		std::cout << std::endl;
     	}
     }
-    
+    */
     /******************************************/
     /* SENSIBILITY CHECKS ON INPUT PARAMETERS */
     /******************************************/
-    
+    /*
     if ( numtheta < 1 ) {
         throw( Exception(" Illegal number of theta bins. Must be positive. Exiting.\n") );
         return -1;
@@ -430,7 +263,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     
  
- 	
+ 	*/
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
@@ -504,12 +337,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // initialize background
     for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
 
+    //ts = obsdata.t[0]; // Don't do this if you want manually setting ts to do anything!!
+    //obsdata.shift = obsdata.t[0];
+    obsdata.shift = ts;
+    obsdata.numbins = numbins;
+
     /*************************/
     /* OPENING THE DATA FILE */
     /*************************/
-   
+    /*************************/
+    /* ALREADY READ IN!!!    */
+    /*************************/
+
+    /*
     if ( datafile_is_set ) {
-      std::cout << "setting data file" << std::endl;	
+      std::cout << "setting data file" << std::endl;    
       std::ifstream data; //(data_file);      // the data input stream
       std::cout << "opening data file" << std::endl;
       data.open( data_file );  // opening the file with observational data
@@ -517,50 +359,52 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       unsigned int numLines(0), i(0);
       if ( data.fail() || data.bad() || !data ) {
       std::cout << "fail in loading data" << std::endl;
-	throw( Exception("Couldn't open data file."));
-	return -1;
+    
+    throw( Exception("Couldn't open data file."));
+    return -1;
+    
       }
       // need to do the following to use arrays of pointers (as defined in Struct)
       for (unsigned int y(0); y < numbands; y++) {
-      	std::cout << "setting pointers" << std::endl;
-	obsdata.t = new double[numbins];
-	obsdata.f[y] = new double[numbins];
-	obsdata.err[y] = new double[numbins];
+        std::cout << "setting pointers" << std::endl;
+    obsdata.t = new double[numbins];
+    obsdata.f[y] = new double[numbins];
+    obsdata.err[y] = new double[numbins];
       }
- 
+    */
       /****************************************/
       /* READING IN FLUXES FROM THE DATA FILE */
       /****************************************/
-    	
+    /*   
       while ( data.getline(line,265) ) {
-	i = numLines;
-	double get_t;
-	double get_f1;
-	double get_err1;
-	double get_f2;
-	double get_err2;
-			
-	sscanf( line, "%lf %lf %lf %lf %lf", &get_t, &get_f1, &get_err1, &get_f2, &get_err2 );
-	//std::cout << "allocate to matrix" << std::endl;	
-	obsdata.t[i] = get_t;	
-	obsdata.f[0][i] = get_f1;
-	obsdata.err[0][i] = get_err1;
-	obsdata.f[1][i] = get_f2;
-	obsdata.err[1][i] = get_err2;
-	// PG1808 data has 2 sigma error bars -- divide by 2!
-	//obsdata.err[1][i] *= 2.0; // to account for systematic errors
-	//obsdata.err[2][i] *= 2.0; // to account for systematic errors
-	numLines++;
+    i = numLines;
+    double get_t;
+    double get_f1;
+    double get_err1;
+    double get_f2;
+    double get_err2;
+            
+    sscanf( line, "%lf %lf %lf %lf %lf", &get_t, &get_f1, &get_err1, &get_f2, &get_err2 );
+    //std::cout << "allocate to matrix" << std::endl;   
+    obsdata.t[i] = get_t;   
+    obsdata.f[0][i] = get_f1;
+    obsdata.err[0][i] = get_err1;
+    obsdata.f[1][i] = get_f2;
+    obsdata.err[1][i] = get_err2;
+    // PG1808 data has 2 sigma error bars -- divide by 2!
+    //obsdata.err[1][i] *= 2.0; // to account for systematic errors
+    //obsdata.err[2][i] *= 2.0; // to account for systematic errors
+    numLines++;
       } 
-
+    
       //if ( numLines != numbins ) {
-	//throw (Exception( "Numbins indicated in command-line not equal to numbins in data file."));
-	std::cout << "Warning! Numbins from command-line not equal to numbins in data file." << std::endl;
-	std::cout << "Command-line numbins = " << numbins <<", data file numbins = " << numLines << std::endl;
-	std::cout << "\t! Setting numbins = numbins from data file." << std::endl;
-	numbins = numLines;
-	curve.numbins = numLines;
-	//return -1;
+    //throw (Exception( "Numbins indicated in command-line not equal to numbins in data file."));
+    //std::cout << "Warning! Numbins from command-line not equal to numbins in data file." << std::endl;
+    std::cout << "Command-line numbins = " << numbins <<", data file numbins = " << numLines << std::endl;
+    //std::cout << "\t! Setting numbins = numbins from data file." << std::endl;
+    numbins = numLines;
+    curve.numbins = numLines;
+    //return -1;
       //}
        
       // Read in data file to structure "obsdata" (observed data)
@@ -575,6 +419,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
     } // Finished reading in the data file
+    */    
 		
     /***************************/
     /* START SETTING THINGS UP */
@@ -619,8 +464,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         //printf("Spherical Model. ");
     }
     else {
+    	/*
         throw(Exception("\nInvalid NS_model parameter. Exiting.\n"));
         return -1;
+        */
     }
 
    
@@ -726,8 +573,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    			//std::cout << phi_edge << std::endl;
 	  			}
 	  			else {  // trying to divide by zero
+	  				/*
 	    			throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 1. Likely, thetak = 0. Exiting.") );
 	  	  			return -1;
+	  	  			*/
 	  			}
 			}
       
@@ -869,8 +718,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    				//std::cout << phi_edge << std::endl;
 	  				}
 	  				else {  // trying to divide by zero
+	  					/*
 	    				throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 2. Likely, thetak = 0. Exiting.") );
 	    				return -1;
+	    				*/
 	  				}
 				} 
 				numphi = 2.0*(Units::PI-phi_edge)/dphi;
@@ -970,14 +821,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }  
     }
      
-    /************************************************************/
-    /* If data file is set, calculate chi^2 fit with simulation */
-    /************************************************************/
+    /***************************************************/
+    /* Data file should already be available           */
+    /***************************************************/
 	
-    if ( datafile_is_set ) {
-    	std::cout << "calculating chi squared" << std::endl;
-    	chisquared = ChiSquare ( &obsdata, &curve );
-    }
+    chisquared = ChiSquare ( &obsdata, &curve );
+    
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
 	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
@@ -986,179 +835,39 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      << ", e = " << theta_1 * 180.0 / Units::PI 
 	      << ", X^2 = " << chisquared 
 	      << std::endl;    
+ 
 
-
-    /*******************************/
-    /* CALCULATING PULSE FRACTIONS */
-    /*******************************/
-    
-    double avgPulseFraction(0.0); // average of pulse fractions across all energy bands
-    double sumMaxFlux(0.0), sumMinFlux(0.0);
-    double overallPulseFraction(0.0);
-    for ( unsigned int j(0); j < numbands; j++ ) {
-      sumMaxFlux += curve.maxFlux[j];
-      sumMinFlux += curve.minFlux[j];
-      avgPulseFraction += curve.pulseFraction[j];
-    }
-    overallPulseFraction = (sumMaxFlux - sumMinFlux) / (sumMaxFlux + sumMinFlux);
-    avgPulseFraction /= (NCURVES);
-	
-    double U(0.0), Q(0.0), A(0.0);   // as defined in PG19 and PG20
-    U = (1 - 2 * mass / rspot) * sin(incl_1) * sin(theta_1); // PG20
-    Q = 2 * mass / rspot + (1 - 2 * mass / rspot) * cos(incl_1) * cos(theta_1); // PG20
-    A = U / Q; // PG19
-    B = rspot * sin(incl_1) * sin(theta_1) * omega / ( sqrt( 1 - ((2*mass) / rspot) ) ); // param_degen/equations.pdf 2    
-
-    /********************************************/
-    /* WRITING THE SIMULATION TO AN OUTPUT FILE */
-    /********************************************/ 
-    	
-    out.open(out_file, std::ios_base::trunc);
-    if ( out.bad() || out.fail() ) {
-        std::cerr << "Couldn't open output file. Exiting." << std::endl;
-        return -1;
-    }
-
-    if ( rho == 0.0 ) rho = Units::PI/180.0;
-
-    out << "% Photon Flux for hotspot on a NS. \n"
-        << "% R_sp = " << Units::nounits_to_cgs(rspot, Units::LENGTH )*1.0e-5 << " km; "
-        << "% R_eq = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 << " km; "
-        << "% M = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun; "
-        << "% Spin = " << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) << " Hz \n"
-        << "% Gravitational redshift 1+z = " << 1.0/sqrt(1.0 - 2*mass/rspot) << "\n"
-        << "% Inclination angle = " << incl_1 * 180.0/Units::PI << " degrees \n"
-        << "% Emission angle = " << theta_1 * 180.0/Units::PI << " degrees \n"
-        << "% Angular radius of spot = " << rho << " radians \n"
-        << "% Number of spot bins = " << numtheta << " \n"
-        << "% Distance to NS = " << Units::nounits_to_cgs(distance, Units::LENGTH)*.01 << " m \n" 
-        << "% Phase shift or time lag = " << ts << " \n"
-      //        << "# Pulse fractions: bolo = " << curve.pulseFraction[0] <<", mono = " << curve.pulseFraction[1] << ", \n"
-      //<< "#                  low E band = " << curve.pulseFraction[2] << ", high E band = " << curve.pulseFraction[3] << " \n"
-      //<< "# Rise/Fall Asymm: bolo = " << curve.asym[0] <<", mono = " << curve.asym[1] << ", \n"
-      //<< "#                  low E band = " << curve.asym[2] << ", high E band = " << curve.asym[3] << " \n"
-      //<< "# B = " << B << " \n"
-      //<< "# B/(1+z) = " << B * sqrt(1.0 - 2*mass/rspot) << "\n"
-      //<< "# U = " << U << " \n"
-      //<< "# Q = " << Q << " \n"
-      //<< "# A = U/Q = " << A << " \n"
-      //<< "# %(Amp-Bolo) = " << (A - curve.pulseFraction[0])/A * 100.0 << " \n"
-      //<< "# %(Bolo-low) = " << (curve.pulseFraction[0]-curve.pulseFraction[2])/curve.pulseFraction[0] * 100.0 << " \n"
-        << std::endl;
-        
-    if (datafile_is_set)
-    	out << "% Data file " << data_file << ", chisquared = " << chisquared << std::endl;
-
-    if ( T_mesh_in )
-    	out << "% Temperature mesh input: "<< T_mesh_file << std::endl;
-    else
-    	out << "% Spot temperature, (star's frame) kT = " << spot_temperature << " keV " << std::endl;
-	if ( NS_model == 1)
-    	out << "% Oblate NS model " << std::endl;
-    else if (NS_model == 3)
-    	out << "% Spherical NS model " << std::endl;
-    if ( beaming_model == 0 )
-        out << "% Isotropic Emission " << std::endl;
-    else
-        out << "% Limb Darkening for Gray Atmosphere (Hopf Function) " << std::endl;
-    if ( normalize_flux )
-    	out << "% Flux normalized to 1 " << std::endl;
-    else
-    	out << "% Flux not normalized " << std::endl;
-    
-    /***************************************************/
-    /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
-    /***************************************************/
-  
-    out << "%\n"
-    	<< "% Column 1: phase bins (0 to 1)\n";
-
-    if (curve.flags.spectral_model==0){
-      out << "% Column 2: Monochromatic Number flux (photons/(cm^2 s keV) measured at energy (at infinity) of " << curve.para.E0 << " keV\n";
-      out << "%"
-	  << std::endl;
-      for ( unsigned int i(0); i < numbins; i++ ) {
-        out << curve.t[i]<< "\t" ;
-	for ( unsigned int p(0); p < numbands; p++ ) { 
-            out << curve.f[p][i] << "\t" ;
-        }
-	out << i;
-        out << std::endl;
-      }
-    }
-
-    if (curve.flags.spectral_model==1){
-      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
-      out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
-      out << "% " << std::endl;
-
-      for ( unsigned int p(0); p < numbands; p++ ) { 
-	for ( unsigned int i(0); i < numbins; i++ ) {
-	  out << curve.t[i]<< "\t" ;
-	  out << curve.para.E0 + p*curve.para.DeltaE << "\t";
-	  out << curve.f[p][i] << "\t" << std::endl;
-	  //out << i;
-	  //out << std::endl;
+	if (std::isnan(chisquared)) {
+		mexPrintf("Chisquared is nan! Setting it to 1,000,000.\n");
+		chisquared = 10000000.0;
 	}
+	else {
+		mexPrintf("X^2 = %f\n\n", chisquared);
+	}
+	
+	if (ts > 1.0) ts -= 1.0; // to make sure ts is in [0:1], for printing out
+    //std::cout << "Pre printing to everything." << std::endl;
 
-      }
-    }
+	/*****************************************************************/
+    /* DUMPING DATA INTO MATLAB OUTPUT                               */
+    /* For filewriting, need to use fopen, fprintf, and fclose (etc) */
+    /*****************************************************************/
+    //std::cout << "Pre output." << std::endl;
+	
+    chiOut[0] = chisquared; // saved this to theOutput[0] at top just after declarations
+    //std::cout << "Output 1." << std::endl;
+    dimSize[1] = 3; // number of columns (1: time, 2: flux in 1st energy band, 3: flux in 2nd energy band)
+    //std::cout << "Output 2." << std::endl;
 
+    dimSize[0] = (int)numbins; // number of rows ( = numbins)
+    //std::cout << "Output 3." << std::endl;
 
-    if (curve.flags.spectral_model==2){
-    	double E_diff;
-		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-    	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-    	}
-      	out << "%" << std::endl;
-      	for ( unsigned int i(0); i < numbins; i++ ) {
-        	out << curve.t[i]<< "\t" ;
-			for ( unsigned int p(0); p < numbands; p++ ) { 
-            	out << curve.f[p][i] << "\t" ;
-        	}
-			out << i;
-        	out << std::endl;
-      	}
-    }
+    theOutput[1] = mxCreateNumericArray(2, dimSize, mxDOUBLE_CLASS, mxREAL); // formatting/setting up the output
+    //std::cout << "Output 4." << std::endl;
 
+    curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
+	
 
-    if (curve.flags.spectral_model==3){
-    	double E_diff;
-		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-    	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column " << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-    	}
-      	out << "%" << std::endl;
-      	for ( unsigned int i(0); i < numbins; i++ ) {
-        	out << curve.t[i]<< "\t" ;
-			for ( unsigned int p(0); p < numbands; p++ ) { 
-            	out << curve.f[p][i] << "\t" ;
-            	out << 1e-6 << "\t" ; // Fake errors.  
-        	}
-			//out << i;
-        	out << std::endl;
-      	}
-    }
-
-
-
-      //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
-      //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
-
-    
-  
-
-
-    out.close();
-    
-    //delete defltoa;
+ 
     delete model;
-    return 0;
-} 
-
-catch(std::exception& e) {
-       std::cerr << "\nERROR: Exception thrown. " << std::endl
-	             << e.what() << std::endl;
-       return -1;
 }
