@@ -468,6 +468,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.radius = req;
     curve.para.req = req;
     curve.para.theta = theta_1;
+    curve.para.theta_c = theta_1;
     curve.para.incl = incl_1;
     curve.para.aniso = aniso;
     curve.para.Gamma1 = Gamma1;
