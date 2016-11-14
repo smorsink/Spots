@@ -25,7 +25,8 @@
 
 
 struct Parameters {      // local bit of spot information
-  double theta;          // Angle between the NS spin axis and the centre of the spot; in radians
+  double theta;          // Angle between the NS spin axis and the spot bin; in radians
+  double theta_c;        // Angle between the NS spin axis and the centre of the spot; in radians
   double phi_0;          // Azimuthal angular location of the centre of the spot; in radians
   double dS;             // Area of grid bit
   double incl;           // Inclination angle (between NS spin axis and observer's line of sight); in radians
