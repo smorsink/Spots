@@ -105,6 +105,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     spotshape(0), // Spot shape; 0=standard
     numbands(NCURVES); // Number of energy bands;
 
+  
+
+
+
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
          out_dir[80],                   // Directory we could send to; unused here, done in the shell script
          T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
@@ -487,6 +491,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
     curve.numbands = numbands;
+    curve.flags.spotshape = spotshape;
 
 
    // Define the Observer's Spectral Model
@@ -657,41 +662,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     for (unsigned int p(0);p<pieces;p++){
-    
-      double deltatheta(2.0*rho/numtheta);
 
-      if (pieces==2)
-	if (p==0)
-	  deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
-	else
-	  deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
-     
+      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve);
+
+      double deltatheta(0.0);
+
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
 	 
-	  double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
-	  double phi_edge, phij;
+	  deltatheta = curve.para.dtheta[k];
 
-	  if (pieces==2){
-	    if (p==1){
-	      thetak = (k+0.5)*deltatheta;
-	      phi_edge = Units::PI;
-	    }
-	    else {
-	      thetak = rho - theta_1 + (k+0.5)*deltatheta;
-	    }
-	  }
+	  double thetak = curve.para.theta_k[k];
 
+	  double phi_edge = curve.para.phi_k[k];
 
 	  dphi = 2.0*Units::PI/(numbins*1.0);
 
-	  // What is the value of radius at this angle?
-	  // For spherical star, rspot = req;
-
 	  mu_1 = cos(thetak);
 	  if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
-
-	  //		std::cout << "k=" << k << " thetak = " << thetak << " mu=" << mu_1 << std::endl;
 
 	  if ( mu_1 < 0.0){
 	    std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
@@ -715,23 +703,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 	  curve = Bend(&curve,defltoa);
 
-	  
-	  if (p==0){ //crescent-shaped piece, or the one circular piece if spot doesn't go over pole
-	    
-	    double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));
-	   
-	    if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
-	    if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
-	      phi_edge = acos( cos_phi_edge );   
-	      // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-	      //std::cout << phi_edge << std::endl;
-	    }
-	    else {  // trying to divide by zero
-	      throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 1. Likely, thetak = 0. Exiting.") );
-	      return -1;
-	    }
-	  }
-      
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
 
@@ -746,19 +717,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
 	  }
        
-	  if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
+	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
 	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
-	    phij = -phi_edge + (j+0.5)*dphi;
-	    curve.para.phi_0 = phij;
-
-			
+	    
+	    curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){ 
 	      curve = ComputeAngles(&curve, defltoa); 
 	      curve = ComputeCurve(&curve);
-				}
+	    }
 	
 	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
 	      for ( unsigned int i(0); i < numbins; i++ ) {

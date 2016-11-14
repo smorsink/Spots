@@ -19,6 +19,7 @@
 // Calculates chi^2
 double ChiSquare( class DataStruct* obsdata, class LightCurve* curve );
 
+class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve);
 
 // Calculates angles
 class LightCurve ComputeAngles( class LightCurve* incurve,

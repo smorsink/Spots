@@ -143,6 +143,59 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     
 }
 
+class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve){
+
+  class LightCurve curve;
+  curve = *incurve;
+
+  if (curve.flags.spotshape==0){
+
+  double deltatheta(2.0*rho/numtheta);
+
+  if (pieces==2)
+    if (p==0)
+      deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
+    else
+      deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
+
+  for (int k(0); k < numtheta; k++){
+
+    curve.para.dtheta[k] = deltatheta;
+
+    double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
+
+    if (pieces==2){
+      if (p==1){
+	thetak = (k+0.5)*curve.para.dtheta[k];
+	curve.para.phi_k[k] = Units::PI;
+      }
+      else {
+	thetak = rho - theta_1 + (k+0.5)*deltatheta;
+      }
+    }
+   
+    curve.para.theta_k[k] = thetak;
+
+    if (p==0){ //crescent-shaped piece, or the one circular piece if spot doesn't go over pole
+	    
+      double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));
+	   
+      if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
+      if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
+	curve.para.phi_k[k] = acos( cos_phi_edge );   
+	// value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
+      }	   
+    }
+
+
+
+  }
+  }
+  return curve;
+
+}
+
+
 /**************************************************************************************/
 /* ComputeAngles:                                                                     */
 /*              computes all angles necessary to create the x-ray light curve         */

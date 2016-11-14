@@ -56,6 +56,9 @@ struct Parameters {      // local bit of spot information
   double E1; // NICER
   double E2; // NICER
   double DeltaE; // NICER 
+  double theta_k[100]; // location of spot bins
+  double phi_k[100];   // phi location of edge of spot
+  double dtheta[100]; // width of spot bins
 };
 
 struct Flags {
@@ -65,6 +68,7 @@ struct Flags {
 	unsigned int spectral_model;  // stating which model we're using -- definitions of models given elsewhere
 	unsigned int beaming_model;   // stating which model we're using -- definitions of models given elsewhere
   unsigned int ns_model; // Shape model: 3=spherical; 1=oblate
+  unsigned int spotshape;
 };
 
 
