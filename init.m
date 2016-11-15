@@ -1,7 +1,7 @@
 function extPar = init  %defining an external parameter sent to the executable; equivalent of command line arguments to main
 
-spotDir=fileparts(which(mfilename));
-
+%spotDir=fileparts(which(mfilename));
+spotDir=fileparts(which('init.m'));
 % ------------
 % Compile the functions...
 %
@@ -12,7 +12,7 @@ spotDir=fileparts(which(mfilename));
 % Simply remove the "-ansi" and it should compile.
 %
 cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp'];
-
+cd(spotDir);
 disp('------ Init ------');
 disp(cmd);
 which('spotMex_trial.cpp');
@@ -24,20 +24,15 @@ eval(cmd);
 % extPar is external parameters
 %
 %
-%extPar.fixed.mass=1.4;				% mass in MSun
-%extPar.mass=1.4;
-%extPar.fixed.radius=12;			% radius in km
-%extPar.radius=12;
+extPar.fixed.mass=1.4;				% mass in MSun
+extPar.fixed.radius=12;			% radius in km
 extPar.fixed.freq=400;              % spin frequency of NS, in Hz
-%extPar.fixed.inclination=90;	    % spot inclination angle in degrees
-%extPar.inclination=90;
-%extPar.fixed.emission=90;			% spot emission angle in degrees
-%extPar.emission=90;
+extPar.fixed.inclination=90;	    % spot inclination angle in degrees
+extPar.fixed.emission=90;			% spot emission angle in degrees
 %extPar.fixed.phaseshift=0;			% spot phaseshift angle in degrees
-%extPar.phaseshift=0;
+extPar.fixed.numbins = 128;
 extPar.modelchoice=3;               % 1 is for oblate, 3 is for spherical
-%
-extPar.fixed.rho=1e-1;             % angular radius of the emitting hot spot, in radians
+extPar.fixed.rho=1e-2;             % angular radius of the emitting hot spot, in radians
 extPar.fixed.spot_temperature=0.1;  % temperature of the hot spot in frame of the NS, in keV
 extPar.fixed.distance=6.1713552e18; % distance from us to the NS, 200 pc in meters
 extPar.fixed.numtheta=1;			% number of theta bins.
@@ -45,8 +40,8 @@ extPar.spectral_model=3;			% 3 is for flux integrated within energy bands
 extPar.numbands=2;					% 2 by default for now
 extPar.fixed.E_band_lower_1=0.3;    % lower bound of first energy band, in keV
 extPar.fixed.E_band_upper_1=0.8;    % upper bound of first energy band, in keV
-extPar.beaming_model=4;				% 3 for hydrogen, 4 for helium
-extPar.spots_2=1;					% 1 for 1 spot, 2 for 2 spots
+extPar.fixed.beaming_model=4;				% 3 for hydrogen, 4 for helium
+extPar.spots_2=2;					% 1 for 1 spot, 2 for 2 spots
 %
 
 
