@@ -539,7 +539,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       /****************************************/
       /* READING IN FLUXES FROM THE DATA FILE */
       /****************************************/
-    	
+    
+    /*	
       while ( data.getline(line,265) ) {
 	i = numLines;
 	double get_t;
@@ -559,15 +560,34 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	//obsdata.err[1][i] *= 2.0; // to account for systematic errors
 	//obsdata.err[2][i] *= 2.0; // to account for systematic errors
 	numLines++;
-      } 
+      }
+	*/
+
+    if (data.is_open()){
+    	double temp;
+    	for (unsigned int j = 0; j < numbins; j++){
+    		data >> temp;
+    		obsdata.t[j] = temp;
+    		for (unsigned int k = 0; k < numbands; k++){
+    			data >> temp;
+    			obsdata.f[k][j] = temp;
+    			//std::cout << temp << std::endl;
+    			data >> temp;
+    			obsdata.err[k][j] = temp;
+    			//std::cout << temp << std::endl;
+    		}
+    	}
+    	data.close();
+    }
+
 
       //if ( numLines != numbins ) {
 	//throw (Exception( "Numbins indicated in command-line not equal to numbins in data file."));
-	std::cout << "Warning! Numbins from command-line not equal to numbins in data file." << std::endl;
-	std::cout << "Command-line numbins = " << numbins <<", data file numbins = " << numLines << std::endl;
-	std::cout << "\t! Setting numbins = numbins from data file." << std::endl;
-	numbins = numLines;
-	curve.numbins = numLines;
+	//std::cout << "Warning! Numbins from command-line not equal to numbins in data file." << std::endl;
+	//std::cout << "Command-line numbins = " << numbins <<", data file numbins = " << numLines << std::endl;
+	//std::cout << "\t! Setting numbins = numbins from data file." << std::endl;
+	//numbins = numLines;
+	//curve.numbins = numLines;
 	//return -1;
       //}
        
@@ -575,6 +595,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       // f[1][i] flux in low energy band
       // f[2][i] flux in high energy band
       obsdata.numbins = numbins;
+      obsdata.numbands = numbands;
 
       data.close();
       //ts = obsdata.t[0]; // Don't do this if you want manually setting ts to do anything!!
