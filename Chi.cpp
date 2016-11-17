@@ -48,8 +48,9 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
    	/* VARIABLE DECLARATIONS FOR ChiSquare */
     /***************************************/
     
-    unsigned int numbins;  // Number of phase (or time) bins the light curve is cut into
-    
+    unsigned int numbins,  // Number of phase (or time) bins the light curve is cut into
+                 numbands;   
+
     int k,      // Array index variable
     	n;      // Array index variable
     
@@ -60,11 +61,14 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     
     cout << "starting chi squared calculation" << endl;
     numbins = obsdata->numbins;
+    numbands = curve->numbands;
     ts = curve->para.ts;
     cout << "pointers set" << endl;
     cout << "timeshift is " << ts << endl;
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
         cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
+        //cout << obsdata->f[1][0] << " " << curve->f[1][0] << " " << obsdata->err[1][0] << endl;
+        //cout << obsdata->f[2][0] << " " << curve->f[2][0] << " " << obsdata->err[2][0] << endl;
         
         while ( ts < 0.0 ) {
             ts += 1.0;
@@ -120,7 +124,9 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
         }
         cout << "chisquare for band 1 is " << chisquare << endl;
-		// energy band 2
+		
+        /*
+        // energy band 2
         p = 1;
         q = 1;
         for ( unsigned int i(0); i < numbins; i++ ) {
@@ -129,7 +135,23 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         }
 
         cout << "chisquare for band 1+2 is " << chisquare << endl;
-
+        cout << "numbands is " << numbands << endl;
+        */
+        
+        // energy band 2 and after
+        unsigned int j = 1;
+        cout << numbins << " " << numbands << endl;
+        while (j < numbands){
+        p += 1;
+        q += 1;
+            for ( unsigned int i(0); i < numbins; i++ ) {
+                chisquare += pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2);
+                // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
+            }
+        cout << "chisquare for bands 1 to " << p+1 << " is " << chisquare << endl;
+        j += 1;
+        }
+        
     }
     
     //chisquare += pow( (bbrat - 0.32)/(0.064) , 2);
@@ -152,12 +174,14 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 
   double deltatheta(2.0*rho/numtheta);
 
-  if (pieces==2)
-    if (p==0)
+  if (pieces==2){
+    if (p==0){
       deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
-    else
+    }
+    else{
       deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
-
+    }
+    }
   for (int k(0); k < numtheta; k++){
 
     curve.para.dtheta[k] = deltatheta;

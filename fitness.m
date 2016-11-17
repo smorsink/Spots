@@ -20,11 +20,24 @@ for i=size(X,2):-1:1  % we want to count backwards here
         %timeShift=X(1,i);
         
 % Call Mex function in order of fixed quantities
+        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.obsdata2.numbins, extPar.modelchoice, rho, extPar.fixed.spot_temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.spots_2, extPar.obsdata2.t';
+        for j = 1:extPar.fixed.numbands
+            cmd = [cmd,', extPar.obsdata2.f(',num2str(j),',:), extPar.obsdata2.err(',num2str(j),',:)'];
+        end
+        cmd = [cmd,');'];
+        disp(cmd);
+        eval(cmd);
+        
+        %{
         [Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, ...
             extPar.obsdata2.numbins, extPar.modelchoice, rho, extPar.fixed.spot_temperature, extPar.fixed.distance, ...
-            extPar.fixed.numtheta, extPar.spectral_model, extPar.numbands, extPar.fixed.E_band_lower_1, ...
+            extPar.fixed.numtheta, extPar.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, ...
             extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.spots_2, extPar.obsdata2.t, extPar.obsdata2.f(1,:), ...
-            extPar.obsdata2.f(2,:), extPar.obsdata2.err(1,:), extPar.obsdata2.err(2,:)); 
+            extPar.obsdata2.err(1,:), extPar.obsdata2.f(2,:), extPar.obsdata2.err(2,:)); 
+        %}
+        
+    
+    
     else
         Fspot(i)=Inf;
         auxOutput{i}=[];

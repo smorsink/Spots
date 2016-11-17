@@ -42,7 +42,7 @@ par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
 par.general.popSize=250; % i [integer >= 1]: Size of each population.
 %par.general.popSize=3;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
-par.general.NGen=250; % g [integer >= 1]: Maximum number of generations to run for.
+par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
 %par.general.NGen=4;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
