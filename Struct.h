@@ -19,7 +19,7 @@
 #include <vector>
 #include <float.h>
 
-#define NN 20            // lookup table for bending angle (deflection angle) calculation
+#define NN 50            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define NCURVES 100        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 
@@ -60,6 +60,7 @@ struct Parameters {      // local bit of spot information
   double theta_k[100]; // location of spot bins
   double phi_k[100];   // phi location of edge of spot
   double dtheta[100]; // width of spot bins
+  double gamma_k[100]; // value of lorentz gamma at the spot bin
 };
 
 struct Flags {

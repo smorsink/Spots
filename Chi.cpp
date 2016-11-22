@@ -48,9 +48,8 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
    	/* VARIABLE DECLARATIONS FOR ChiSquare */
     /***************************************/
     
-    unsigned int numbins,  // Number of phase (or time) bins the light curve is cut into
-                 numbands;   
-
+    unsigned int numbins;  // Number of phase (or time) bins the light curve is cut into
+    
     int k,      // Array index variable
     	n;      // Array index variable
     
@@ -61,14 +60,11 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     
     cout << "starting chi squared calculation" << endl;
     numbins = obsdata->numbins;
-    numbands = curve->numbands;
     ts = curve->para.ts;
     cout << "pointers set" << endl;
     cout << "timeshift is " << ts << endl;
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
         cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
-        //cout << obsdata->f[1][0] << " " << curve->f[1][0] << " " << obsdata->err[1][0] << endl;
-        //cout << obsdata->f[2][0] << " " << curve->f[2][0] << " " << obsdata->err[2][0] << endl;
         
         while ( ts < 0.0 ) {
             ts += 1.0;
@@ -124,9 +120,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
         }
         cout << "chisquare for band 1 is " << chisquare << endl;
-		
-        /*
-        // energy band 2
+		// energy band 2
         p = 1;
         q = 1;
         for ( unsigned int i(0); i < numbins; i++ ) {
@@ -135,23 +129,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         }
 
         cout << "chisquare for band 1+2 is " << chisquare << endl;
-        cout << "numbands is " << numbands << endl;
-        */
-        
-        // energy band 2 and after
-        unsigned int j = 1;
-        cout << numbins << " " << numbands << endl;
-        while (j < numbands){
-        p += 1;
-        q += 1;
-            for ( unsigned int i(0); i < numbins; i++ ) {
-                chisquare += pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2);
-                // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
-            }
-        cout << "chisquare for bands 1 to " << p+1 << " is " << chisquare << endl;
-        j += 1;
-        }
-        
+
     }
     
     //chisquare += pow( (bbrat - 0.32)/(0.064) , 2);
@@ -165,59 +143,211 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     
 }
 
-class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve){
+class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve, class OblModelBase* model){
+  // If the spot is in one piece, then p=0
+  // If the spot is in two pieces, then:
+  // p=0 --> crescent shape
+  // p=1 --> polar cap
 
   class LightCurve curve;
   curve = *incurve;
 
-  if (curve.flags.spotshape==0){
+  if (p==1){ // polar cap
 
-  double deltatheta(2.0*rho/numtheta);
-
-  if (pieces==2){
-    if (p==0){
-      deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
+    double deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
+    for(int k(0); k < numtheta; k++){
+      curve.para.dtheta[k] = deltatheta;
+      curve.para.theta_k[k] = (k+0.5)*curve.para.dtheta[k];
+      curve.para.phi_k[k] = Units::PI;
     }
-    else{
-      deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
-    }
-    }
-  for (int k(0); k < numtheta; k++){
+  }
+  if (p==0){
 
-    curve.para.dtheta[k] = deltatheta;
-
-    double thetak = theta_1 - rho + (k+0.5)*deltatheta; 
-
-    if (pieces==2){
-      if (p==1){
-	thetak = (k+0.5)*curve.para.dtheta[k];
-	curve.para.phi_k[k] = Units::PI;
+    if (curve.flags.spotshape==0){
+      double deltatheta(2.0*rho/numtheta);
+      if (pieces==2){
+	  deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
       }
-      else {
-	thetak = rho - theta_1 + (k+0.5)*deltatheta;
+      for (int k(0); k < numtheta; k++){
+	curve.para.dtheta[k] = deltatheta;
+	double thetak = theta_1 - rho + (k+0.5)*deltatheta;       
+	if (pieces==2){	  
+	    thetak = rho - theta_1 + (k+0.5)*deltatheta;	  
+	}   
+	curve.para.theta_k[k] = thetak;
+		    
+	  double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));	
+	  if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
+	  if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
+	    curve.para.phi_k[k] = acos( cos_phi_edge );   
+	    // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
+	  	   
+	}
       }
-    }
+    } // end spotshape=0 case
+
+  if (curve.flags.spotshape==1){
+
+    if (p==0){ // case of just one spot that doesn't go over the pole; OR crescent shaped part of spot
+
    
-    curve.para.theta_k[k] = thetak;
+	double dzeta(Units::PI/(numtheta));
+	double zeta_0(0.0);
+	double zeta_k(0.0);
+     
 
-    if (p==0){ //crescent-shaped piece, or the one circular piece if spot doesn't go over pole
-	    
-      double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));
-	   
-      if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
-      if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
-	curve.para.phi_k[k] = acos( cos_phi_edge );   
-	// value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-      }	   
+      double north(1.0*rho); // Length of the segment joining the spot centre to the North-most part of the spot
+      // Need to integrate to find north on an oblate star
+
+      int k;
+
+      for (k=0; k < numtheta; k++){
+	zeta_k = (0.5+k)*dzeta + zeta_0;
+
+	// Trapezoidal Rule
+	double a = 0.0;          // lower bound of integration
+	double b = north;          // upper bound of integration
+	double current_x(0.0);      // current value of x, at which we are evaluating the integrand
+	unsigned int current_n(0);  // current step
+	unsigned int n_steps(10); // total number of steps
+	double h = (b - a) / n_steps;     // step amount for numerical integration; the size of each step
+	
+	double length(0.0);           // the integrated length
+	double oldlength(0.0);
+	double rho_star(0.0);
+
+	// begin trapezoidal rule
+	current_x = a + h * current_n;
+	length = SpotIntegrand(current_x,zeta_k, &curve);
+
+	for ( current_n = 1; current_n <= n_steps-1; current_n++ ) {
+		current_x = a + h * current_n;
+		oldlength = length;
+		length += 2.0 * SpotIntegrand(current_x,zeta_k,&curve);
+		if (length >= north*2.0/h){
+		  /*std::cout << " north = " << north
+			    << " curr_rho = " << current_x
+			    << " length = " << length * h/2.0
+			    << " old_rho = " << current_x - h
+			    << " oldlength = " << oldlength * h/2.0
+			    << std::endl;*/
+		  rho_star = current_x - h + (north*2.0/h - oldlength)*h/(length-oldlength);
+		  //std::cout << " interpol rho = " << rho_star << endl;
+		}
+	}
+	
+	current_x = a + h * current_n;
+	length += SpotIntegrand(current_x,zeta_k,&curve);
+	
+		if (length >= north*2.0/h){
+		  /*std::cout << " north = " << north
+			    << " curr_rho = " << current_x
+			    << " length = " << length * h/2.0
+			    << " old_rho = " << current_x - h
+			    << " oldlength = " << oldlength * h/2.0
+			    << std::endl;*/
+		  rho_star = current_x - h + (north*2.0/h - oldlength)*h/(length-oldlength);
+		  //std::cout << " interpol rho = " << rho_star << endl;
+		}
+
+	length *= h/2.0;	
+	// end trapezoidal rule; numerical integration complete!
+
+	std::cout << "k = " << k 
+		  << " zeta = " << zeta_k 
+		  << " rho = " << rho_star
+		  << " length = " << north
+		  << std::endl;
+
+	double theta_0(curve.para.theta_c);
+
+	double costheta(cos(theta_0)*cos(rho_star) + sin(theta_0)*sin(rho_star)*cos(zeta_k));
+
+	curve.para.theta_k[k] = acos(costheta);
+
+	double denom = (sin(theta_0)*cos(rho_star) - cos(theta_0)*sin(rho_star)*cos(zeta_k));
+	double tanphi = sin(rho_star)*sin(zeta_k)/(denom);
+
+	if (denom>0.0)
+	  curve.para.phi_k[k] = atan(tanphi);
+	else
+	  curve.para.phi_k[k] = Units::PI + atan(tanphi);
+
+	std::cout << "k = " << k
+		  << " theta_k = " << curve.para.theta_k[k]
+		  << " phi_k = " << curve.para.phi_k[k]
+		  << std::endl;
+
+
+      } // end for-k-loop
+
+      if (pieces == 1){ // spot does not cover the pole
+	k=0;
+	curve.para.dtheta[k] = curve.para.theta_k[0] - (curve.para.theta_c - rho);
+	for (k=1; k<numtheta-1; k++){
+	  curve.para.dtheta[k] = 0.5 * (curve.para.theta_k[k+1] - curve.para.theta_k[k-1]);
+	}
+	k=numtheta-1;
+	curve.para.dtheta[k] =  (curve.para.theta_c + rho) - curve.para.theta_k[k];
+      }
+      if (pieces == 2 && p==0){ //crescent -shaped bit
+
+	k=0;
+	curve.para.dtheta[k] = curve.para.theta_k[0] - (-curve.para.theta_c + rho);
+	for (k=1; k<numtheta-1; k++){
+	  curve.para.dtheta[k] = 0.5 * (curve.para.theta_k[k+1] - curve.para.theta_k[k-1]);
+	}
+	k=numtheta-1;
+	curve.para.dtheta[k] =  (curve.para.theta_c + rho) - curve.para.theta_k[k];
+      }
+
+
     }
+  }// end spotshape=1 case
+  } //p=0 case
+
+  for ( int k(0); k<numtheta; k++){
+    double rtheta(curve.para.radius); // value of r at present value of theta
+    rtheta = model->R_at_costheta( cos(curve.para.theta_k[k]));
 
 
-
+    double mass_over_r = curve.para.mass_over_r * curve.para.radius/rtheta;
+    double red = 1.0/sqrt(1.0-2.0*mass_over_r);
+    double omega = curve.para.omega;
+    //omega=0.0;
+    double speed = omega*rtheta*sin(curve.para.theta_k[k])*red; // MLCB34
+    curve.para.gamma_k[k] = sqrt(1.0/(1.0-pow(speed,2))); 
   }
-  }
+
+
   return curve;
 
 }
+
+double SpotIntegrand( double rho, double zeta, class LightCurve* incurve){
+  class LightCurve curve;
+  curve = *incurve;
+
+  double theta_0(curve.para.theta_c);
+  double costheta(cos(theta_0)*cos(rho) + sin(theta_0)*sin(rho)*cos(zeta));
+  double sintheta( sqrt(1.0 - pow(costheta,2)) );
+
+  double rtheta(curve.para.radius); // value of r at present value of theta
+  // Need to fix this for oblate star
+
+  double mass_over_r = curve.para.mass_over_r; // change for oblate star
+  double red = 1.0/sqrt(1.0-2.0*mass_over_r);
+  double omega = curve.para.omega;
+  //omega=0.0;
+  double speed = omega*rtheta*sintheta*red; // MLCB34
+  double gammasq = 1.0/(1.0-pow(speed,2)); 
+ 
+  double integrand = sqrt( 1.0 + gammasq * pow( omega*rtheta*red * sin(theta_0)*sin(zeta),2));
+
+  return integrand;
+}
+
+
 
 
 /**************************************************************************************/
@@ -301,8 +431,15 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
-    //std::cout << "ComputeAngles: radius = " << radius << std::endl;
+    double singamma(0.0);
+    singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
+    if (mu < 0.0){
+      std::cout << "ComputeAngles: Southern Hemisphere!"
+		<< " mu = " << mu 
+		<< std::endl;
+      singamma *= -1.0;
+    }
 
     //initial assumptions
     curve.eclipse = false;
@@ -313,7 +450,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     /* COMPUTE EMISSION TIME, PHASE BINS, AND LIGHT BENDING */
     /********************************************************/
 
-
+   
 
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-1
         // SMM: Added an offset of phi_0
@@ -322,6 +459,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         phi_em.at(i) = phi_0 + (2.0*Units::PI) * curve.t[i]; // phi_em is the same thing as "phi" in PG; changes with t
         psi.at(i) = acos(cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i))); // PG1; this theta_0 is the theta_0 from spot.cpp
        
+	/*	std::cout << "i=" << i
+		  << " phi="<< phi_em.at(i) * 180.0/Units::PI
+		  << " cos(phi)=" << cos(phi_em.at(i))
+		  << " psi=" << psi.at(i)*180.0/Units::PI
+		  << " cos(psi)="<< cos(psi.at(i))
+		  << std::endl;*/
+
+
     } // closing For-Loop-1
 
     int j(0);
@@ -333,15 +478,16 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
       bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
       psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
        std::cout << "ComputeAngles: Oblate! b_min_ingoing = " << bmin 
-		<< " psi_min_ingoing = " << psimin
+		<< " psi_min_ingoing = " << psimin * 180/Units::PI
 		<< " b_max_outgoing = " << curve.defl.b_max
-		<< " psi_max = " << curve.defl.psi_max
+		 << " psi_max = " << curve.defl.psi_max * 180/Units::PI
 		<< std::endl;
     }
     
 
-	
-    for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2
+    for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2	
+
+
         int sign(0);
         double bval(0.0);
         bool result(false);
@@ -357,7 +503,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             if ( psi.at(i) > curve.defl.psi_b[j] )
 	            while ( psi.at(i) > curve.defl.psi_b[j] ) {
 	                j++;      
-                }
+		    }
             else {
 	            while ( psi.at(i) < curve.defl.psi_b[j] ) {
 	              j--;
@@ -369,14 +515,25 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             b2 = curve.defl.b_psi[j];
             psi1 = curve.defl.psi_b[j-1];
             psi2 = curve.defl.psi_b[j];
+	    /*
+	    std::cout << "i=" <<i
+		      << " psi1=" << psi1 << " b1=" << b1 <<std::endl;
+	    std::cout << " psi2=" << psi2 << " b2=" << b2 <<std::endl;
+	    std::cout << " b = " << (b2-b1)/(psi2-psi1) * (psi.at(i) - psi2) + b2 << std::endl;
+	    */
             k = j - 2;
       
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
 
+	    /*  std::cout << "i=" << i
+		      << " psi(i)=" << psi.at(i) 
+		      << std::endl;*/
             for ( j = 0; j < 4; j++ ) {
 	            b_k.at(j) = curve.defl.b_psi[k+j];
 	            psi_k.at(j) = curve.defl.psi_b[k+j];
+		    /* std::cout << "psi("<<j<<")=" << psi_k.at(j);
+		       std::cout << " b("<<j<<")=" << b_k.at(j) << std::endl;*/
             }
   
             // 4-pt interpolation to find the correct value of b given psi.
@@ -389,6 +546,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
 	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*b_k.at(3)/
                 	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
+	    // std::cout << "b = " << b_guess << std::endl;
+
+	    // b_guess = (b2-b1)/(psi2-psi1) * (psi.at(i) - psi2) + b2;
+
         } // ending psi.at(i) < curve.defl.psi_max
 
         /***********************************************/
@@ -406,15 +567,21 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             curve.t_o[i] = 0.0;
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
+	     
         }
-
         else if ( result == false ) { 
             curve.visible[i] = false;
             curve.t_o[i] = curve.t[i] + curve.t_o[i-1] - curve.t[i-1];
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
+	    /*  std::cerr << "i = " << i
+	        	          << ", phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
+			<< ", cos(theta) = " << cos(theta_0)
+			<< ", cospsi = " << cos(psi.at(i))
+			<< ", psi = " <<  psi.at(i) * 180.0/Units::PI
+		                  << " (Not Visible)." << std::endl << std::endl;
+	    */
         }
-
         else { // there is a solution
             b = bval;
             if ( sign < 0 ) { // if the photon is initially ingoing (only a problem in oblate models)
@@ -451,36 +618,71 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             alpha    = asin( sinalpha );
             
 
-            if ( sign < 0 ) { // alpha is greater than pi/2
-	            alpha = Units::PI - alpha;
-            }
+	    if ( sign < 0 ) { // alpha is greater than pi/2
+	      //std::cout << "i=" << i << " sign < 0 " << std::endl;
+	      alpha = Units::PI - alpha;
+	      cosalpha *= -1;
+	    }
+
+
 
             cosdelta.at(i) =  (cos(incl) - cos(theta_0)*cos(psi.at(i))) / (sin(theta_0)*sin(psi.at(i))) ;
+
             if ( theta_0 == 0.0 )  // cosdelta needs to be redone if theta_0 = 0
             	cosdelta.at(i) = sqrt( 1 - pow( sin(incl) * sin(phi_em.at(i)) / sin(psi.at(i)) ,2) ); // law of sines from MLCB Fig 1 and in MLCB17 and just above
      
             if ( (cos(theta_0) < 0) && (cos(incl) < 0 ) ) {
 	            cosdelta.at(i) *= -1.0;
             }
+
             if ( sin(psi.at(i)) != 0.0 ) {
-	            curve.cosbeta[i] = cosalpha * cosgamma + sinalpha * sqrt( 1.0 - pow( cosgamma, 2.0 )) * cosdelta.at(i);
-	            //if( std::isnan(curve.cosbeta[i]) ) std::cout << "cosdelta.at(i="<<i<<") = " << cosdelta.at(i) << std::endl;
+	            curve.cosbeta[i] = cosalpha * cosgamma + sinalpha * singamma * cosdelta.at(i);
             }
             else {
 	            curve.cosbeta[i] = cosalpha * cosgamma;
             }
 
-            if ( cosalpha < 0.01 ) {
-	            curve.cosbeta[i] = (Units::PI/2.0 - alpha + sqrt(2) * sqrt(1.0-cosgamma) * cosdelta.at(i));
-  			}
+	    if ( fabs(cosalpha) < 0.01 ) {
+	            curve.cosbeta[i] = (cosalpha*cosgamma +  singamma * cosdelta.at(i));
+		    //std::cout << "small cosbeta=" << curve.cosbeta[i] << std::endl;
+		    }
+
+	    double gamma = asin(singamma); 
+	    
+	    /*   std::cerr << "i = " << i
+			<< ", phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
+			<< ", cos(beta) = " << curve.cosbeta[i] 
+			<< ", cos(alpha) = " << cosalpha
+			<< ", sin(alpha) = " << sinalpha
+			<< ", cos(gamma) = " << cosgamma
+			<< ", sin(gamma) " << singamma
+			 <<", gamma = " << gamma
+			<< ", cos(delta) = " << cosdelta.at(i)
+			<< ", cos(theta) = " << cos(theta_0)
+			<< ", cospsi = " << cos(psi.at(i))
+			 << ", psi = " <<  psi.at(i) * 180.0/Units::PI << " = " << psi.at(i)
+			<< " (visibility condition)."  << std::endl;
+	    
+	      
+
+	       std::cerr << "Alternate cos(beta) = "
+			 << 1.0/(sin(psi.at(i))*sin(theta_0)) 
+		 * ( sinalpha * (sin(theta_0-gamma)*cos(psi.at(i)) + singamma * cos(incl))
+		     +sin(psi.at(i)-alpha) * ( sin(theta_0-gamma) + singamma*cos(theta_0)))
+			 << std::endl << std::endl;
+				 
+								
+	    */
+
+
             if ( curve.cosbeta[i] < 0.0 || curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
-	            std::cerr << "i = " << i
+	      /* std::cerr << "i = " << i
 	        	          << ", Not visible at phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
 	                   	  << ", cos(beta) = " << curve.cosbeta[i] 
 		                  << ", cos(alpha) = " << cosalpha
 		                  << ", cos(gamma) = " << cosgamma
 		                  << ", cos(delta) = " << cosdelta.at(i)
-		                  << " (visibility condition)." << std::endl << std::endl;
+		                  << " (visibility condition)." << std::endl << std::endl;*/
 	            curve.visible[i] = false;
             }
             else {
@@ -503,19 +705,18 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             	if (alpha == 0.0 && psi.at(i) == 0.0 & phi_em.at(i) == 0.0) 
             		cosxi.at(i) = 0.0; // to avoid NAN errors from dividing by 0; appears when incl = theta at i=0
 	            else 
-	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sin(fabs(psi.at(i)));  // PG11
+	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sin(psi.at(i));  // PG11
 	            curve.eta[i] = sqrt( 1.0 - speed*speed ) / (1.0 - speed*cosxi.at(i) ); // Doppler boost factor, MLCB33
 	            
+		    
+
 	            if ((1.0 - speed*cosxi.at(i)) == 0.0) 
 	            	std::cout << "dividing by zero" << std::endl;
 	            if((std::isnan(speed) || speed == 0.0) && theta_0 != 0.0 )
 	            	std::cout << "speed = " << speed << " at i = " << i << std::endl;
-	            //if(std::isnan(cosxi.at(i)) || cosxi.at(i) == 0.0) 
-	            //	std::cout << "cosxi(i="<<i<<") = " << cosxi.at(i) << std::endl;
-	            
 
 	            if ( ingoing ) {
-	              //std::cout << "ComputeAngles:Ingoing b = " << b << std::endl;
+		      //        std::cout << "ComputeAngles:Ingoing b = " << b << std::endl;
 		      dpsi_db_val = defltoa->dpsi_db_ingoing_u( b, radius, mu, &curve.problem );
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
@@ -523,22 +724,19 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 		  if (b != curve.defl.b_max ){
 	                dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	                //if (i == 0) std::cout << "b = " << b <<", dpsi_db = " << dpsi_db_val << std::endl;
-
-	                toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
-	                //std::cout << "dpsi_db_val = " << dpsi_db_val << ", toa_val = " << toa_val << std::endl;
+	              
+	                toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );	              
 		  }
 		  else{
 		    toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
-		    	eps = 1e-6;
+		    	eps = 2e-6;
 			b = curve.defl.b_max * sqrt(1.0 - eps);
-			epspsi = defltoa->psi_outgoing( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+			epspsi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+			//epspsi = defltoa->psi_outgoing( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
 			dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
 			dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(epspsi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
 
 		  }
-
-
 		}
 
 	            //std::cout << "Done computing TOA " << std::endl;
@@ -684,6 +882,7 @@ class LightCurve Bend ( class LightCurve* incurve,
     curve.defl.psi_b[3*NN] = curve.defl.psi_max;
     // Finished computing lookup table
     
+    printflag = 0;
     if (printflag){
 
       //initial assumptions
@@ -699,7 +898,38 @@ class LightCurve Bend ( class LightCurve* incurve,
       bend << "# R/M = " << 1.0/curve.para.mass_over_r << std::endl;
       bend << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
 
-      for (unsigned int i(0); i < numbins; i++ ) { 
+
+
+      // Code to take care of values near cos(alpha) = 0
+      // Change so that x=alpha
+      // y = dcosa/dcospsi
+
+      //      eps = 7e-3;  // eps = cos(alpha)
+      eps = 1e-2;
+      double x1, x2, y1, y2, yslope, yy;
+  
+
+      x1 = Units::PI/2.0 - eps; 
+      x2 = x1+eps*0.1;
+
+      b = sin(x1) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+      y1 = fabs( sin(x1)/cos(x1) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+
+      b = sin(x2) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+      y2 = fabs( sin(x2)/cos(x2) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+
+      yslope = (y2-y1)/(x2-x1);
+
+      std::cout << "x1 = " << x1 << " y1 = " << y1 << std::endl;
+      std::cout << "x2 = " << x2 << " y2 = " << y2 << std::endl;
+      
+
+      numbins = 10000;
+      for (unsigned int i(9000); i < numbins; i++ ) { 
 
 	alpha = i/(numbins-1.0) * Units::PI/2.0; 
 	sinalpha = sin(alpha);
@@ -707,7 +937,10 @@ class LightCurve Bend ( class LightCurve* incurve,
 
 	b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
 	psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-	dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+	
+	if (cosalpha >= cos(x1))
+	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+
 	toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
 
 	if (psi==0 && alpha == 0)
@@ -716,31 +949,36 @@ class LightCurve Bend ( class LightCurve* incurve,
 	else
 	  dcosa_dcosp = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
 
-	if (cosalpha == 0){
-	  eps = 5e-7;
-	  b = curve.defl.b_max * sqrt(1.0 - eps);
-	  psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+	if (cosalpha < cos(x1)){
+	  /*
+	  b = curve.defl.b_max * sqrt(1.0 - eps*eps);
 	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	  dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(psi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
+	  dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (eps * sin(fabs(psi)) * radius * dpsi_db_val) * sqrt(1.0-eps*eps);
+	  */
 
-	  b = curve.defl.b_max;
-	  psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+	  yy = y2 + yslope*(alpha - x2);
+	  dcosa_dcosp = yy;
 
-	}
-		
-	bend 
-	  //<< i << " " 
-	  << alpha << " " 
-	  << b/radius << " " 
-	  //	<< cosalpha << " "
-	  << psi << " " 
-	  //<< cos(psi) << " "
-	  //<< 1.0/dcosa_dcosp << " " 
-	  << dcosa_dcosp << " " 
-	  //<< Units::nounits_to_cgs(toa_val,Units::TIME)  << " " 
-	  << toa_val / radius 
-	  << std::endl;
-	       			   
+
+	  }
+
+			
+	    bend 
+	      //<< i << " " 
+	      << alpha << " " 
+	      << b/radius << " " 
+	      //	<< cosalpha << " "
+	      << psi << " " 
+	      //<< cos(psi) << " "
+	      //<< 1.0/dcosa_dcosp << " " 
+	      << dcosa_dcosp << " " 
+	      //<< Units::nounits_to_cgs(toa_val,Units::TIME)  << " " 
+	      << toa_val / radius << " "
+	      << cosalpha << " "
+	      << cosalpha * dpsi_db_val
+	      << std::endl;	       		
+	
+	   
       }
     }
 

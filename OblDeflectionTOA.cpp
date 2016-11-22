@@ -253,6 +253,7 @@ double OblDeflectionTOA_b_from_psi_outgoing_zero_func_wrapper ( double b ) {
 // Defining constants
 //const double OblDeflectionTOA::INTEGRAL_EPS = 1.0e-7;
 const double OblDeflectionTOA::FINDZERO_EPS = 1.0e-6;
+
 const double OblDeflectionTOA::RFINAL_MASS_MULTIPLE = 1.0e7;
 //const double OblDeflectionTOA::DIVERGENCE_GUARD = 2.0e-2; // set to 0 to turn off
 const double OblDeflectionTOA::DIVERGENCE_GUARD = 0.0;
@@ -260,7 +261,8 @@ const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_MAX = 100000;
 const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_MAX_1 = 10000;
 const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N = 2000;
 const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_N_1 = 2000;
-const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_INGOING_N = 400;
+const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_INGOING_N = 4000;
+//const long int OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_INGOING_N = 100000;
 //const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 4.0; 
 const double OblDeflectionTOA::TRAPEZOIDAL_INTEGRAL_POWER = 4.0;
 
@@ -351,7 +353,7 @@ double OblDeflectionTOA::rcrit ( const double& b, const double& cos_theta, bool 
 				modptr->R_at_costheta(0.0),
 				OblDeflectionTOA_rcrit_zero_func_wrapper);*/ // rcrit_guess
 
-	candidate = MATPACK::FindZero(0.5*r,
+	candidate = MATPACK::FindZero(0.6*r,
 				      r,
 				      OblDeflectionTOA_rcrit_zero_func_wrapper); // rcrit_guess
  
@@ -404,7 +406,7 @@ double OblDeflectionTOA::psi_outgoing_u ( const double& b, const double& rspot,
     	return dummy;
   }
 
-  if ( fabs( b - b_max ) < 1e-7 ) { // essentially the same as b=b_max
+  if ( fabs( b - b_max ) < 1e-8 ) { // essentially the same as b=b_max
     return psi_max;
   }
   else {  // set globals
@@ -412,16 +414,23 @@ double OblDeflectionTOA::psi_outgoing_u ( const double& b, const double& rspot,
     OblDeflectionTOA_b_over_r = b/rspot;     // this will be fed to another function
 
     double psi(0.0);
+    double split(0.90);  
 
     if ( b != 0.0 ) {
-      //psi = Integration( 0.0, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u ); // integrating from r_surf to ~infinity
-      if ( b > 0.995*b_max){
-	double split(0.95);  	
-	psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
+
+      if ( b > 0.9995*b_max){
+	psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*100 );
+	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*1000 );
       }
-      else
-	psi = Integration( 0.0, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
+      else{
+
+	if ( b > 0.995*b_max){	
+	  psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	  psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10 );
+	}
+	else
+	  psi = Integration( 0.0, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*100 );
+      }
     }				
     return psi;
   }
@@ -446,11 +455,11 @@ double OblDeflectionTOA::deltapsi_outgoing_u ( const double& b, const double& rs
       //psi = Integration( 0.0, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u ); // integrating from r_surf to ~infinity
       if ( b > 0.99*b_max){
 	//double split(1.0 + (rspot-rcrit)/2.0);  	
-	psi = Integration( 1.0, rspot/rcrit,  OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
+	psi = Integration( 1.0, rspot/rcrit,  OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10 );
 	//	psi += Integration( 1.0, split,  OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
       }
       else
-	psi = Integration( 1.0, rspot/rcrit, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
+	psi = Integration( 1.0, rspot/rcrit, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
     }				
     return psi;
   
@@ -491,8 +500,8 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
   	OblDeflectionTOA_b_over_r = b/rspot;
 
 	double split(0.9);  	
-  	double psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX_1 );
-	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX*10 );
+  	double psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX_1*10 );
+	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_MAX*100 );
 					
   	return psi;
 }
@@ -505,7 +514,7 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
   double psi, psi_in, rcrit;
   double rspot ( modptr->R_at_costheta( fabs(cos_theta) ) );
   	//double dummy;
-  // std::cout << "psi_ingoing: b = " << b << " bmax = " << bmax << std::endl;
+  //std::cout << "psi_ingoing: b = " << b << " bmax = " << bmax << std::endl;
 	
   	// set globals
   	OblDeflectionTOA_object = this;
@@ -703,29 +712,37 @@ double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b, const double& rspo
   	//rsurf = rspot;
 
 	double dpsidb(0.0);
-	double split(0.9);
+	double split(0.5);
 
 	if (b < 0.95*b_max)
-	  dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
+	  dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
 	else
 	  if ( b < 0.99995*b_max){
 	      	
-	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
+	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*1000 );
 	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
 	    //	      << " b/b_max = " << b/b_max << " dpsidb = " << dpsidb << std::endl; 
 
 	  }
 	  else{
-	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*100 );
-	    //std::cout << "*******b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
+	    if ( b < 0.999995*b_max){
+	      	
+	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10000 );
+	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
 	    //	      << " b/b_max = " << b/b_max << " dpsidb = " << dpsidb << std::endl; 
 
+	    }
+	    else{
+	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10000 );
+	    }
 
 	  }
 	  
 	    
+	dpsidb *= 1.0/rspot;
 
 	  //double dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u );
   	
@@ -747,7 +764,7 @@ double OblDeflectionTOA::dpsi_db_ingoing_u( const double& b, const double& rspot
 
 	OblDeflectionTOA_b_over_r = b/rcrit;
 
-	dpsidb_in = 2.0/rcrit * Integration( rcrit/rspot, 1.0, OblDeflectionTOA_dpsi_db_ingoing_integrand_wrapper_u,10000 );
+	dpsidb_in = 2.0/rcrit * Integration( rcrit/rspot, 1.0, OblDeflectionTOA_dpsi_db_ingoing_integrand_wrapper_u,100000 );
 	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
 
 	OblDeflectionTOA_b_over_r = b/rspot;
@@ -828,22 +845,22 @@ double OblDeflectionTOA::toa_outgoing_u ( const double& b, const double& rspot, 
 
   	//std::cout << "toa_outgoing: rpole = " << rpole << std::endl;
 	double toa(0.0);
-	double split(0.99);
+	double split(0.90);
 
-	if (b < 0.95*b_max)
-	  toa = Integration( 0.0, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N/10 );
+	if (b < 0.99*b_max)
+	  toa = Integration( 0.0, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
 	else
-	  if ( b < 0.9999999*b_max){
+	  if ( b < 0.9999*b_max){
 	      	
-	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1/10 );
+	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10);
 	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
 	    //	      << " b/b_max = " << b/b_max << " toa = " << toa << std::endl; 
 
 	  }
 	  else{
-	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10 );
+	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*100 );
+	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*1000 );
 	    //std::cout << "*******b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
 	    //	      << " b/b_max = " << b/b_max << " toa = " << toa << std::endl; 
 
@@ -880,7 +897,7 @@ double OblDeflectionTOA::toa_ingoing ( const double& b, const double& rspot, con
 
 	OblDeflectionTOA_b_over_r = b/rcrit;
 
-	toa_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u,100 );
+	toa_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u,1000 );
 	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
 
 	OblDeflectionTOA_b_over_r = b/rspot;
@@ -935,8 +952,8 @@ double OblDeflectionTOA::dpsi_db_integrand_u ( const double& b_R, const double& 
   //		    + (b * b * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) 
   //		       / (pow( r , 4.0 ) * pow( 1.0 - pow( b / r , 2.0 ) * (1.0 - 2.0 * get_mass_over_r() * get_rspot()/r) , 1.5) ) ) );
 
-  double integrand (  1.0/get_rspot() * pow( 1.0 - pow( b_R*u , 2.0 ) * (1.0 - 2.0*get_mass_over_r() * u) , -1.5));
-
+  double integrand (   pow( 1.0 - pow( b_R*u , 2.0 ) * (1.0 - 2.0*get_mass_over_r() * u) , -1.5));
+  // divide by rspot after!!!!
   	return integrand;
 }
 
