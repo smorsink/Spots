@@ -685,7 +685,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     for (unsigned int p(0);p<pieces;p++){
 
-      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve);
+      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
 
       double deltatheta(0.0);
 
@@ -737,6 +737,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    dphi=0.0;
 	    phishift = 0.0;
 	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
 	  }
        
       //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
@@ -934,7 +936,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		
 		    for (unsigned int p(0);p<pieces;p++){
 
-      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve);
+		      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve, model);
 
       double deltatheta(0.0);
 

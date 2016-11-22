@@ -126,7 +126,9 @@ class DataStruct {             // if reading in data, this would be the experime
 	double *err[NCURVES];            // error bars
 	double chisquare;                // chi squared
 	double shift;                    // if we need it; unused
-	unsigned int numbins;            // Number of time or phase bins for one spin period; Also the number of flux data points
+	unsigned int numbins;            // Number of time or phase bins for one spin period; 
+	//Also the number of flux data points
+	unsigned int numbands;
 };
 
 
