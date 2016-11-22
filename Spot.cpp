@@ -521,8 +521,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       std::ifstream data; //(data_file);      // the data input stream
       std::cout << "opening data file" << std::endl;
       data.open( data_file );  // opening the file with observational data
-      char line[265]; // line of the data file being read in
-      unsigned int numLines(0), i(0);
+      //char line[265]; // line of the data file being read in
+      //unsigned int numLines(0), i(0);
       if ( data.fail() || data.bad() || !data ) {
       std::cout << "fail in loading data" << std::endl;
 	throw( Exception("Couldn't open data file."));
@@ -676,9 +676,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( rho > theta_1){ // yes
     	pieces=2;
     }
-    else //no
+    else{ //no
     	pieces=1;
-
+    }
     // If spot is in 2 pieces, p=0 is the crescent; p=1 is the symmetric part over the pole
 
 
@@ -705,7 +705,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  if ( mu_1 < 0.0){
 	    std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
-			  //  mu_1 = fabs(mu_1);
+			  //mu_1 = fabs(mu_1);
 			  //thetak = Units::PI - thetak;
 			  //curve.para.incl = Units::PI - incl_1;
 	  }
@@ -738,6 +738,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    phishift = 0.0;
 	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
 	  }
+       
+      //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
        
 	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
@@ -812,9 +814,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	if ( rho > theta_2){ // yes
       		pieces=2;
    		}
-    	else //no
+    	else{ //no
  			pieces=1;
+		}
 
+		/*
     	for (unsigned int p(0);p<pieces;p++){
 
     		double deltatheta = 2.0*rho/numtheta;
@@ -879,10 +883,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  				curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
 				}
        
+       	        //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
 
     			for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
 					phij = phi_edge + (j+0.5)*dphi;
 					curve.para.phi_0 = phij;
+	                //std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << std::endl;
 
 					if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
 					if ( j==0){ // Only do computation if its the first phi bin - otherwise just shift
@@ -923,6 +929,117 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       			} // closing the missing bit.      
     		} // closing for loop through theta divisions
     	} // closing for loop for calculating each piece, either the symmetric or crescent
+		*/
+
+		
+		    for (unsigned int p(0);p<pieces;p++){
+
+      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve);
+
+      double deltatheta(0.0);
+
+    // Looping through the mesh of the spot
+      	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+	 
+	  deltatheta = curve.para.dtheta[k];
+
+	  double thetak = curve.para.theta_k[k];
+
+	  double phi_edge = Units::PI-curve.para.phi_k[k]; // from our convention for second spot, true phi_edge should be pi - SpotShape:phi_k 
+
+	  dphi = 2.0*Units::PI/(numbins*1.0);
+
+	  mu_2 = cos(thetak);
+	  if (fabs(mu_2) < DBL_EPSILON) mu_2 = 0.0;
+
+	  if ( mu_2 < 0.0){
+	    std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
+			//mu_2 = fabs(mu_2);
+			//thetak = Units::PI - thetak;
+			//curve.para.incl = Units::PI - incl_2;
+	  }
+
+	  if (NS_model != 3)
+	    rspot = model->R_at_costheta(mu_2);
+	  else
+	    rspot = req;
+
+      // Values we need in some of the formulas.
+	  cosgamma = model->cos_gamma(mu_2);
+      curve.para.cosgamma = cosgamma;
+
+	  curve.para.radius = rspot; // load rspot into structure
+	  curve.para.mass_over_r = mass_over_req * req/rspot;
+
+	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+	  curve = Bend(&curve,defltoa);
+
+	  numphi = 2.0*(Units::PI-phi_edge)/dphi;
+	  phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
+	  //phishift = 2.0*(Units::PI-phi_edge)+ numphi*dphi;
+
+	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+	  curve.para.theta = thetak;
+
+	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
+	    numphi=1;
+	    phi_edge=-1*Units::PI;
+	    dphi=0.0;
+	    phishift = 0.0;
+	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+	  }
+	  //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
+       
+	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
+
+	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+	    
+	    curve.para.phi_0 =  phi_edge + (j+0.5)*dphi;			
+	    //std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << std::endl;
+	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
+	    if ( j==0){
+	      curve = ComputeAngles(&curve, defltoa); 
+	      curve = ComputeCurve(&curve);
+	    }
+	
+	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
+	      for ( unsigned int i(0); i < numbins; i++ ) {
+		for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
+	      }
+	    }
+
+	    // Add curves, load into Flux array
+	    for ( unsigned int i(0); i < numbins; i++ ) {
+	      int q(i+j);
+	      if (q>=numbins) q+=-numbins;
+	      for ( unsigned int p(0); p < numbands; p++ ) {
+		Flux[p][i] += curve.f[p][q];
+	      }
+	    } // ending Add curves
+	  } // end for-j-loop
+
+	  // Add in the missing bit.      
+	  if (phishift != 0.0){ // Add light from last bin, which requires shifting
+	    for ( unsigned int i(0); i < numbins; i++ ) {
+	      int q(i+numphi-1);
+	      if (q>=numbins) q+=-numbins;
+	      for ( unsigned int pp(0); pp < numbands; pp++ ) {
+		Temp[pp][i] = curve.f[pp][q];
+	      }
+	    }
+	    for (unsigned int pp(0); pp < numbands; pp++ )
+	      for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
+	    
+	    curve = ShiftCurve(&curve,phishift);
+       
+	    for( unsigned int pp(0); pp < numbands; pp++ )
+	      for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+	  } //end of last bin  
+	  delete defltoa;
+      	} // closing for loop through theta divisions
+    } // End Standard Case of second spot
+	
+
 	} // closing second spot
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
