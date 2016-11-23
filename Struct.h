@@ -19,7 +19,7 @@
 #include <vector>
 #include <float.h>
 
-#define NN 50            // lookup table for bending angle (deflection angle) calculation
+#define NN 40            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define NCURVES 100        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 
@@ -79,6 +79,7 @@ class Defl {
 	double psi_b[3*NN+1];         // table where given psi, look up b
 	double b_psi[3*NN+1];         // table where given b, look up psi
 	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
+	double toa_b[3*NN+1];           // table for toa values
 	double psi_max;               // largest possible value of psi
 	double b_max;                 // largest possible value of b
 	//class OblDeflectionTOA defltoa;
@@ -93,6 +94,7 @@ class LightCurve {                     // Stores all the data about the light cu
 	double cosbeta[MAX_NUMBINS];           // as seen in MLCB17 (cos of zenith angle, between the norm vector and initial photon direction)
 	double eta[MAX_NUMBINS];               // doppler shift factor; MLCB33
 	double psi[MAX_NUMBINS];               // bending angle; MLCB15
+	double cospsi[MAX_NUMBINS];
 	double R_dpsi_db[MAX_NUMBINS];         // derivative with respect to b of MLCB20 times the radius
 	double b[MAX_NUMBINS];                 // impact parameter; defined in dimensionless units
 	double dcosalpha_dcospsi[MAX_NUMBINS]; // appears in MLCB30
