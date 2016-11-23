@@ -24,10 +24,8 @@
 // to Matpack routines which do not have a signature to accomodate
 // passing in the object pointer).
 
-double OblDeflectionTOA_psi_integrand_wrapper( double r, bool *prob );
-double OblDeflectionTOA_dpsi_db_integrand_wrapper( double r, bool *prob );
-double OblDeflectionTOA_toa_integrand_wrapper( double r, bool *prob );
-double OblDeflectionTOA_toa_integrand_minus_b0_wrapper( double r, bool *prob );
+
+
 double OblDeflectionTOA_rcrit_zero_func_wrapper( double rc );
 double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper( double b );
 double OblDeflectionTOA_b_from_psi_outgoing_zero_func_wrapper( double b );
@@ -68,10 +66,7 @@ class OblDeflectionTOA {
   		}
 
  	public: // all of the member functions for which we provide hooks for MATPACK
- 		double psi_integrand ( const double& b, const double& r) const;
-  		double dpsi_db_integrand ( const double& b, const double& r ) const;
-  		double toa_integrand ( const double& b, const double& r ) const;
-  		double toa_integrand_minus_b0 ( const double& b, const double& r ) const;
+
   		double rcrit_zero_func( const double& rc, const double& b ) const;
   		double b_from_psi_ingoing_zero_func ( const double& b, const double& bmax, const double& psimax,
 						      const double& cos_theta, 
@@ -99,13 +94,6 @@ class OblDeflectionTOA {
 
   		double rcrit ( const double& b, const double& cos_theta, bool *prob ) const;
 
-		double deltapsi_outgoing_u ( const double& b, const double& rspot, const double&rcrit,
-					       const double& b_max, const double& psi_max, 
-					     bool *prob ) const;
-   
-  		double psi_outgoing ( const double& b, const double& rspot, const double& b_max, 
-  		                      const double& psi_max, bool *prob ) const;
-  		double psi_max_outgoing ( const double& b, const double& rspot, bool *prob );
   		double psi_ingoing ( const double& b, const double& bmax, const double& psimax,
 				     const double& cos_theta, bool *prob ) const;
   		bool b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b, 
@@ -114,7 +102,7 @@ class OblDeflectionTOA {
 				  const double& b_guess, const double& psi_guess,
 				  const double& b2, const double&psi2, bool *prob );
 
-  		double dpsi_db_outgoing ( const double& b, const double& rspot, bool *prob );
+
   		double dpsi_db_ingoing_u ( const double& b, const double& rspot, const double& cos_theta, bool *prob ); //changed GC
 
 		double psi_outgoing_u ( const double& b, const double& rspot,
@@ -123,7 +111,6 @@ class OblDeflectionTOA {
 		double dpsi_db_outgoing_u( const double& b, const double& rspot, bool *prob ) const;
 		double toa_outgoing_u ( const double& b, const double& rspot, bool *prob );
 
-  		double toa_outgoing ( const double& b, const double& cos_theta, bool *prob );
   		double toa_ingoing ( const double& b, const double& rspot, const double& cos_theta, bool *prob );
 
  		// a trapezoidal integrator which will not evaluate func at the first endpoint, a
