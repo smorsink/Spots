@@ -78,6 +78,7 @@ class Defl {
 	public:                       // allocates the memory for the lookup table -- not evenly spaced
 	double psi_b[3*NN+1];         // table where given psi, look up b
 	double b_psi[3*NN+1];         // table where given b, look up psi
+	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
 	double psi_max;               // largest possible value of psi
 	double b_max;                 // largest possible value of b
 	//class OblDeflectionTOA defltoa;

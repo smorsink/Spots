@@ -864,14 +864,22 @@ class LightCurve Bend ( class LightCurve* incurve,
     // 0 - 90% is large spacing, 90% - 100% is small spacing. b_mid is this value at 90%.
     curve.defl.b_psi[0] = 0.0; // definitions of the actual look-up table for b when psi = 0
     curve.defl.psi_b[0] = 0.0; // definitions of the actual look-up table for psi when b = 0
-    
+    dpsi_db_val = defltoa->dpsi_db_outgoing_u( 0.0, radius, &curve.problem );
+    curve.defl.dcosa_dcosp_b[0] = fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
+
+    // computation for b < b_mid
     for ( unsigned int i(1); i < NN+1; i++ ) { /* compute table of b vs psi points */
         curve.defl.b_psi[i] = b_mid * i / (NN * 1.0);
         curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
-	// calculates the integral
+	dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], radius, &curve.problem );
+
+	sinalpha = b/radius * sqrt(1.0 - 2.0*mass_over_r);
+	cosalpha = sqrt(1.0 - pow(sinalpha,2));
+
+	curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * radius*dpsi_db_val));
     }
 
-    // For arcane reasons, the table is not evenly spaced.
+    // computation for b > b_mid
     for ( unsigned int i(NN+1); i < 3*NN; i++ ) { /* compute table of b vs psi points */
         curve.defl.b_psi[i] = b_mid + (curve.defl.b_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); 
 	// spacing for the part where the points are closer together
