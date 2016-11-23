@@ -383,12 +383,11 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
            b(0.0),                    // Photon's impact parameter
            toa_val(0.0),              // Time of arrival, MLCB38
-           dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
            phi_0,                     // Azimuthal location of the spot, in radians
            dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
            distance;                  // Distance from Earth to NS, inputted in meters
 
-    double eps, epspsi,dcosa_dcosp, red;
+    double red;
            
     unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
     numbins = curve.numbins;
@@ -398,17 +397,19 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     bool infile_is_set(false);
 
     std::vector< double > phi_em(numbins, 0.0);   // Azimuth as measured from the star's emission frame; one for each phase bin
-    std::vector< double > psi(numbins, 0.0);      // Bending angle, as defined in MLCB20
+  
 
     // These are calculated in the second loop.
-    std::vector< double > dcosalpha_dcospsi(numbins, 0.0);    // Used in MLCB30
+    //std::vector< double > dcosalpha_dcospsi(numbins, 0.0);    // Used in MLCB30
     std::vector< double > cosdelta(numbins, 0.0);             // 
     std::vector< double > cosxi(numbins, 0.0);                // Used in Doppler boost factor, defined in MLCB35
 
     // vectors for 4-point interpolation
     std::vector< double > psi_k(4, 0.0);       // Bending angle, sub k?
     std::vector< double > b_k(4, 0.0);         // Impact parameter, sub k?
-    
+    std::vector< double > dp_k(4, 0.0);      
+    std::vector< double > t_k(4, 0.0);          
+
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
     /************************************************************************************/
@@ -450,23 +451,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     /* COMPUTE EMISSION TIME, PHASE BINS, AND LIGHT BENDING */
     /********************************************************/
 
-   
-
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-1
         // SMM: Added an offset of phi_0
         // SMM: Time is normalized to the spin period so 0 < t_e < 1 
         // curve.t[i] = i/(1.0*numbins) + shift_t; (This is computed in Spot.cpp)
         phi_em.at(i) = phi_0 + (2.0*Units::PI) * curve.t[i]; // phi_em is the same thing as "phi" in PG; changes with t
-        psi.at(i) = acos(cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i))); // PG1; this theta_0 is the theta_0 from spot.cpp
+	curve.cospsi[i] = cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i));
+	curve.psi[i] = acos(curve.cospsi[i]);
        
-	/*	std::cout << "i=" << i
-		  << " phi="<< phi_em.at(i) * 180.0/Units::PI
-		  << " cos(phi)=" << cos(phi_em.at(i))
-		  << " psi=" << psi.at(i)*180.0/Units::PI
-		  << " cos(psi)="<< cos(psi.at(i))
-		  << std::endl;*/
-
-
     } // closing For-Loop-1
 
     int j(0);
@@ -492,6 +484,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         double bval(0.0);
         bool result(false);
         double b1(0.0), b2(0.0), psi1(0.0), psi2(0.0);
+	double dc1(0.0), dc2(0.0), t1(0.0), t2(0.0);
         double xb(0.0);
         int k(0);
         //j=0;
@@ -499,13 +492,13 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
 
-        if ( psi.at(i) < curve.defl.psi_max ) {
-            if ( psi.at(i) > curve.defl.psi_b[j] )
-	            while ( psi.at(i) > curve.defl.psi_b[j] ) {
+        if ( curve.psi[i] < curve.defl.psi_max ) {
+            if (curve.psi[i] > curve.defl.psi_b[j] )
+	            while ( curve.psi[i] > curve.defl.psi_b[j] ) {
 	                j++;      
 		    }
             else {
-	            while ( psi.at(i) < curve.defl.psi_b[j] ) {
+	            while ( curve.psi[i] < curve.defl.psi_b[j] ) {
 	              j--;
 	            }
 	           j++;
@@ -515,29 +508,25 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             b2 = curve.defl.b_psi[j];
             psi1 = curve.defl.psi_b[j-1];
             psi2 = curve.defl.psi_b[j];
-	    /*
-	    std::cout << "i=" <<i
-		      << " psi1=" << psi1 << " b1=" << b1 <<std::endl;
-	    std::cout << " psi2=" << psi2 << " b2=" << b2 <<std::endl;
-	    std::cout << " b = " << (b2-b1)/(psi2-psi1) * (psi.at(i) - psi2) + b2 << std::endl;
-	    */
-            k = j - 2;
-      
+	    dc1 = curve.defl.dcosa_dcosp_b[j-1];
+	    dc2 = curve.defl.dcosa_dcosp_b[j];
+	    t1 = curve.defl.toa_b[j-1];
+	    t2 = curve.defl.toa_b[j];
+	   
+            k = j - 2;      
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
 
-	    /*  std::cout << "i=" << i
-		      << " psi(i)=" << psi.at(i) 
-		      << std::endl;*/
+	   
             for ( j = 0; j < 4; j++ ) {
 	            b_k.at(j) = curve.defl.b_psi[k+j];
 	            psi_k.at(j) = curve.defl.psi_b[k+j];
-		    /* std::cout << "psi("<<j<<")=" << psi_k.at(j);
-		       std::cout << " b("<<j<<")=" << b_k.at(j) << std::endl;*/
+	            dp_k.at(j) = curve.defl.dcosa_dcosp_b[k+j];
+	            t_k.at(j) = curve.defl.toa_b[k+j];
             }
   
             // 4-pt interpolation to find the correct value of b given psi.
-            xb = psi.at(i);
+	    xb = curve.psi[i];
             b_guess = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*b_k.at(0)/
 	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
 	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*b_k.at(1)/
@@ -546,9 +535,31 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
 	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*b_k.at(3)/
                 	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
-	    // std::cout << "b = " << b_guess << std::endl;
+			 
 
-	    // b_guess = (b2-b1)/(psi2-psi1) * (psi.at(i) - psi2) + b2;
+	    curve.dcosalpha_dcospsi[i] = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*dp_k.at(0)/
+	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*dp_k.at(1)/
+	                  ((psi_k.at(1)-psi_k.at(0))*(psi_k.at(1)-psi_k.at(2))*(psi_k.at(1)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(3))*dp_k.at(2)/
+	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*dp_k.at(3)/
+                	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
+
+            toa_val = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*t_k.at(0)/
+	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*t_k.at(1)/
+	                  ((psi_k.at(1)-psi_k.at(0))*(psi_k.at(1)-psi_k.at(2))*(psi_k.at(1)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(3))*t_k.at(2)/
+	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
+	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*t_k.at(3)/
+                	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
+
+	    // b_guess = (b2-b1)/(psi2-psi1) * (curve.psi[i] - psi2) + b2;
+	    // curve.dcosalpha_dcospsi[i] = (dc2-dc1)/(psi2-psi1) * (curve.psi[i] - psi2) + dc2;
+	    // toa_val = (t2-t1)/(psi2-psi1) * (curve.psi[i] - psi2) + t2;
+
+	     
 
         } // ending psi.at(i) < curve.defl.psi_max
 
@@ -558,8 +569,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 	//std::cout << "Compute Angles: i = " << i << " psi = " << psi.at(i) << std::endl;
 
-        result = defltoa->b_from_psi( fabs(psi.at(i)), radius, mu, bval, sign, curve.defl.b_max, 
-				      curve.defl.psi_max, bmin,psimin, b_guess, fabs(psi.at(i)), b2, fabs(psi.at(i))-psi2, 
+        result = defltoa->b_from_psi( curve.psi[i], radius, mu, bval, sign, curve.defl.b_max, 
+				      curve.defl.psi_max, bmin,psimin, b_guess,curve.psi[i], b2, curve.psi[i]-psi2, 
 				      &curve.problem );
 
         if ( result == false && i == 0) { 
@@ -626,16 +637,17 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
 
-            cosdelta.at(i) =  (cos(incl) - cos(theta_0)*cos(psi.at(i))) / (sin(theta_0)*sin(psi.at(i))) ;
+            cosdelta.at(i) =  (cos(incl) - cos(theta_0)*curve.cospsi[i]) / (sin(theta_0)*sin(curve.psi[i])) ;
 
             if ( theta_0 == 0.0 )  // cosdelta needs to be redone if theta_0 = 0
-            	cosdelta.at(i) = sqrt( 1 - pow( sin(incl) * sin(phi_em.at(i)) / sin(psi.at(i)) ,2) ); // law of sines from MLCB Fig 1 and in MLCB17 and just above
+            	cosdelta.at(i) = sqrt( 1 - pow( sin(incl) * sin(phi_em.at(i)) / sin(curve.psi[i]) ,2) );
+	    // law of sines from MLCB Fig 1 and in MLCB17 and just above
      
             if ( (cos(theta_0) < 0) && (cos(incl) < 0 ) ) {
 	            cosdelta.at(i) *= -1.0;
             }
 
-            if ( sin(psi.at(i)) != 0.0 ) {
+            if ( sin(curve.psi[i]) != 0.0 ) {
 	            curve.cosbeta[i] = cosalpha * cosgamma + sinalpha * singamma * cosdelta.at(i);
             }
             else {
@@ -646,33 +658,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            curve.cosbeta[i] = (cosalpha*cosgamma +  singamma * cosdelta.at(i));
 		    //std::cout << "small cosbeta=" << curve.cosbeta[i] << std::endl;
 		    }
-
-	    double gamma = asin(singamma); 
-	    
-	    /*   std::cerr << "i = " << i
-			<< ", phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
-			<< ", cos(beta) = " << curve.cosbeta[i] 
-			<< ", cos(alpha) = " << cosalpha
-			<< ", sin(alpha) = " << sinalpha
-			<< ", cos(gamma) = " << cosgamma
-			<< ", sin(gamma) " << singamma
-			 <<", gamma = " << gamma
-			<< ", cos(delta) = " << cosdelta.at(i)
-			<< ", cos(theta) = " << cos(theta_0)
-			<< ", cospsi = " << cos(psi.at(i))
-			 << ", psi = " <<  psi.at(i) * 180.0/Units::PI << " = " << psi.at(i)
-			<< " (visibility condition)."  << std::endl;
-	    
-	      
-
-	       std::cerr << "Alternate cos(beta) = "
-			 << 1.0/(sin(psi.at(i))*sin(theta_0)) 
-		 * ( sinalpha * (sin(theta_0-gamma)*cos(psi.at(i)) + singamma * cos(incl))
-		     +sin(psi.at(i)-alpha) * ( sin(theta_0-gamma) + singamma*cos(theta_0)))
-			 << std::endl << std::endl;
-				 
-								
-	    */
 
 
             if ( curve.cosbeta[i] < 0.0 || curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
@@ -702,10 +687,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 			/********************************************************/
 			
             if ( curve.visible[i] ) { // visible 
-            	if (alpha == 0.0 && psi.at(i) == 0.0 & phi_em.at(i) == 0.0) 
+            	if (alpha == 0.0 && curve.psi[i] == 0.0 & phi_em.at(i) == 0.0) 
             		cosxi.at(i) = 0.0; // to avoid NAN errors from dividing by 0; appears when incl = theta at i=0
 	            else 
-	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sin(psi.at(i));  // PG11
+	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sin(curve.psi[i]);  // PG11
 	            curve.eta[i] = sqrt( 1.0 - speed*speed ) / (1.0 - speed*cosxi.at(i) ); // Doppler boost factor, MLCB33
 	            
 		    
@@ -716,65 +701,20 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            	std::cout << "speed = " << speed << " at i = " << i << std::endl;
 
 	            if ( ingoing ) {
-		      //        std::cout << "ComputeAngles:Ingoing b = " << b << std::endl;
-		      dpsi_db_val = defltoa->dpsi_db_ingoing_u( b, radius, mu, &curve.problem );
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
-                else {
-
-		  if (b != curve.defl.b_max ){
-	                dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	              
-	                toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );	              
-		  }
-		  else{
-		    toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
-		    	eps = 2e-6;
-			b = curve.defl.b_max * sqrt(1.0 - eps);
-			epspsi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-			//epspsi = defltoa->psi_outgoing( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-			dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-			dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (sqrt(eps) * sin(fabs(epspsi)) * radius * dpsi_db_val) * sqrt(1.0-eps);
-
-		  }
-		}
+                
 
 	            //std::cout << "Done computing TOA " << std::endl;
-	            curve.t_o[i] = curve.t[i] + (omega * toa_val) / (2.0 * Units::PI);
-	            curve.psi[i] = psi.at(i);
-	            curve.R_dpsi_db[i] = dpsi_db_val * radius;
-
-		    if (b != curve.defl.b_max){
-		    if ( psi.at(i) == 0 && alpha == 0 ) 
-		      curve.dcosalpha_dcospsi[i] = fabs( (1.0 - 2.0 * mass_over_r) / curve.R_dpsi_db[i]);
-		    //if (psi.at(i) == 0 && alpha == 0 ) curve.dcosalpha_dcospsi[i] = 0.0;
-	            else 
-		      curve.dcosalpha_dcospsi[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi.at(i))) * curve.R_dpsi_db[i]) );
-		    }
-		    else
-		      curve.dcosalpha_dcospsi[i] = dcosa_dcosp; 
-		   
+	            curve.t_o[i] = curve.t[i] + (omega * toa_val) / (2.0 * Units::PI);	           
+         
 
 	            curve.dOmega_s[i] = (dS / (distance * distance)) 
 	                               * (1.0 / (1.0 - 2.0 * mass_over_r)) 
 	                               * curve.cosbeta[i] 
 	                               * curve.dcosalpha_dcospsi[i];  // PG8
-		    //std::cout << "t = " << curve.t[i] << " dOmega = " << curve.dOmega_s[i] << std::endl;
 
-	            /***********************************/
-				/* FLAGS IF A VALUE IS NAN OR ZERO */
-				/***********************************/
-	            if (std::isnan(dpsi_db_val) || dpsi_db_val == 0) std::cout << "dpsi_db_val = " << dpsi_db_val << "at i = " << i << std::endl;
-				if (std::isnan(psi.at(i))) std::cout << "psi.at(i="<<i<<") = " << psi.at(i) << std::endl;
-				if (std::isnan(curve.dOmega_s[i])) std::cout << "dOmega is NAN at i = " << i << std::endl;
-				if (std::isnan(curve.cosbeta[i])) std::cout << "cosbeta is NAN at i = " << i << std::endl;
-				if (std::isnan(curve.dcosalpha_dcospsi[i])) std::cout << "dcosalpha_dcospsi is NAN at i = " << i<< std::endl;
-				if (std::isnan(sinalpha)) std::cout << "sinalpha is NAN at i = " << i << std::endl;
-				if (std::isnan(cosalpha)) std::cout << "cosalpha is NAN at i = " << i << std::endl;
-				if (std::isnan(psi.at(i))) std::cout << "psi is NAN at i = " << i << std::endl;
-				if (std::isnan(mass)) std::cout << "mass is NAN at i = " << i << std::endl;
-				if (std::isnan(radius)) std::cout << "radius is NAN at i = " << i << std::endl;
-				
+	        
 
             } // end visible
             
@@ -788,7 +728,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	      curve.dOmega_s[i] = 0.0;    // don't see the spot, so dOmega = 0
 	      curve.cosbeta[i] = 0.0;     // doesn't matter, doesn't enter into calculation
 	      curve.eta[i] = 1.0;	        // doesn't matter, doesn't enter into calculation
-	      std::cout << "toa = " << (curve.t_o[i-1] - curve.t[i-1]) << std::endl;
+	      // std::cout << "toa = " << (curve.t_o[i-1] - curve.t[i-1]) << std::endl;
 	            //}
             } // end not visible
         } // end "there is a solution"
@@ -866,28 +806,68 @@ class LightCurve Bend ( class LightCurve* incurve,
     curve.defl.psi_b[0] = 0.0; // definitions of the actual look-up table for psi when b = 0
     dpsi_db_val = defltoa->dpsi_db_outgoing_u( 0.0, radius, &curve.problem );
     curve.defl.dcosa_dcosp_b[0] = fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
+    curve.defl.toa_b[0] = toa_val = defltoa->toa_outgoing_u( 0.0, radius, &curve.problem );
 
     // computation for b < b_mid
     for ( unsigned int i(1); i < NN+1; i++ ) { /* compute table of b vs psi points */
         curve.defl.b_psi[i] = b_mid * i / (NN * 1.0);
         curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
 	dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], radius, &curve.problem );
+	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], radius, &curve.problem );
 
-	sinalpha = b/radius * sqrt(1.0 - 2.0*mass_over_r);
+	sinalpha = curve.defl.b_psi[i]/radius * sqrt(1.0 - 2.0*mass_over_r);
 	cosalpha = sqrt(1.0 - pow(sinalpha,2));
 
 	curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * radius*dpsi_db_val));
     }
 
+    // Compute slope of d(cosalpha)/d(psi) near cos(alpha)=0
+      eps = 1e-2;
+      double x1, x2, y1, y2, yslope, yy;
+  
+      x1 = Units::PI/2.0 - eps; 
+      x2 = x1+eps*0.1;
+
+      b = sin(x1) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+      y1 = fabs( sin(x1)/cos(x1) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+
+      b = sin(x2) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
+      y2 = fabs( sin(x2)/cos(x2) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+
+      yslope = (y2-y1)/(x2-x1);
+
+
     // computation for b > b_mid
     for ( unsigned int i(NN+1); i < 3*NN; i++ ) { /* compute table of b vs psi points */
         curve.defl.b_psi[i] = b_mid + (curve.defl.b_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); 
-	// spacing for the part where the points are closer together
-        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); // referenced same as above
+        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
+	sinalpha = curve.defl.b_psi[i]/radius * sqrt(1.0 - 2.0*mass_over_r);
+	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], radius, &curve.problem );
+
+
+	if (cosalpha >= cos(x1)){
+	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], radius, &curve.problem );
+	  cosalpha = sqrt(1.0 - pow(sinalpha,2));
+	  curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * radius*dpsi_db_val));
+	}
+	else{
+	  alpha = asin(sinalpha);
+	  yy = y2 + yslope*(alpha - x2);
+	  curve.defl.dcosa_dcosp_b[i] = yy;
+	}
     }
     
     curve.defl.b_psi[3*NN] = curve.defl.b_max;   // maximums
     curve.defl.psi_b[3*NN] = curve.defl.psi_max;
+    curve.defl.toa_b[3*NN] = defltoa->toa_outgoing_u(curve.defl.b_max, radius, &curve.problem );
+
+    alpha = Units::PI/2.0;
+    yy = y2 + yslope*(alpha - x2);
+    curve.defl.dcosa_dcosp_b[3*NN]  = yy;
     // Finished computing lookup table
     
     printflag = 0;
@@ -906,84 +886,29 @@ class LightCurve Bend ( class LightCurve* incurve,
       bend << "# R/M = " << 1.0/curve.para.mass_over_r << std::endl;
       bend << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
 
+      for (unsigned int i(0); i <= 3*NN; i++ ) { 
 
+	b = curve.defl.b_psi[i];
+	sinalpha = b/radius * sqrt( 1.0 - 2.0 * mass_over_r );
+	alpha = asin(sinalpha);
 
-      // Code to take care of values near cos(alpha) = 0
-      // Change so that x=alpha
-      // y = dcosa/dcospsi
-
-      //      eps = 7e-3;  // eps = cos(alpha)
-      eps = 1e-2;
-      double x1, x2, y1, y2, yslope, yy;
-  
-
-      x1 = Units::PI/2.0 - eps; 
-      x2 = x1+eps*0.1;
-
-      b = sin(x1) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
-      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-      y1 = fabs( sin(x1)/cos(x1) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
-
-      b = sin(x2) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
-      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-      y2 = fabs( sin(x2)/cos(x2) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
-
-      yslope = (y2-y1)/(x2-x1);
-
-      std::cout << "x1 = " << x1 << " y1 = " << y1 << std::endl;
-      std::cout << "x2 = " << x2 << " y2 = " << y2 << std::endl;
-      
-
-      numbins = 10000;
-      for (unsigned int i(9000); i < numbins; i++ ) { 
-
-	alpha = i/(numbins-1.0) * Units::PI/2.0; 
+	/*alpha = i/(numbins-1.0) * Units::PI/2.0; 
 	sinalpha = sin(alpha);
-	cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
+	cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); */
 
-	b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
-	psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
+	//	b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
+	psi = curve.defl.psi_b[i];
+	dcosa_dcosp = curve.defl.dcosa_dcosp_b[i];
+	toa_val = curve.defl.toa_b[i];
 	
-	if (cosalpha >= cos(x1))
-	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-
-	toa_val = defltoa->toa_outgoing_u( b, radius, &curve.problem );
-
-	if (psi==0 && alpha == 0)
-	  dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
-      	//dcosa_dcosp =  fabs( (1.0 - 2.0 * mass_over_r));
-	else
-	  dcosa_dcosp = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
-
-	if (cosalpha < cos(x1)){
-	  /*
-	  b = curve.defl.b_max * sqrt(1.0 - eps*eps);
-	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-	  dcosa_dcosp = sqrt(1.0-2*mass_over_r) / (eps * sin(fabs(psi)) * radius * dpsi_db_val) * sqrt(1.0-eps*eps);
-	  */
-
-	  yy = y2 + yslope*(alpha - x2);
-	  dcosa_dcosp = yy;
-
-
-	  }
 
 			
 	    bend 
-	      //<< i << " " 
 	      << alpha << " " 
 	      << b/radius << " " 
-	      //	<< cosalpha << " "
 	      << psi << " " 
-	      //<< cos(psi) << " "
-	      //<< 1.0/dcosa_dcosp << " " 
 	      << dcosa_dcosp << " " 
-	      //<< Units::nounits_to_cgs(toa_val,Units::TIME)  << " " 
 	      << toa_val / radius << " "
-	      << cosalpha << " "
-	      << cosalpha * dpsi_db_val
 	      << std::endl;	       		
 	
 	   
