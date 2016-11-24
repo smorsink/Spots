@@ -152,6 +152,8 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
   class LightCurve curve;
   curve = *incurve;
 
+  double r_eq = model->R_at_costheta(0.0); // Equatorial radius
+
   if (p==1){ // polar cap
 
     double deltatheta = (rho-theta_1)/numtheta; //symmetric over pole
@@ -198,16 +200,27 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 
       double north(1.0*rho); // Length of the segment joining the spot centre to the North-most part of the spot
       // Need to integrate to find north on an oblate star
-
       int k;
+      double dtheta = fabs(rho)/(numtheta);
 
+      north = 0.0;
+      for (k=1; k<=numtheta; k++){ // Integrate from centre of spot to northernmost edge
+
+	double thetak = theta_1 + dtheta*k; 
+	double costhetak = cos(thetak);
+	north += dtheta * model->R_at_costheta(costhetak)/r_eq;	
+      }
+      //std::cout << "North length = " << north << std::endl;
+
+
+      //for (k=31; k < 32; k++){
       for (k=0; k < numtheta; k++){
 	zeta_k = (0.5+k)*dzeta + zeta_0;
 
 	// Trapezoidal Rule
 	double a = 0.0;          // lower bound of integration
 	double b = north;          // upper bound of integration
-	double current_x(0.0);      // current value of x, at which we are evaluating the integrand
+	double current_rho(0.0);      // current value of x, at which we are evaluating the integrand
 	unsigned int current_n(0);  // current step
 	unsigned int n_steps(10); // total number of steps
 	double h = (b - a) / n_steps;     // step amount for numerical integration; the size of each step
@@ -217,51 +230,65 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	double rho_star(0.0);
 
 	// begin trapezoidal rule
-	current_x = a + h * current_n;
-	length = SpotIntegrand(current_x,zeta_k, &curve);
+	current_rho = a + h * current_n;
+	length = SpotIntegrand(current_rho,zeta_k, &curve, model);
+	//length = 0.0;
+
+	/*	std::cout << "rho=" << current_rho
+		<< " length=" << length*h/2.0 << std::endl;*/
 
 	for ( current_n = 1; current_n <= n_steps-1; current_n++ ) {
-		current_x = a + h * current_n;
+		current_rho = a + h * current_n;
 		oldlength = length;
-		length += 2.0 * SpotIntegrand(current_x,zeta_k,&curve);
+		length += 2.0 * SpotIntegrand(current_rho,zeta_k,&curve,model);
+		/*	std::cout << "rho=" << current_rho
+			<< " length=" << length*h/2.0 << std::endl;*/
 		if (length >= north*2.0/h){
-		  /*std::cout << " north = " << north
-			    << " curr_rho = " << current_x
+		  /* std::cout << " north = " << north
+			    << " curr_rho = " << current_rho
 			    << " length = " << length * h/2.0
-			    << " old_rho = " << current_x - h
+			    << " old_rho = " << current_rho - h
 			    << " oldlength = " << oldlength * h/2.0
 			    << std::endl;*/
-		  rho_star = current_x - h + (north*2.0/h - oldlength)*h/(length-oldlength);
+		  rho_star = current_rho - h + (north*2.0/h - oldlength)*h/(length-oldlength);
 		  //std::cout << " interpol rho = " << rho_star << endl;
 		}
 	}
 	
-	current_x = a + h * current_n;
-	length += SpotIntegrand(current_x,zeta_k,&curve);
-	
+	current_rho = a + h * current_n;
+	length += SpotIntegrand(current_rho,zeta_k,&curve,model);
+	/*std::cout << "rho=" << current_rho
+	  << " length=" << length*h/2.0 << std::endl;*/
+	rho_star = current_rho;
+
 		if (length >= north*2.0/h){
 		  /*std::cout << " north = " << north
-			    << " curr_rho = " << current_x
+			    << " curr_rho = " << current_rho
 			    << " length = " << length * h/2.0
-			    << " old_rho = " << current_x - h
+			    << " old_rho = " << current_rho - h
 			    << " oldlength = " << oldlength * h/2.0
 			    << std::endl;*/
-		  rho_star = current_x - h + (north*2.0/h - oldlength)*h/(length-oldlength);
+		  rho_star = current_rho - h + (north*2.0/h - oldlength)*h/(length-oldlength);
 		  //std::cout << " interpol rho = " << rho_star << endl;
 		}
 
 	length *= h/2.0;	
 	// end trapezoidal rule; numerical integration complete!
 
-	std::cout << "k = " << k 
+	/*	std::cout << "k = " << k 
 		  << " zeta = " << zeta_k 
 		  << " rho = " << rho_star
 		  << " length = " << north
-		  << std::endl;
+		  << std::endl;*/
 
 	double theta_0(curve.para.theta_c);
 
 	double costheta(cos(theta_0)*cos(rho_star) + sin(theta_0)*sin(rho_star)*cos(zeta_k));
+
+	/*	std::cout << "k=" << k
+		  << " cos(theta) = " << costheta
+		  << " R(costheta)/R_eq = " << model->R_at_costheta(costheta)/model->R_at_costheta(0.0)
+		  << std::endl;*/
 
 	curve.para.theta_k[k] = acos(costheta);
 
@@ -273,10 +300,10 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	else
 	  curve.para.phi_k[k] = Units::PI + atan(tanphi);
 
-	std::cout << "k = " << k
+	/*	std::cout << "k = " << k
 		  << " theta_k = " << curve.para.theta_k[k]
 		  << " phi_k = " << curve.para.phi_k[k]
-		  << std::endl;
+		  << std::endl;*/
 
 
       } // end for-k-loop
@@ -324,25 +351,25 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 
 }
 
-double SpotIntegrand( double rho, double zeta, class LightCurve* incurve){
+double SpotIntegrand( double rho, double zeta, class LightCurve* incurve, class OblModelBase* model){
   class LightCurve curve;
   curve = *incurve;
 
   double theta_0(curve.para.theta_c);
   double costheta(cos(theta_0)*cos(rho) + sin(theta_0)*sin(rho)*cos(zeta));
   double sintheta( sqrt(1.0 - pow(costheta,2)) );
+  double r_eq(model->R_at_costheta(0.0));
+  double rtheta(model->R_at_costheta(costheta));// value of r at present value of theta
+ 
 
-  double rtheta(curve.para.radius); // value of r at present value of theta
-  // Need to fix this for oblate star
-
-  double mass_over_r = curve.para.mass_over_r; // change for oblate star
+  double mass_over_r = curve.para.mass_over_r * r_eq/rtheta; // change for oblate star
   double red = 1.0/sqrt(1.0-2.0*mass_over_r);
   double omega = curve.para.omega;
   //omega=0.0;
   double speed = omega*rtheta*sintheta*red; // MLCB34
   double gammasq = 1.0/(1.0-pow(speed,2)); 
  
-  double integrand = sqrt( 1.0 + gammasq * pow( omega*rtheta*red * sin(theta_0)*sin(zeta),2));
+  double integrand = rtheta/r_eq * sqrt( 1.0 + gammasq * pow( omega*rtheta*red * sin(theta_0)*sin(zeta),2));
 
   return integrand;
 }
@@ -436,9 +463,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
     if (mu < 0.0){
-      std::cout << "ComputeAngles: Southern Hemisphere!"
+      /* std::cout << "ComputeAngles: Southern Hemisphere!"
 		<< " mu = " << mu 
-		<< std::endl;
+		<< std::endl;*/
       singamma *= -1.0;
     }
 
@@ -468,12 +495,12 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
       bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
-      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, cos(theta_0),&curve.problem);
-       std::cout << "ComputeAngles: Oblate! b_min_ingoing = " << bmin 
+      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, radius,&curve.problem);
+      /* std::cout << "ComputeAngles: Oblate! b_min_ingoing = " << bmin 
 		<< " psi_min_ingoing = " << psimin * 180/Units::PI
 		<< " b_max_outgoing = " << curve.defl.b_max
 		 << " psi_max = " << curve.defl.psi_max * 180/Units::PI
-		<< std::endl;
+		 << std::endl;*/
     }
     
 
@@ -757,7 +784,10 @@ class LightCurve Bend ( class LightCurve* incurve,
 
     std::ofstream bend;      // output stream; printing information to the output file
 
+    std::ifstream angles;   // input stream; read in the bending angles from a file
+
     int printflag(0); // Set to 1 if you want to print out stuff to a file.
+    int readflag(0);
 
     double 
       eps,
@@ -773,11 +803,16 @@ class LightCurve Bend ( class LightCurve* incurve,
       dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
       dcosa_dcosp;
           
-    unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
-    numbins = 100;
+    //unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
+    //numbins = 100;
 
 
-    //std::cout << "Entering Bend" << std::endl;
+    /*  std::cout << "Entering Bend: M/R = " 
+	      << curve.para.mass_over_r
+	      << std::endl;
+    */
+
+    if (readflag==0){ // Compute Lookup Table
 
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
@@ -869,8 +904,24 @@ class LightCurve Bend ( class LightCurve* incurve,
     yy = y2 + yslope*(alpha - x2);
     curve.defl.dcosa_dcosp_b[3*NN]  = yy;
     // Finished computing lookup table
-    
-    printflag = 0;
+    }    
+
+    if (readflag==1){ // Read in values instead of computing them 
+
+      //     angles.open("bend.txt");
+      char line[265]; // line of the data file being read in
+      unsigned int numLines(0), i(0);
+
+      std::cout << "Reading in a file is not yet implemented" << std::endl;
+ 
+
+      
+    }
+
+
+
+
+    //printflag = 0;
     if (printflag){
 
       //initial assumptions
@@ -900,9 +951,7 @@ class LightCurve Bend ( class LightCurve* incurve,
 	psi = curve.defl.psi_b[i];
 	dcosa_dcosp = curve.defl.dcosa_dcosp_b[i];
 	toa_val = curve.defl.toa_b[i];
-	
-
-			
+				
 	    bend 
 	      << alpha << " " 
 	      << b/radius << " " 
@@ -910,8 +959,7 @@ class LightCurve Bend ( class LightCurve* incurve,
 	      << dcosa_dcosp << " " 
 	      << toa_val / radius << " "
 	      << std::endl;	       		
-	
-	   
+       	   
       }
     }
 
