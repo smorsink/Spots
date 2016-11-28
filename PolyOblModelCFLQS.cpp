@@ -1,8 +1,7 @@
 /***************************************************************************************/
 /*                               PolyOblModelCFLQS.h
 
-    This is the header file for PolyOblModelCFLQS.cpp, which sets up an alternative model 
-    for an oblate NS (colour-flavour locked quark star).
+    This is now the old hadronic shape model.
     
     Based on code written by Coire Cadeau and modified by Sharon Morsink and 
     Abigail Stevens.
@@ -22,17 +21,21 @@ PolyOblModelCFLQS::PolyOblModelCFLQS (const double& Req_nounits, const double& z
 double PolyOblModelCFLQS::a0() const {
   double eps(this->get_eps());
   double zeta(this->get_zeta());
-  return double(-0.26*eps + 0.50*zeta*eps - 0.04*eps*eps);
+  //return double(-0.26*eps + 0.50*zeta*eps - 0.04*eps*eps);
+  return double(-0.18*eps + 0.23*zeta*eps - 0.05*eps*eps);
 }
 
 double PolyOblModelCFLQS::a2() const {
   double eps(this->get_eps());
   double zeta(this->get_zeta());
-  return double(-0.53*eps + 0.85*zeta*eps + 0.06*eps*eps);
+  //return double(-0.53*eps + 0.85*zeta*eps + 0.06*eps*eps);
+  return double(-0.39*eps + 0.29*zeta*eps + 0.13*eps*eps); // Old value
 }
 
 double PolyOblModelCFLQS::a4() const {
   double eps(this->get_eps());
   double zeta(this->get_zeta());
-  return double(0.02*eps - 0.14*zeta*eps + 0.09*eps*eps );
+  //return double(0.02*eps - 0.14*zeta*eps + 0.09*eps*eps );
+  return double(0.04*eps - 0.15*zeta*eps + 0.07*eps*eps );
+  //return (0.0);
 }

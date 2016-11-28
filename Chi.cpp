@@ -165,7 +165,7 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
   }
   if (p==0){
 
-    if (curve.flags.spotshape==0){
+    if (curve.flags.spotshape!=1){
       double deltatheta(2.0*rho/numtheta);
       if (pieces==2){
 	  deltatheta = 2.0*theta_1/numtheta; // crescent or single piece
@@ -461,6 +461,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
+
+    std::cout << "ComputeAngles:" << std::endl;
+
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -807,13 +810,10 @@ class LightCurve Bend ( class LightCurve* incurve,
     //numbins = 100;
 
 
-    /*  std::cout << "Entering Bend: M/R = " 
+     std::cout << "Entering Bend: M/R = " 
 	      << curve.para.mass_over_r
 	      << std::endl;
-    */
-
-    if (readflag==0){ // Compute Lookup Table
-
+   
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
     /************************************************************************************/
@@ -821,6 +821,10 @@ class LightCurve Bend ( class LightCurve* incurve,
     mass = curve.para.mass;
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
+
+    if (readflag==0){ // Compute Lookup Table
+
+
 
    /**********************************************************/
     /* Compute maximum deflection for purely outgoing photons */
@@ -908,15 +912,32 @@ class LightCurve Bend ( class LightCurve* incurve,
 
     if (readflag==1){ // Read in values instead of computing them 
 
-      //     angles.open("bend.txt");
+      angles.open("bend.txt");
       char line[265]; // line of the data file being read in
-      unsigned int numLines(0), i(0);
+      unsigned int numLines(0);
+      double get_alpha, get_bR, get_psi, get_dcos, get_toa;
 
       std::cout << "Reading in a file is not yet implemented" << std::endl;
  
+      for (unsigned int i(1);i<=5;i++){
+	angles.getline(line,265);
+	std::cout << "line=" << line << std::endl;
+	}
 
-      
-    }
+      for (unsigned int i(0);i<=3*NN;i++){
+	angles.getline(line,265);
+	sscanf( line, "%lf %lf %lf %lf %lf", &get_alpha, &get_bR, &get_psi, &get_dcos, &get_toa );
+	//std::cout << "line=" << line << std::endl;
+	//std::cout << "radius = " << radius << " b/R=" << get_bR << std::endl;
+	curve.defl.b_psi[i] = get_bR * radius;
+	curve.defl.psi_b[i] = get_psi;
+	curve.defl.toa_b[i] = get_toa * radius;
+	curve.defl.dcosa_dcosp_b[i] = get_dcos;
+      }
+
+      curve.defl.b_max =  curve.defl.b_psi[3*NN];
+      curve.defl.psi_max =  curve.defl.psi_b[3*NN];
+    } // End readflag==1
 
 
 
@@ -943,11 +964,6 @@ class LightCurve Bend ( class LightCurve* incurve,
 	sinalpha = b/radius * sqrt( 1.0 - 2.0 * mass_over_r );
 	alpha = asin(sinalpha);
 
-	/*alpha = i/(numbins-1.0) * Units::PI/2.0; 
-	sinalpha = sin(alpha);
-	cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); */
-
-	//	b = sinalpha * radius / sqrt( 1.0 - 2.0 * mass_over_r );
 	psi = curve.defl.psi_b[i];
 	dcosa_dcosp = curve.defl.dcosa_dcosp_b[i];
 	toa_val = curve.defl.toa_b[i];

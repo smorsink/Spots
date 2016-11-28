@@ -53,6 +53,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   /*********************************************/
     
   std::ofstream out;      // output stream; printing information to the output file
+  std::ofstream allflux;      // Prints information about the star's surface area
   std::ofstream testout;  // testing output stream;
   std::ofstream param_out;// piping out the parameters and chisquared
   
@@ -93,8 +94,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance(3.0857e22),        // Distance from earth to the NS, in meters; default is 10kpc
     B;                          // from param_degen/equations.pdf 2
    
+  double SurfaceArea(0.0);
 
-  double E0, E1, E2, DeltaE, rot_par;
+  double E0, L1, L2, DeltaE, rot_par;
     
   unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
@@ -106,7 +108,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numbands(NCURVES); // Number of energy bands;
 
   
-
+  
 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
@@ -238,7 +240,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%lf", &rho);
 	                break;
 
-	    case 'P':  // Spot shape model 0=default=standard 
+	    case 'P':  // Spot shape model 0=default=standard; 1=circular in rotating frame; 2=other
 	                sscanf(argv[i+1], "%u", &spotshape);
 	                break;	          
 
@@ -282,18 +284,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	break;
 	                
 	    case 'v': // NICER funny line E1
-	            	sscanf(argv[i+1], "%lf", &E1);
+	            	sscanf(argv[i+1], "%lf", &L1);
 	            	break;
 	            	
 	    case 'V': // NICER funny line E2
-	            	sscanf(argv[i+1], "%lf", &E2);
+	            	sscanf(argv[i+1], "%lf", &L2);
 	            	break;
 	            
-	    case 'x': // Scattering radius, in kpc
+	    case 'x': // Part of funny NICER line
 	            	sscanf(argv[i+1], "%lf", &E0);
 	            	break;
 	            
-	    case 'X': // Scattering intensity, units not specified
+	    case 'X': // Part of funny NICER line
 	            	sscanf(argv[i+1], "%lf", &DeltaE);
 	            	break;
 	            	
@@ -503,9 +505,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     if (curve.flags.spectral_model == 1){ // NICER Line
       curve.para.E0 = E0; // Observed Energy in keV
-      curve.para.E1 = E1; // Lowest Energy in keV in Star's frame
-      curve.para.E2 = E2; // Highest Energy in keV
+      curve.para.L1 = L1; // Lowest Energy in keV in Star's frame
+      curve.para.L2 = L2; // Highest Energy in keV
       curve.para.DeltaE = DeltaE; // Delta(E) in keV
+
+      std::cout << " Starting L1 = " << L1 << std::endl;
+
     }
 
 
@@ -631,8 +636,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
         model = new PolyOblModelCFLQS( req,
-				     PolyOblModelBase::zetaparam(mass,rspot),
-				     PolyOblModelBase::epsparam(omega, mass, rspot) );
+				     mass_over_req,
+				     rot_par );
         //printf("Oblate Colour-Flavour Locked Quark Star. ");
     }
     else if ( NS_model == 3 ) { // Standard spherical model
@@ -695,6 +700,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  deltatheta = curve.para.dtheta[k];
 
 	  double thetak = curve.para.theta_k[k];
+	  // std::cout << "k = " << k 
+	  //	    << "theta = " << thetak
+	  //	    << std::endl;
 
 	  double phi_edge = curve.para.phi_k[k];
 
@@ -728,8 +736,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
 
-	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi * curve.para.gamma_k[k];
+	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+	  if (spotshape!=2)
+	    curve.para.dS *= curve.para.gamma_k[k];
+
 	  curve.para.theta = thetak;
+
+	  SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
 
 	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
 	    numphi=1;
@@ -1203,8 +1216,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
       out << "% " << std::endl;
 
-      for ( unsigned int p(0); p < numbands; p++ ) { 
-	for ( unsigned int i(0); i < numbins; i++ ) {
+      for ( unsigned int i(0); i < numbins; i++ ) {
+	for ( unsigned int p(0); p < numbands; p++ ) { 
 	  out << curve.t[i]<< "\t" ;
 	  out << curve.para.E0 + p*curve.para.DeltaE << "\t";
 	  out << curve.f[p][i] << "\t" << std::endl;
@@ -1262,6 +1275,29 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     out.close();
+
+    std::cout << "Flux[0] = " << curve.f[0][0] << std::endl;
+   
+    //std::ofstream allflux;      // output stream; printing information to the output file    
+    allflux.open("allflux",std::fstream::app);
+    // allflux<< "testing 2" << std::endl;
+
+ 
+    if ( NS_model == 1)
+    	allflux << "% Oblate NS model " << std::endl;
+    else if (NS_model == 3)
+    	allflux << "% Spherical NS model " << std::endl;
+	     
+    allflux << "#spin \t Flux(1keV) \t Area (km^2) " << std::endl;
+    allflux << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) 
+	    << " \t "
+	    << curve.f[0][0]
+	    << " \t "
+	    << SurfaceArea * pow(Units::nounits_to_cgs(1.0, Units::LENGTH )*1.0e-5,2)
+	    << std::endl;
+
+    allflux.close();
+
     
     //delete defltoa;
     delete model;
