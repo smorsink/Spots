@@ -19,9 +19,9 @@
 #include <vector>
 #include <float.h>
 
-#define NN 40            // lookup table for bending angle (deflection angle) calculation
+#define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define NCURVES 100        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 
 
 struct Parameters {      // local bit of spot information
@@ -54,8 +54,8 @@ struct Parameters {      // local bit of spot information
   double Isc;            // Scattering intensity; adds scattering junk
   double bmodel;         // who knows?
   double E0; // NICER
-  double E1; // NICER
-  double E2; // NICER
+  double L1; // NICER
+  double L2; // NICER
   double DeltaE; // NICER 
   double theta_k[100]; // location of spot bins
   double phi_k[100];   // phi location of edge of spot
@@ -76,12 +76,13 @@ struct Flags {
 
 class Defl {
 	public:                       // allocates the memory for the lookup table -- not evenly spaced
-	double psi_b[3*NN+1];         // table where given psi, look up b
-	double b_psi[3*NN+1];         // table where given b, look up psi
+	double psi_b[3*NN+1];         // table where given psi, look up b_R
+	double b_psi[3*NN+1];         // table where given b_R, look up psi
 	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
 	double toa_b[3*NN+1];           // table for toa values
 	double psi_max;               // largest possible value of psi
 	double b_max;                 // largest possible value of b
+	double b_R_max;               // largest possible value of b/R
 	//class OblDeflectionTOA defltoa;
 };
 

@@ -39,8 +39,8 @@ double OblDeflectionTOA_costheta_value;
 double OblDeflectionTOA_psi_value;
 double OblDeflectionTOA_b_max_value;
 double OblDeflectionTOA_psi_max_value;
-double OblDeflectionTOA_b_guess;
-double OblDeflectionTOA_psi_guess;
+//double OblDeflectionTOA_b_guess;
+//double OblDeflectionTOA_psi_guess;
 double OblDeflectionTOA_rspot;
 
 /**********************************************************/
@@ -174,26 +174,14 @@ double OblDeflectionTOA_rcrit_zero_func_wrapper ( double rc ) {
 /* Passed b (photon impact parameter)                      */
 /* Returns                      */
 /***********************************************************/
-double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper ( double b ) {
-  	return double ( OblDeflectionTOA_object->b_from_psi_ingoing_zero_func( b, 
-									       OblDeflectionTOA_b_max_value,
+double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper ( double b_R ) {
+  	return double ( OblDeflectionTOA_object->b_from_psi_ingoing_zero_func( b_R, 
+									       OblDeflectionTOA_b_max_value/OblDeflectionTOA_rspot,
 									       OblDeflectionTOA_psi_max_value,
 						OblDeflectionTOA_rspot,
 						OblDeflectionTOA_psi_value ) );
 }
 
-/*****************************************************/
-/*****************************************************/
-double OblDeflectionTOA_b_from_psi_outgoing_zero_func_wrapper ( double b ) {
-  // std::cerr << "b = " << Units::nounits_to_cgs(b, Units::LENGTH)/1.0e5 <<std::endl;
-	return double ( OblDeflectionTOA_object->b_from_psi_outgoing_zero_func( b, 
-						OblDeflectionTOA_costheta_value,
-						OblDeflectionTOA_psi_value,
-						OblDeflectionTOA_b_max_value,
-						OblDeflectionTOA_psi_max_value,
-						OblDeflectionTOA_b_guess,
-						OblDeflectionTOA_psi_guess ) );
-}
 
 // End of global pollution.
 
@@ -235,6 +223,19 @@ double OblDeflectionTOA::bmax_outgoing ( const double& rspot ) const {
   	return bmax_outgoing;
 }
 
+/************************************************************/
+/* OblDeflectionTOA::b_R_max_outgoing                          */
+/* Uses value of M/R where R=rspot						       			      	    */
+/* Computes the maximal value of b/R for outgoing light rays  */
+/************************************************************/
+double OblDeflectionTOA::b_R_max_outgoing ( const double& mass_over_r ) const {
+
+  double b_R_max_outgoing ( 1.0 / sqrt( 1.0 - 2.0 * mass_over_r ) );
+  	return b_R_max_outgoing;
+}
+
+
+
 /*******************************************************************************/
 /* OblDeflectionTOA::bmin_ingoing                                              */
 /*														                       */
@@ -259,6 +260,34 @@ double OblDeflectionTOA::bmin_ingoing ( const double& rspot, const double& cos_t
 
   	return b;    // returning b!!!
 }
+
+/*******************************************************************************/
+/* OblDeflectionTOA::b_R_min_ingoing                                              */
+/*														                       */
+/* Computes value of b/r corresponding to the most ingoing light ray allowed,    */
+/*   i.e. the ray that just grazes the surface and moves toward axis with b=0  */
+/* Passed cos_theta (cosine of theta (what is theta here?))                    */
+/* Returns minimum value of b allowed                                          */
+/*******************************************************************************/
+double OblDeflectionTOA::b_R_min_ingoing ( const double& rspot, const double& cos_theta ) const { 
+
+  	// Need to return the value of b/R corresponding to dR/dtheta of the surface.
+
+  	double drdth ( modptr->Dtheta_R( cos_theta ) );
+	double b_R ( 1.0 / sqrt( (1.0 - 2.0 * get_mass_over_r()) + pow( drdth / rspot , 2.0 ) ) );
+ 
+  	// NaN check:
+  	if ( std::isnan(b_R) ) {
+    	std::cerr << "ERROR in OblDeflectionTOA::bmin_ingoing(): returned NaN." << std::endl;
+    	b_R = -7888.0;
+    	return b_R;
+  	}
+
+  	return b_R;    // returning b!!!
+}
+
+
+
 
 /*************************************************************/
 /* OblDeflectionTOA::ingoing_allowed                         */
@@ -310,38 +339,45 @@ double OblDeflectionTOA::rcrit ( const double& b, const double& rspot, bool *pro
 
 
 /*****************************************************/
-double OblDeflectionTOA::psi_outgoing_u ( const double& b, const double& rspot,
-					  const double& b_max, const double& psi_max, 
+double OblDeflectionTOA::psi_outgoing_u ( const double& b_R, 
+					  const double& b_R_max, const double& psi_max, 
 					  bool *prob ) const{
 
   double dummy;
 
-  if ( b > b_max || b < 0.0 ) {
+  if ( b_R > b_R_max || b_R < 0.0 ) {
     std::cerr << "ERROR in OblDeflectionTOA::psi_outgoing_u(): b out-of-range." << std::endl;
+    std::cerr << "M/R = " << get_mass_over_r() 
+	      << " b/R = " << b_R 
+	      << " b_R_max = " << b_R_max
+	      << std::endl;
+
+
+
     *prob = true;
     	dummy = -7888.0;
     	return dummy;
   }
 
-  if ( fabs( b - b_max ) < 1e-8 ) { // essentially the same as b=b_max
+  if ( fabs( b_R - b_R_max ) < 1e-8 ) { // essentially the same as b=b_max
     return psi_max;
   }
   else {  // set globals
     OblDeflectionTOA_object = this;
-    OblDeflectionTOA_b_over_r = b/rspot;     // this will be fed to another function
+    OblDeflectionTOA_b_over_r = b_R;     // this will be fed to another function
 
     double psi(0.0);
     double split(0.90);  
 
-    if ( b != 0.0 ) {
+    if ( b_R != 0.0 ) {
 
-      if ( b > 0.9995*b_max){
+      if ( b_R > 0.9995*b_R_max){
 	psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
 	psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10 );
       }
       else{
 
-	if ( b > 0.995*b_max){	
+	if ( b_R > 0.995*b_R_max){	
 	  psi = Integration( 0.0, split, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
 	  psi += Integration( split, 1.0, OblDeflectionTOA_psi_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1 );
 	}
@@ -358,10 +394,17 @@ double OblDeflectionTOA::psi_outgoing_u ( const double& b, const double& rspot,
 
 
 
-double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rspot, bool *prob ) const{
+double OblDeflectionTOA::psi_max_outgoing_u ( const double& b_R, bool *prob ) const{
   	double dummy;
-  	if ( b > bmax_outgoing(rspot) || b < 0.0 ) {
-    	std::cerr << "ERROR in OblDeflectionTOA::psi_outgoing(): b out-of-range." << std::endl;
+	double mass_over_r( get_mass_over_r());
+
+  	if ( (b_R - b_R_max_outgoing(mass_over_r) > 1e-3) || b_R < 0.0 ) {
+    	std::cerr << "ERROR in OblDeflectionTOA::psi_max_outgoing(): b out-of-range." << std::endl;
+
+	std::cerr << "M/R = " << get_mass_over_r() 
+	      << " b/R = " << b_R 
+	      << " b_R_max = " <<  b_R_max_outgoing(mass_over_r)	      << std::endl;
+
     	*prob = true;
     	dummy = -7888.0;
     	return dummy;
@@ -369,7 +412,7 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
 
   	// set globals
   	OblDeflectionTOA_object = this;
-  	OblDeflectionTOA_b_over_r = b/rspot;
+  	OblDeflectionTOA_b_over_r = b_R;
 
 	double psi, split(0.9);  	
 
@@ -381,41 +424,34 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b, const double& rsp
 
 /*****************************************************/
 /*****************************************************/
-double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, const double& psimax, 
+double OblDeflectionTOA::psi_ingoing ( const double& b_R, const double& b_R_max, const double& psimax, 
 				       const double& rspot, bool *prob ) const {
-  //costheta_check( cos_theta );
+
   double psi, psi_in, rcrit;
-  //double rspot ( modptr->R_at_costheta( fabs(cos_theta) ) );
-  	//double dummy;
-  //std::cout << "psi_ingoing: b = " << b << " bmax = " << bmax << std::endl;
 	
   	// set globals
   	OblDeflectionTOA_object = this;
-  	OblDeflectionTOA_b_value = b;
-	OblDeflectionTOA_b_max_value = bmax;
+  	OblDeflectionTOA_b_value = b_R * rspot;
+	OblDeflectionTOA_b_max_value = b_R_max * rspot;
 	OblDeflectionTOA_psi_max_value = psimax;
 
-	if ( fabs(b-bmax) < 1e-6){
+	if ( fabs(b_R-b_R_max) < 1e-6){
 	  psi_in = 0.0;
 	}
 	else{
 
-	  rcrit = this->rcrit( b, rspot, &curve.problem );
-
-	  //std::cout << "rspot = " << rspot << " rcrit = " << rcrit << std::endl;
-
-	 
-	  OblDeflectionTOA_b_over_r = b/rcrit;
+	  rcrit = this->rcrit( b_R*rspot, rspot, &curve.problem );	 
+	  OblDeflectionTOA_b_over_r = b_R*rspot/rcrit;
 	  psi_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_psi_ingoing_integrand_wrapper_u,10000 );
 	}
 	
   	
-   	OblDeflectionTOA_b_over_r = b/rspot;
+   	OblDeflectionTOA_b_over_r = b_R;
 	
-	if ( b == OblDeflectionTOA_b_max_value)
+	if ( b_R == b_R_max)
 	  psi = psi_in +  OblDeflectionTOA_psi_max_value;
 	  else
-	  psi = psi_in + this->psi_outgoing_u( b, rspot, OblDeflectionTOA_b_max_value,
+	  psi = psi_in + this->psi_outgoing_u( b_R, b_R_max,
 						      OblDeflectionTOA_psi_max_value , &curve.problem );
 
 	//	std::cout << "Total psi = " << psi << std::endl;
@@ -429,17 +465,15 @@ double OblDeflectionTOA::psi_ingoing ( const double& b, const double& bmax, cons
 // if the photon is purely outgoing nothing is changed
 // if the photon is initially ingoing a calculation is done
 /*****************************************************/
-bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b,
+bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b_R,
 				    int& rdot, const double& bmax_out, 
 				    const double& psi_out_max,
 				    const double& bmin, const double& psimin,
 				    const double& b_guess, 
-				    const double& psi_guess, const double& b2, 
-				    const double& psi2, bool *prob ) {
-  //costheta_check( cos_theta );
+				    bool *prob ) {
 
   // return bool indicating whether a solution was found.
-  // store result in b
+  // store result in b_R
   // store -1 in rdot if its an ingoing solution, +1 otherwise.
 
   	double bcand;    //
@@ -448,9 +482,6 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 
 	OblDeflectionTOA_b_max_value = bmax_out;
 	OblDeflectionTOA_psi_max_value = psi_out_max;
-	OblDeflectionTOA_b_guess = b_guess;
-	OblDeflectionTOA_psi_guess = psi_guess;
-	OblDeflectionTOA_rspot = rspot;
 
   	if ( std::isinf(psi_out_max) ) {
 	  std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): psi_out_max = infinity" << std::endl;
@@ -466,30 +497,27 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  return dummypsi;
   	}
   	else if ( psi == 0.0 ) {
-	  b = 0.0;
+	  b_R = 0.0;
 	  rdot = 1;
 	  return true;
   	}
   	else if ( psi == psi_out_max ) {
-	  b = bmax_out;
+	  b_R = bmax_out/rspot;
 	  rdot = 1;
 	  return true;
   	}
   	else if ( psi < psi_out_max ) { // begin normal outgoing case, psi < psi_out_max
-	  OblDeflectionTOA_object = this;
-	  OblDeflectionTOA_costheta_value = cos_theta;
-	  OblDeflectionTOA_psi_value = psi;
 
 	  bcand = b_guess;
 
 	  if ( fabs(bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
 	    std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): outgoing returned no solution?" << std::endl;
 	    *prob = true;
-	    b = -7888.0;
-	    return b;
+	    b_R = -7888.0;
+	    return b_R;
 	  }
 	  else {
-	    b = bcand;
+	    b_R = bcand/rspot;
 	    rdot = 1;
 	    return true;
 	  }
@@ -498,24 +526,14 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
   	else { // psi > psi_out_max 
 	  // Test to see if ingoing photons are allowed
 	  bool ingoing_allowed( this->ingoing_allowed(cos_theta) );
-	  
-
-	  /*std::cout << "b_from_psi: psi > psi_out_max" 
-		    << " psi=" << psi 
-		    << " psi_out_max=" << psi_out_max
-		    << std::endl;*/
 
 	  if ( ingoing_allowed ) {
-	    //bmin_in = bmin_ingoing( rspot, cos_theta );
-       
-	    //psi_in_max = psi_ingoing( bmin_in, bmax_out, psi_out_max, cos_theta, &curve.problem );
-	    //std::cout << "psi_in_max=" << psimin << std::endl;
 
 	    if ( psi > psimin ) {
 	      return false;
 	    }
 	    else if ( psi == psimin ) {
-	      b = bmin;
+	      b_R = bmin/rspot;
 	      rdot = -1;
 	      return true;
 	    }
@@ -523,23 +541,22 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      OblDeflectionTOA_object = this;
 	      OblDeflectionTOA_costheta_value = cos_theta;
 	      OblDeflectionTOA_psi_value = psi;
+	      OblDeflectionTOA_rspot = rspot;
 
-	      //std::cout << "bmin_in=" << bmin << " bmax_out=" << bmax_out <<std::endl;
 
 	      bcand = MATPACK::FindZero(bmin, bmax_out,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
-	      //std::cout << "b-cand=" << bcand << std::endl;
 
  
 	      if( fabs(bmin - bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
 		std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): ingoing returned no solution?" << std::endl;
 		*prob = true;
-		b = -7888.0;
-		return b;
+		b_R = -7888.0;
+		return b_R;
 	      }
 	      else {
-		b = bcand;
+		b_R = bcand;
 		rdot = -1;
 		return true;
 	      }
@@ -556,22 +573,17 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 }
 
 
-
-/*****************************************************/
-// warning: this integral will diverge near bmax_out. You can't remove
-  	// the divergence in the same manner as the one for the deflection.
-  	// check the output!
-/*****************************************************/
-double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b, const double& rspot, bool *prob ) const {
-  	//costheta_check(cos_theta);
+double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b_R, bool *prob ) const {
   
-  	double dummy; //
+  // dpsi_db returns a dimensionless quantity. You'll need to divide by radius to make it have dimensions of 1/length
 
-	double b_max = bmax_outgoing(rspot);
+  double mass_over_r( get_mass_over_r());
+  double dummy; //
 
-  	if ( (b > b_max || b < 0.0) ) { 
+  double b_R_max = b_R_max_outgoing(mass_over_r);
+
+  	if ( (b_R > b_R_max || b_R < 0.0) ) { 
     	std::cerr << "ERROR inOblDeflectionTOA::dpsi_db_outgoing(): b out-of-range." << std::endl;
-    	std::cerr << "b = " << b << ", bmax = " << bmax_outgoing(rspot) << ", |b - bmax| = " << fabs(b - bmax_outgoing(rspot)) << std::endl;
     	*prob = true;
     	dummy = -7888.0;
     	return dummy;
@@ -579,30 +591,24 @@ double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b, const double& rspo
   
   	// set globals
   	OblDeflectionTOA_object = this;
-  	OblDeflectionTOA_b_over_r = b/rspot;
+  	OblDeflectionTOA_b_over_r = b_R;
 
 	double dpsidb(0.0);
 	double split(0.5);
 
-	if (b < 0.95*b_max)
-	  dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
+	if (b_R < 0.95*b_R_max)
+	  dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
 	else
-	  if ( b < 0.99995*b_max){
+	  if ( b_R < 0.99995*b_R_max){
 	      	
-	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
-	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*10 );
-	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
-	    //	      << " b/b_max = " << b/b_max << " dpsidb = " << dpsidb << std::endl; 
-
+	    //dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N*10 );
+	    dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*100 );
 	  }
 	  else{
-	    if ( b < 0.999995*b_max){
+	    if ( b_R < 0.999995*b_R_max){
 	      	
 	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
 	    dpsidb += Integration( split, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*1000 );
-	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
-	    //	      << " b/b_max = " << b/b_max << " dpsidb = " << dpsidb << std::endl; 
-
 	    }
 	    else{
 	    dpsidb = Integration( 0.0, split, OblDeflectionTOA_dpsi_db_integrand_wrapper_u,TRAPEZOIDAL_INTEGRAL_N );
@@ -612,10 +618,7 @@ double OblDeflectionTOA::dpsi_db_outgoing_u( const double& b, const double& rspo
 	  }
 	  
 	    
-	dpsidb *= 1.0/rspot;
-
-	  //double dpsidb = Integration( 0.0, 1.0, OblDeflectionTOA_dpsi_db_integrand_wrapper_u );
-  	
+	//dpsidb *= 1.0/rspot;
   	return dpsidb;
 }
 
@@ -638,76 +641,52 @@ double OblDeflectionTOA::dpsi_db_ingoing_u( const double& b, const double& rspot
 	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
 
 	OblDeflectionTOA_b_over_r = b/rspot;
-  	return double( dpsidb_in + this->dpsi_db_outgoing_u( b, rspot, &curve.problem ) );
+  	return double( dpsidb_in + this->dpsi_db_outgoing_u( b/rspot, &curve.problem ) );
 
 }
 
 
-double OblDeflectionTOA::toa_outgoing_u ( const double& b, const double& rspot, bool *prob ) {
-	// costheta_check(cos_theta);
-  	//double dummy;
+double OblDeflectionTOA::toa_outgoing_u ( const double& b_R, bool *prob ) {
+  // Returns a dimensionless toa!!!!
+  // Must multiply by radius later on to proper dimensions!!!
 
-  	// set globals
+  double mass_over_r(get_mass_over_r());
 
-  double b_max=bmax_outgoing(rspot);
+  double b_R_max=b_R_max_outgoing(mass_over_r);
+  //double b_R=b/rspot;
 
   OblDeflectionTOA_object = this;
-  OblDeflectionTOA_b_over_r = b/rspot;
-
-  	// Note: Use an approximation to the integral near the surface
-  	// to avoid divergence problems, and then use the real
-  	// integral afterwards. See astro-ph/07030123 for the formula.
-
-  	// The idea is to compute the time for a ray emitted from the
-  	// surface, and subtract the time for a b=0 ray from r=rpole.
-  	// To avoid large numbers, part of the subtraction is accomplished in the integrand.
+  OblDeflectionTOA_b_over_r = b_R;
 
   	// Note that for a b=0 ray, Delta T = int(1/(1-2*M/r), r),
   	// which is r + 2 M ln (r - 2M)
 
-  	//double rsurf = modptr->R_at_costheta(cos_theta);
- 
-  	double rsurf = rspot;
-  	//double rpole = modptr->R_at_costheta(1.0);
-	//std::cout << "toa_outgoing_u: " << std::endl;
-	double req = modptr->R_at_costheta(0.0);
-
-  	//std::cout << "toa_outgoing: rpole = " << rpole << std::endl;
 	double toa(0.0);
 	double split(0.90);
 
-	if (b < 0.95*b_max)
+	if (b_R < 0.95*b_R_max)
 	  toa = Integration( 0.0, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N/10 );
 	else
-	  if ( b < 0.9999*b_max){
+	  if ( b_R < 0.9999*b_R_max){
 	      	
 	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N/10 );
 	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1/10);
-	    //std::cout << "b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
-	    //	      << " b/b_max = " << b/b_max << " toa = " << toa << std::endl; 
 
 	  }
 	  else{
 	    toa = Integration( 0.0, split, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N/10 );
 	    toa += Integration( split, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u,TRAPEZOIDAL_INTEGRAL_N_1*100 );
-	    //std::cout << "*******b/r = " << b/rspot << " b_max/r = " << b_max/rspot 
-	    //	      << " b/b_max = " << b/b_max << " toa = " << toa << std::endl; 
-
-
 	  }
 	 
-	toa *= rspot;
-	    
-  	//double toa = Integration( 0.0, 1.0, OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u );
+	//toa *= rspot;
+	   
+	//	double toa_b0_eqsurf = (rspot - req) + 2.0 * get_mass() * ( log( rspot - 2.0 * get_mass() )
+	//	       				 - log( req - 2.0 * get_mass() ) );
 
-  	//double toa_b0_polesurf = (rsurf - rpole) + 2.0 * get_mass() * ( log( rsurf - 2.0 * get_mass() )
-	//	       				 - log( rpole - 2.0 * get_mass() ) );
+	//	return double( toa - toa_b0_eqsurf);
 
-  	double toa_b0_eqsurf = (rsurf - req) + 2.0 * get_mass() * ( log( rsurf - 2.0 * get_mass() )
-		       				 - log( req - 2.0 * get_mass() ) );
+	return (toa);
 
-	//	return double( toa - toa_b0_polesurf);
-	return double( toa - toa_b0_eqsurf);
 }
 
 
@@ -731,7 +710,7 @@ double OblDeflectionTOA::toa_ingoing ( const double& b, const double& rspot, con
 	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
 
 	OblDeflectionTOA_b_over_r = b/rspot;
-  	return double( toa_in + this->toa_outgoing_u( b, rspot, &curve.problem ) );
+  	return double( toa_in + this->toa_outgoing_u( b/rspot, &curve.problem ) );
 
 }
 
@@ -817,24 +796,23 @@ double OblDeflectionTOA::rcrit_zero_func ( const double& rc, const double& b ) c
 /*****************************************************/
 // used in oblate shape of star
 /*****************************************************/
-double OblDeflectionTOA::b_from_psi_ingoing_zero_func ( const double& b, const double& bmax, const double& psimax,
+double OblDeflectionTOA::b_from_psi_ingoing_zero_func ( const double& b_R, const double& b_R_max, const double& psimax,
 							const double& rspot, 
 							const double& psi ) const { 
-  return double( psi - this->psi_ingoing(b, bmax, psimax, rspot, &curve.problem) );
+  return double( psi - this->psi_ingoing(b_R, b_R_max, psimax, rspot, &curve.problem) );
 
 }
 
 /*****************************************************/
 /*****************************************************/
-double OblDeflectionTOA::b_from_psi_outgoing_zero_func ( const double& b, 
-							 const double& cos_theta, 
+/*double OblDeflectionTOA::b_from_psi_outgoing_zero_func ( const double& b_R, 
 							 const double& psi,
 							 const double& b_max, 
-							 const double& psi_max, 
-							 const double& b_guess, 
-							 const double& psi_guess ) const {
-  return double( psi - this->psi_outgoing_u( b, cos_theta, b_max, psi_max, &curve.problem ) );
+							 const double& psi_max 
+							  ) const {
+  return double( psi - this->psi_outgoing_u( b_R, b_max, psi_max, &curve.problem ) );
 }
+*/
 
 /*****************************************************/
 /* OblDeflectionTOA::TrapezoidalInteg                */

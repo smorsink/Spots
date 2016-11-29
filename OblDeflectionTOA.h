@@ -71,7 +71,7 @@ class OblDeflectionTOA {
   		double b_from_psi_ingoing_zero_func ( const double& b, const double& bmax, const double& psimax,
 						      const double& cos_theta, 
   								              const double& psi) const;
-  		double b_from_psi_outgoing_zero_func ( const double& b, const double& cos_theta, 
+  		double b_from_psi_outgoing_zero_func ( const double& b, 
   		                                       const double& psi, const double& b_max, 
   		                                       const double& psi_max, 
   		                                       const double &b_guess, 
@@ -85,7 +85,9 @@ class OblDeflectionTOA {
 	public:
  		OblDeflectionTOA ( OblModelBase* modptr, const double& mass_nounits ,const double& mass_over_r_nounits, const double& radius_nounits);
   		double bmax_outgoing ( const double& rspot ) const;
+		double b_R_max_outgoing ( const double& mass_over_r ) const;
   		double bmin_ingoing ( const double& rspot, const double& cos_theta ) const;
+		double b_R_min_ingoing ( const double& rspot, const double& cos_theta ) const;
   		bool ingoing_allowed ( const double& cos_theta );
   		double get_mass() const { return mass; }
 		double get_mass_over_r() const { return mass_over_r; }
@@ -99,17 +101,17 @@ class OblDeflectionTOA {
   		bool b_from_psi ( const double& psi, const double& rspot, const double& cos_theta, double& b, 
   		                  int& rdot, const double& bmax_out, const double& psi_out_max, 
 				  const double& bmin, const double& psimin,
-				  const double& b_guess, const double& psi_guess,
-				  const double& b2, const double&psi2, bool *prob );
+				  const double& b_guess,
+				  bool *prob );
 
 
   		double dpsi_db_ingoing_u ( const double& b, const double& rspot, const double& cos_theta, bool *prob ); //changed GC
 
-		double psi_outgoing_u ( const double& b, const double& rspot,
+		double psi_outgoing_u ( const double& b, 
 					const double& b_max, const double& psi_max, bool *prob ) const;
-		double psi_max_outgoing_u ( const double& b, const double& rspot, bool *prob ) const;
-		double dpsi_db_outgoing_u( const double& b, const double& rspot, bool *prob ) const;
-		double toa_outgoing_u ( const double& b, const double& rspot, bool *prob );
+		double psi_max_outgoing_u ( const double& b, bool *prob ) const;
+		double dpsi_db_outgoing_u( const double& b, bool *prob ) const;
+		double toa_outgoing_u ( const double& b, bool *prob );
 
   		double toa_ingoing ( const double& b, const double& rspot, const double& cos_theta, bool *prob );
 

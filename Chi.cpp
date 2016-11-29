@@ -398,6 +398,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            incl,                      // inclination angle of the observer, in radians
            mass,                      // Mass of the star, in M_sun
            radius,                    // Radius of the star (at whatever little bit we're evaluating at)
+      req,                            // Radius at the equator
       mass_over_r,
            omega,                     // Spin frequency of the neutron star, in Hz
            cosgamma,                  // Cos of the angle between the radial vector and the surface normal vector
@@ -409,6 +410,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
            cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
            b(0.0),                    // Photon's impact parameter
+      b_R, // b/radius
            toa_val(0.0),              // Time of arrival, MLCB38
            phi_0,                     // Azimuthal location of the spot, in radians
            dS,                        // Surface area of the spot, defined in MLCB2; computed in Spot.cpp
@@ -446,7 +448,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     incl = curve.para.incl;
     phi_0 = curve.para.phi_0;
     mass = curve.para.mass;
-    radius = curve.para.radius;
+    radius = curve.para.radius; //present location on the star
+    req =     curve.para.req;  // equatorial radius of the star
     mass_over_r = curve.para.mass_over_r;
     red = 1.0/sqrt(1.0-2.0*mass_over_r);
     omega = curve.para.omega;
@@ -492,26 +495,20 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     } // closing For-Loop-1
 
     int j(0);
-    double bmin(0), psimin(0);
+    double b_R_min(0), psimin(0);
 
     // Check to see if this is an oblate star
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
-      bmin = defltoa->bmin_ingoing(radius, cos(theta_0));
-      psimin = defltoa->psi_ingoing(bmin,curve.defl.b_max, curve.defl.psi_max, radius,&curve.problem);
-      /* std::cout << "ComputeAngles: Oblate! b_min_ingoing = " << bmin 
-		<< " psi_min_ingoing = " << psimin * 180/Units::PI
-		<< " b_max_outgoing = " << curve.defl.b_max
-		 << " psi_max = " << curve.defl.psi_max * 180/Units::PI
-		 << std::endl;*/
+      b_R_min = defltoa->b_R_min_ingoing(radius, cos(theta_0));
+      psimin = defltoa->psi_ingoing(b_R_min,curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
     }
     
 
     for ( unsigned int i(0); i < numbins; i++ ) { // opening For-Loop-2	
 
-
         int sign(0);
-        double bval(0.0);
+        double b_R_val(0.0);
         bool result(false);
         double b1(0.0), b2(0.0), psi1(0.0), psi2(0.0);
 	double dc1(0.0), dc2(0.0), t1(0.0), t2(0.0);
@@ -589,18 +586,19 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    // curve.dcosalpha_dcospsi[i] = (dc2-dc1)/(psi2-psi1) * (curve.psi[i] - psi2) + dc2;
 	    // toa_val = (t2-t1)/(psi2-psi1) * (curve.psi[i] - psi2) + t2;
 
-	     
-
         } // ending psi.at(i) < curve.defl.psi_max
+
+	b_guess *= radius;
+	b2 *= radius;
 
         /***********************************************/
 	/* FINDING IF A SOLUTION EXISTS, SETTING FLAGS */
 	/***********************************************/
 
-	//std::cout << "Compute Angles: i = " << i << " psi = " << psi.at(i) << std::endl;
+	//Change so that bval is really b/radius;
 
-        result = defltoa->b_from_psi( curve.psi[i], radius, mu, bval, sign, curve.defl.b_max, 
-				      curve.defl.psi_max, bmin,psimin, b_guess,curve.psi[i], b2, curve.psi[i]-psi2, 
+        result = defltoa->b_from_psi( curve.psi[i], radius, mu, b_R_val, sign, curve.defl.b_max, 
+				      curve.defl.psi_max, b_R_min*radius,psimin, b_guess,
 				      &curve.problem );
 
         if ( result == false && i == 0) { 
@@ -615,16 +613,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             curve.t_o[i] = curve.t[i] + curve.t_o[i-1] - curve.t[i-1];
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
-	    /*  std::cerr << "i = " << i
-	        	          << ", phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
-			<< ", cos(theta) = " << cos(theta_0)
-			<< ", cospsi = " << cos(psi.at(i))
-			<< ", psi = " <<  psi.at(i) * 180.0/Units::PI
-		                  << " (Not Visible)." << std::endl << std::endl;
-	    */
         }
         else { // there is a solution
-            b = bval;
+	  //b = bval;
+	    b_R = b_R_val;
             if ( sign < 0 ) { // if the photon is initially ingoing (only a problem in oblate models)
 	            ingoing = true;
 	            curve.ingoing = true;
@@ -637,12 +629,12 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            throw( Exception("Chi.cpp: sign not returned as + or - with success.") ); // used to say "ObFluxApp.cpp"
             }
             
-			double b_maximum = radius/sqrt(1.0 - 2.0*mass_over_r);
-			if ( (fabs(b-b_maximum) < 1e-7) && (b > 0.0) && (b > b_maximum) ) { 
-			// this corrects for b being ever so slightly over bmax, which yields all kinds of errors in OblDeflectionTOA
-				std::cout << "Setting b = b_max." << std::endl;
-				b = b_maximum - DBL_EPSILON;
-			}
+	    double b_maximum = radius/sqrt(1.0 - 2.0*mass_over_r);
+	    if ( (fabs(b-b_maximum) < 1e-7) && (b > 0.0) && (b > b_maximum) ) { 
+	      // this corrects for b being ever so slightly over bmax, which yields all kinds of errors in OblDeflectionTOA
+	      std::cout << "Setting b = b_max." << std::endl;
+	      b = b_maximum - DBL_EPSILON;
+	    }
             curve.b[i] = b/radius;
             
             /*******************************************************/
@@ -654,7 +646,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    /*******************************************************/
 
 
-            sinalpha =  b * sqrt( 1.0 - 2.0 * mass_over_r ) / radius;  // PG4, reconfigured
+            sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
             cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
             alpha    = asin( sinalpha );
             
@@ -734,9 +726,13 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
                 
+		    toa_val += (req/radius - 1.0);
+		    toa_val += -  2.0 * mass_over_r * log( (radius/req) * (1.0 - 2.0 * mass_over_r)/(1.0 - 2.0 * mass_over_r*radius/req)) ;
 
-	            //std::cout << "Done computing TOA " << std::endl;
-	            curve.t_o[i] = curve.t[i] + (omega * toa_val) / (2.0 * Units::PI);	           
+		    //Change toa_val so it is dimensionless. Then multiply by radius to give correct dimensions!!!!		    
+		    // Correct for emission from location different from equator.
+
+	            curve.t_o[i] = curve.t[i] + (omega * toa_val * radius) / (2.0 * Units::PI);	           
          
 
 	            curve.dOmega_s[i] = (dS / (distance * distance)) 
@@ -786,10 +782,9 @@ class LightCurve Bend ( class LightCurve* incurve,
     curve = *incurve;
 
     std::ofstream bend;      // output stream; printing information to the output file
-
     std::ifstream angles;   // input stream; read in the bending angles from a file
 
-    int printflag(0); // Set to 1 if you want to print out stuff to a file.
+    int printflag(1); // Set to 1 if you want to print out stuff to a file.
     int readflag(0);
 
     double 
@@ -800,15 +795,13 @@ class LightCurve Bend ( class LightCurve* incurve,
       alpha(0.0),                // Zenith angle, in radians
       sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
       cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
-      b(0.0),                    // Photon's impact parameter
+      b_R,
       psi(0.0),
       toa_val(0.0),              // Time of arrival, MLCB38
       dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
       dcosa_dcosp;
           
-    //unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
-    //numbins = 100;
-
+   
 
      std::cout << "Entering Bend: M/R = " 
 	      << curve.para.mass_over_r
@@ -832,32 +825,33 @@ class LightCurve Bend ( class LightCurve* incurve,
 	
     double  b_mid;  // the value of b, the impact parameter, at 90% of b_max
     curve.defl.b_max =  defltoa->bmax_outgoing(radius); // telling us the largest value of b
-    curve.defl.psi_max = defltoa->psi_max_outgoing_u(curve.defl.b_max,radius,&curve.problem); // telling us the largest value of psi
+    curve.defl.b_R_max = curve.defl.b_max/radius;
+    curve.defl.psi_max = defltoa->psi_max_outgoing_u(curve.defl.b_max/radius,&curve.problem); // telling us the largest value of psi
 
     /********************************************************************/
     /* COMPUTE b VS psi LOOKUP TABLE, GOOD FOR THE SPECIFIED M/R AND mu */
     /********************************************************************/
 	
-    b_mid = curve.defl.b_max * 0.9; 
+    b_mid = curve.defl.b_R_max * 0.9; 
     // since we want to split up the table between coarse and fine spacing. 
     // 0 - 90% is large spacing, 90% - 100% is small spacing. b_mid is this value at 90%.
     curve.defl.b_psi[0] = 0.0; // definitions of the actual look-up table for b when psi = 0
     curve.defl.psi_b[0] = 0.0; // definitions of the actual look-up table for psi when b = 0
-    dpsi_db_val = defltoa->dpsi_db_outgoing_u( 0.0, radius, &curve.problem );
-    curve.defl.dcosa_dcosp_b[0] = fabs( (1.0 - 2.0 * mass_over_r) / (radius * dpsi_db_val));
-    curve.defl.toa_b[0] = toa_val = defltoa->toa_outgoing_u( 0.0, radius, &curve.problem );
+    dpsi_db_val = defltoa->dpsi_db_outgoing_u( 0.0, &curve.problem );
+    curve.defl.dcosa_dcosp_b[0] = fabs( (1.0 - 2.0 * mass_over_r) / (dpsi_db_val));
+    curve.defl.toa_b[0] = toa_val = defltoa->toa_outgoing_u( 0.0, &curve.problem );
 
     // computation for b < b_mid
     for ( unsigned int i(1); i < NN+1; i++ ) { /* compute table of b vs psi points */
         curve.defl.b_psi[i] = b_mid * i / (NN * 1.0);
-        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
-	dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], radius, &curve.problem );
-	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], radius, &curve.problem );
+        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], curve.defl.b_R_max, curve.defl.psi_max, &curve.problem); 
+	dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], &curve.problem );
+	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], &curve.problem );
 
-	sinalpha = curve.defl.b_psi[i]/radius * sqrt(1.0 - 2.0*mass_over_r);
+	sinalpha = curve.defl.b_psi[i] * sqrt(1.0 - 2.0*mass_over_r);
 	cosalpha = sqrt(1.0 - pow(sinalpha,2));
 
-	curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * radius*dpsi_db_val));
+	curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) *dpsi_db_val));
     }
 
     // Compute slope of d(cosalpha)/d(psi) near cos(alpha)=0
@@ -867,31 +861,31 @@ class LightCurve Bend ( class LightCurve* incurve,
       x1 = Units::PI/2.0 - eps; 
       x2 = x1+eps*0.1;
 
-      b = sin(x1) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
-      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-      y1 = fabs( sin(x1)/cos(x1) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+      b_R = sin(x1) / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b_R, curve.defl.b_R_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b_R, &curve.problem );
+      y1 = fabs( sin(x1)/cos(x1) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * dpsi_db_val));
 
-      b = sin(x2) * radius / sqrt( 1.0 - 2.0 * mass_over_r );
-      psi = defltoa->psi_outgoing_u( b, radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem);
-      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b, radius, &curve.problem );
-      y2 = fabs( sin(x2)/cos(x2) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * radius*dpsi_db_val));
+      b_R = sin(x2) / sqrt( 1.0 - 2.0 * mass_over_r );
+      psi = defltoa->psi_outgoing_u( b_R, curve.defl.b_R_max, curve.defl.psi_max, &curve.problem);
+      dpsi_db_val = defltoa->dpsi_db_outgoing_u( b_R,&curve.problem );
+      y2 = fabs( sin(x2)/cos(x2) * sqrt(1.0 - 2.0*mass_over_r) / (sin(fabs(psi)) * dpsi_db_val));
 
       yslope = (y2-y1)/(x2-x1);
 
 
     // computation for b > b_mid
     for ( unsigned int i(NN+1); i < 3*NN; i++ ) { /* compute table of b vs psi points */
-        curve.defl.b_psi[i] = b_mid + (curve.defl.b_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); 
-        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], radius, curve.defl.b_max, curve.defl.psi_max, &curve.problem); 
-	sinalpha = curve.defl.b_psi[i]/radius * sqrt(1.0 - 2.0*mass_over_r);
-	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], radius, &curve.problem );
+        curve.defl.b_psi[i] = b_mid + (curve.defl.b_R_max - b_mid) / 2.0 * (i - NN) / (NN * 1.0); 
+        curve.defl.psi_b[i] = defltoa->psi_outgoing_u(curve.defl.b_psi[i], curve.defl.b_R_max, curve.defl.psi_max, &curve.problem); 
+	sinalpha = curve.defl.b_psi[i] * sqrt(1.0 - 2.0*mass_over_r);
+	curve.defl.toa_b[i] = defltoa->toa_outgoing_u(curve.defl.b_psi[i], &curve.problem );
 
 
 	if (cosalpha >= cos(x1)){
-	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], radius, &curve.problem );
+	  dpsi_db_val = defltoa->dpsi_db_outgoing_u( curve.defl.b_psi[i], &curve.problem );
 	  cosalpha = sqrt(1.0 - pow(sinalpha,2));
-	  curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * radius*dpsi_db_val));
+	  curve.defl.dcosa_dcosp_b[i] = fabs( sinalpha/cosalpha * sqrt(1.0 - 2.0*mass_over_r) / (sin(curve.defl.psi_b[i]) * dpsi_db_val));
 	}
 	else{
 	  alpha = asin(sinalpha);
@@ -900,9 +894,9 @@ class LightCurve Bend ( class LightCurve* incurve,
 	}
     }
     
-    curve.defl.b_psi[3*NN] = curve.defl.b_max;   // maximums
+    curve.defl.b_psi[3*NN] = curve.defl.b_R_max;   // maximums
     curve.defl.psi_b[3*NN] = curve.defl.psi_max;
-    curve.defl.toa_b[3*NN] = defltoa->toa_outgoing_u(curve.defl.b_max, radius, &curve.problem );
+    curve.defl.toa_b[3*NN] = defltoa->toa_outgoing_u(curve.defl.b_max/radius, &curve.problem );
 
     alpha = Units::PI/2.0;
     yy = y2 + yslope*(alpha - x2);
@@ -914,7 +908,7 @@ class LightCurve Bend ( class LightCurve* incurve,
 
       angles.open("bend.txt");
       char line[265]; // line of the data file being read in
-      unsigned int numLines(0);
+      //unsigned int numLines(0);
       double get_alpha, get_bR, get_psi, get_dcos, get_toa;
 
       std::cout << "Reading in a file is not yet implemented" << std::endl;
@@ -929,18 +923,16 @@ class LightCurve Bend ( class LightCurve* incurve,
 	sscanf( line, "%lf %lf %lf %lf %lf", &get_alpha, &get_bR, &get_psi, &get_dcos, &get_toa );
 	//std::cout << "line=" << line << std::endl;
 	//std::cout << "radius = " << radius << " b/R=" << get_bR << std::endl;
-	curve.defl.b_psi[i] = get_bR * radius;
+	curve.defl.b_psi[i] = get_bR ;
 	curve.defl.psi_b[i] = get_psi;
-	curve.defl.toa_b[i] = get_toa * radius;
+	curve.defl.toa_b[i] = get_toa; // toa is now dimensionless
 	curve.defl.dcosa_dcosp_b[i] = get_dcos;
       }
 
-      curve.defl.b_max =  curve.defl.b_psi[3*NN];
+      curve.defl.b_R_max =  curve.defl.b_psi[3*NN];
+      curve.defl.b_max = curve.defl.b_R_max * radius;
       curve.defl.psi_max =  curve.defl.psi_b[3*NN];
     } // End readflag==1
-
-
-
 
     //printflag = 0;
     if (printflag){
@@ -960,8 +952,8 @@ class LightCurve Bend ( class LightCurve* incurve,
 
       for (unsigned int i(0); i <= 3*NN; i++ ) { 
 
-	b = curve.defl.b_psi[i];
-	sinalpha = b/radius * sqrt( 1.0 - 2.0 * mass_over_r );
+	//b = curve.defl.b_psi[i] * radius;
+	sinalpha = curve.defl.b_psi[i] * sqrt( 1.0 - 2.0 * mass_over_r );
 	alpha = asin(sinalpha);
 
 	psi = curve.defl.psi_b[i];
@@ -970,10 +962,10 @@ class LightCurve Bend ( class LightCurve* incurve,
 				
 	    bend 
 	      << alpha << " " 
-	      << b/radius << " " 
+	      << curve.defl.b_psi[i] << " " 
 	      << psi << " " 
 	      << dcosa_dcosp << " " 
-	      << toa_val / radius << " "
+	      << toa_val << " "
 	      << std::endl;	       		
        	   
       }

@@ -17,17 +17,22 @@ CCFLAGS=-Wall -pedantic -O3
 
 LDFLAGS=-lm
 
-NAMES=spot
+NAMES=spot bend
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
 	Chi.o Atmo.o SphericalOblModel.o matpack.o # defining the objects
 
 APPOBJ=Spot.o
 
+BOBJ=Bend.o
+
 all: $(NAMES)
 
 spot: Spot.o $(OBJ)
 	$(CC) $(CCFLAGS) Spot.o $(OBJ) $(LDFLAGS) -o spot
+
+bend: Bend.o $(OBJ)
+	$(CC) $(CCFLAGS) Bend.o $(OBJ) $(LDFLAGS) -o bend
 
 Spot.o: \
 	Spot.cpp \
@@ -42,6 +47,20 @@ Spot.o: \
 	Units.h \
 	Makefile
 	$(CC) $(CCFLAGS) -c Spot.cpp
+
+Bend.o: \
+	Bend.cpp \
+	OblDeflectionTOA.h \
+	Chi.h \
+	Atmo.h \
+	Struct.h \
+	PolyOblModelNHQS.h \
+	PolyOblModelCFLQS.h \
+	SphericalOblModel.h \
+	OblModelBase.h \
+	Units.h \
+	Makefile
+	$(CC) $(CCFLAGS) -c Bend.cpp
 
 PolyOblModelBase.o: \
 	PolyOblModelBase.h \
