@@ -99,8 +99,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     E_band_lower_2 = curve.para.E_band_lower_2;     // in keV
     E_band_upper_2 = curve.para.E_band_upper_2;     // in keV
     E0 = curve.para.E0;
-    E1 = curve.para.E1;
-    E2 = curve.para.E2;
+    E1 = curve.para.L1;
+    E2 = curve.para.L2;
     DeltaE = curve.para.DeltaE;
    
     redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);

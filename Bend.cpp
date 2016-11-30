@@ -332,9 +332,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     
     incurve = &curve;
 
-    //    double interplin(double *xp, double *yp, int np, double xb, int *n_nearest_pt);
 
-    get_psi = interplin( mr,psi, numangles, mass_over_r, &jlo);
+    incurve->defl.psi_b = interplin( mr, psi, numangles, mass_over_r, &jlo);
 
     }
 

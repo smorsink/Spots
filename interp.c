@@ -9,27 +9,31 @@
 #include <math.h>
 #include "interp.h"
 #include "Struct.h"
+#include "nrutil.h"
 
 /* Do a linear interpolation between two points. */
 
 double interplin(double *xp, double **yp, int numangles, double xb, int *n_nearest_pt){
 
   int k;
-  double y
+  double *yint;
+
+  yint = dvector(0,numangles);
+
   k=*n_nearest_pt;
 
-  printf("xb = %lf; xp[k] = %lf; xp[k+1] = %lf \n",
-	 xb, xp[k], xp[k+1]);
-
-  printf("yp[k][5] = %lf; yp[k+1][5] = %lf \n",
-    yp[k][0], yp[k+1][0]);
+  // printf("xb = %lf; xp[k] = %lf; xp[k+1] = %lf \n",
+  //	 xb, xp[k], xp[k+1]);
 
   for (unsigned int i(0);i<=numangles;i++){
+
+    yint[i] =  yp[k][i] + (xb-xp[k])*(yp[k+1][i]-yp[k][i])/(xp[k+1]-xp[k]);
 
   }
 
   //return yp[k] + (xb-xp[k])*(yp[k+1]-yp[k])/(xp[k+1]-xp[k]);
-  return (0.0);
+ 
+  return (*yint);
 }
 
 /* Polynomial interpolation.  This is based on the interpolation routine in

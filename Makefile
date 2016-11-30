@@ -20,7 +20,7 @@ LDFLAGS=-lm
 NAMES=spot bend
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
-	Chi.o Atmo.o SphericalOblModel.o matpack.o # defining the objects
+	Chi.o Atmo.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
 
 APPOBJ=Spot.o
 
@@ -119,6 +119,17 @@ Units.o: \
 	Units.h \
 	Units.cpp
 	$(CC) $(CCFLAGS) -c Units.cpp
+
+interp.o: \
+	interp.h \
+	nrutil.h \
+	interp.c
+	$(CC) $(CCFLAGS) -c interp.c
+
+nrutil.o: \
+	nrutil.h \
+	nrutil.c
+	$(CC) $(CCFLAGS) -c nrutil.c
 
 matpack.o: \
 	matpack.h \
