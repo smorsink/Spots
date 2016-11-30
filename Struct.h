@@ -22,7 +22,7 @@
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
-
+#define MR 500             // Maximum number of m/r values
 
 struct Parameters {      // local bit of spot information
   double theta;          // Angle between the NS spin axis and the spot bin; in radians
@@ -83,6 +83,12 @@ class Defl {
 	double psi_max;               // largest possible value of psi
 	double b_max;                 // largest possible value of b
 	double b_R_max;               // largest possible value of b/R
+	double mr[MR];              // values of M/R
+	double b[MR][3*NN+1];        // values of b/R
+	double psi[MR][3*NN+1];      // values of psi
+	double dcosa[MR][3*NN+1];    // values of dcosa/dcospsi
+	double toa[MR][3*NN+1];      // values of toa
+
 	//class OblDeflectionTOA defltoa;
 };
 

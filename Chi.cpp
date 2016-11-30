@@ -911,7 +911,7 @@ class LightCurve Bend ( class LightCurve* incurve,
       //unsigned int numLines(0);
       double get_alpha, get_bR, get_psi, get_dcos, get_toa;
 
-      std::cout << "Reading in a file is not yet implemented" << std::endl;
+      // std::cout << "Reading in a file is not yet implemented" << std::endl;
  
       for (unsigned int i(1);i<=5;i++){
 	angles.getline(line,265);
@@ -942,7 +942,7 @@ class LightCurve Bend ( class LightCurve* incurve,
 	
       // Open output file and print out header
 
-      bend.open("bend.txt", std::ios_base::trunc);
+      bend.open("angles.txt", std::ios_base::trunc);
       bend.precision(10);
       bend << "# Mass = " <<  Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun "    << std::endl;
       bend << "# R_sp = " << Units::nounits_to_cgs(radius, Units::LENGTH )*1.0e-5 << " km " << std::endl;
