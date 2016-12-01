@@ -162,21 +162,6 @@ void hunt_surf(double xx[], int first, int n, double x, int *jlo)
 
 
 
-/* Do a 1-D interpolation on the first index of a 2-D array. */
-double interp_b(double *xp, double **zp, int nx, int y, double xb,
-                int *n){
-  int i;
-  double *z_at_y, val;
-
-
-  //  z_at_y = dvector(1, nx);
-  for (i=1; i<=nx; i++)
-    z_at_y[i] = zp[i][y];
-  // val =  interp(xp, z_at_y, nx, xb, n);
-  // free_dvector(z_at_y, 1, nx);
-  return val;
-}
-
 
 
 
