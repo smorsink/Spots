@@ -18,7 +18,7 @@ void hunt_surf(double xx[], int first, int n, double x, int *jlo);
 double interp2(double *, double *, double **, int, int, double, double, int *,
                int *);
 
-double interplin(double *, double **yp, int, double, int *);
+double * interplin(double *, double **yp, int, double, int *);
 
 double interp_b(double *, double **, int, int, double, int *);
 

@@ -76,18 +76,23 @@ struct Flags {
 
 class Defl {
 	public:                       // allocates the memory for the lookup table -- not evenly spaced
-	double psi_b[3*NN+1];         // table where given psi, look up b_R
-	double b_psi[3*NN+1];         // table where given b_R, look up psi
-	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
-	double toa_b[3*NN+1];           // table for toa values
+  //double psi_b[3*NN+1];         // table where given psi, look up b_R
+  //	double b_psi[3*NN+1];         // table where given b_R, look up psi
+  //	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
+  //	double toa_b[3*NN+1];           // table for toa values
+	double *psi_b; // psi values for specific M/R
+	double *b_psi; // b values for specific M/R
+	double *dcosa_dcosp_b; // dcos(alpha)/dcos(psi) values for specific M/R
+	double *toa_b; // toa values for specific M/R
 	double psi_max;               // largest possible value of psi
 	double b_max;                 // largest possible value of b
 	double b_R_max;               // largest possible value of b/R
-	double mr[MR];              // values of M/R
-	double b[MR][3*NN+1];        // values of b/R
-	double psi[MR][3*NN+1];      // values of psi
-	double dcosa[MR][3*NN+1];    // values of dcosa/dcospsi
-	double toa[MR][3*NN+1];      // values of toa
+	int num_mr;              // number of M/R values
+	double *mr;              // values of M/R
+	double **b;        // values of b/R for different M/R
+	double **psi;      // values of psi for different M/R
+	double **dcosa;    // values of dcosa/dcospsi for different M/R
+	double **toa;      // values of toa for different M/R
 
 	//class OblDeflectionTOA defltoa;
 };

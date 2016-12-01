@@ -32,6 +32,8 @@
 #include "Units.h"
 #include "Struct.h"
 #include "time.h"
+#include "nrutil.h"
+#include "interp.h"
 #include <stdio.h>
 using namespace std;
 
@@ -488,7 +490,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
     std::cout << "ComputeAngles:" << std::endl;
-
+    std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -540,6 +542,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         /**************************************************************************/
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
+
+	//	std::cout << "i = " << i 
+	//	  << " psi = " << curve.psi[i] << std::endl; 
 
         if ( curve.psi[i] < curve.defl.psi_max ) {
             if (curve.psi[i] > curve.defl.psi_b[j] )
@@ -782,14 +787,89 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         } // end "there is a solution"
     }  // closing For-Loop-2
 
+    //  std::cout << "End of ComputeAngles" << std::endl; 
+
     return curve;
 
 } // End ComputeAngles
 
 /**************************************************************************************/
-/* Bend:                                                                              */
-/*              Creates a Table of alpha, b, psi, dpsi_db                             */
-/*																					  */
+/* ReadBend:                                                                          */
+/*         Reads in the table of alpha, b, psi, dpsi_db for different M/R values      */
+/* pass: incurve = contains needed values like mass, radius, inclination, theta_0     */
+/*       defltoa =                                                                    */
+/**************************************************************************************/
+class LightCurve ReadBend ( class LightCurve* incurve,
+				                 char *bend_file) {
+  std::ifstream in;     // Bending Angle File
+
+  class LightCurve curve;
+  curve = *incurve;
+
+  char line[265]; // line of the data file being read in
+  double get_alpha, get_bR, get_psi, get_dcos, get_toa, get_mr;
+  unsigned int get_i, numangles, num_mr;
+  
+  in.open(bend_file);
+  // Read in value of NN
+  in.getline(line,265);      
+  sscanf( line, "#NN= %u #Number of alpha cells = 3NN+1", &numangles);
+  if ( numangles != NN)
+    std::cerr << "Something is really wrong here: numangles != NN "<< std::endl;
+
+  // Read in value of num_mr
+  in.getline(line,265);      
+  sscanf( line, "#NUM_MR= %u", &num_mr);
+  curve.defl.num_mr = num_mr;
+  //std::cout << "num_mr = " << num_mr << std::endl;
+  if ( num_mr > MR)
+    std::cerr << "Problem: num_mr > MR... check struct.h " << std::endl;
+ 
+  curve.defl.mr = dvector(0,num_mr);
+  curve.defl.psi = dmatrix(0,num_mr,0,3*numangles+1);
+  curve.defl.b = dmatrix(0,num_mr,0,3*numangles+1);
+  curve.defl.dcosa = dmatrix(0,num_mr,0,3*numangles+1);
+  curve.defl.toa = dmatrix(0,num_mr,0,3*numangles+1);
+  
+     // Loop through the M/R values
+      for (unsigned int j(0);j<=num_mr; j++){
+	in.getline(line,265);      
+	sscanf( line, "#M/R= %lf", &get_mr );
+	//std::cout << "line = " << line << std::endl;
+	curve.defl.mr[j] = get_mr;
+	in.getline(line,265);  
+
+	for (unsigned int i(0);i<=3*numangles; i++){
+
+	  in.getline(line,265);  
+	  sscanf( line, "%lf %lf %lf %lf %lf %lf %u", &get_alpha, &get_bR, &get_psi, &get_dcos, &get_toa, &get_mr, &get_i );
+
+	  if ( get_mr != curve.defl.mr[j] || get_i != i)
+	    std::cerr << "BIG PROBLEM!!!! " << std::endl;
+
+	  curve.defl.b[j][i] = get_bR;
+	  curve.defl.psi[j][i] = get_psi;
+	  curve.defl.dcosa[j][i] = get_dcos;
+	  curve.defl.toa[j][i] = get_toa;
+	  
+	} // end-for-i loop
+
+      } // end-for-j loop     
+
+      in.close();
+    
+      //std::cout << "ReadBend: test psi = " << curve.defl.psi[10][10] << std::endl;
+
+      return curve;
+
+}
+
+
+
+
+/**************************************************************************************/
+/* Bend:                                                                          */
+/*        Interpolates to find bending angles for specific M/R value              */
 /* pass: incurve = contains needed values like mass, radius, inclination, theta_0     */
 /*       defltoa =                                                                    */
 /**************************************************************************************/
@@ -806,8 +886,10 @@ class LightCurve Bend ( class LightCurve* incurve,
     std::ofstream bend;      // output stream; printing information to the output file
     std::ifstream angles;   // input stream; read in the bending angles from a file
 
-    int printflag(1); // Set to 1 if you want to print out stuff to a file.
+    int printflag(0); // Set to 1 if you want to print out stuff to a file.
     int readflag(0);
+    int computeflag(0); // Set to 1 if you want to compute the bending angles.
+    int interpflag(1);
 
     double 
       eps,
@@ -823,11 +905,12 @@ class LightCurve Bend ( class LightCurve* incurve,
       dpsi_db_val(0.0),          // Derivative of MLCB20 with respect to b
       dcosa_dcosp;
           
-   
-
-     std::cout << "Entering Bend: M/R = " 
+  
+    /* std::cout << "Entering Bend: M/R = " 
 	      << curve.para.mass_over_r
 	      << std::endl;
+
+	      std::cout << "Bend: test psi = " << curve.defl.psi[10][10] << std::endl;*/
    
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
@@ -837,8 +920,7 @@ class LightCurve Bend ( class LightCurve* incurve,
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
 
-    if (readflag==0){ // Compute Lookup Table
-
+    if (computeflag){ // Compute Lookup Table
 
 
    /**********************************************************/
@@ -926,7 +1008,13 @@ class LightCurve Bend ( class LightCurve* incurve,
     // Finished computing lookup table
     }    
 
-    if (readflag==1){ // Read in values instead of computing them 
+    if (readflag){ // Read in values instead of computing them 
+
+      // Allocate Memory -- Look up table for specific M/R value
+      curve.defl.psi_b = dvector(0,3*NN+1);
+      curve.defl.b_psi = dvector(0,3*NN+1);
+      curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
+      curve.defl.toa_b = dvector(0,3*NN+1);
 
       angles.open("bend.txt");
       char line[265]; // line of the data file being read in
@@ -964,7 +1052,7 @@ class LightCurve Bend ( class LightCurve* incurve,
 	
       // Open output file and print out header
 
-      bend.open("angles.txt", std::ios_base::trunc);
+      bend.open("bend.txt", std::ios_base::trunc);
       bend.precision(10);
       bend << "# Mass = " <<  Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun "    << std::endl;
       bend << "# R_sp = " << Units::nounits_to_cgs(radius, Units::LENGTH )*1.0e-5 << " km " << std::endl;
@@ -991,7 +1079,85 @@ class LightCurve Bend ( class LightCurve* incurve,
 	      << std::endl;	       		
        	   
       }
-    }
+    } // End printflag==1
+
+    if (interpflag){
+
+    // Interpolate to find bending angles for a particular m/r value
+
+      double mr_lo, mr_hi, mr_step;
+      unsigned int num_mr(curve.defl.num_mr);
+      unsigned int numangles(NN);
+
+      mr_lo = curve.defl.mr[0];
+      mr_hi = curve.defl.mr[num_mr];
+      mr_step = (mr_hi-mr_lo)/num_mr;
+
+      int jlo, jhi;
+    
+      if (mass_over_r < mr_hi){
+	jlo = (mass_over_r - mr_lo)/mr_step;
+	jhi = jlo+1;
+      }
+      else{
+	jlo = num_mr-1;
+	jhi = num_mr;
+      }
+
+      /*     std::cout << "mass_over_r = " << mass_over_r <<
+	" jlo=" << jlo << " m/r[jlo]=" << curve.defl.mr[jlo] << std::endl;
+      std::cout << "mass_over_r = " << mass_over_r <<
+	" jhi=" << jhi << " m/r[jhi]=" << curve.defl.mr[jhi] << std::endl;
+      */
+
+  
+
+    curve.defl.psi_b = interplin( curve.defl.mr, curve.defl.psi, numangles, mass_over_r, &jlo);
+    curve.defl.b_psi =  interplin( curve.defl.mr, curve.defl.b, numangles, mass_over_r, &jlo);
+    curve.defl.dcosa_dcosp_b =  interplin( curve.defl.mr, curve.defl.dcosa, numangles, mass_over_r, &jlo);
+    curve.defl.toa_b =  interplin( curve.defl.mr, curve.defl.toa, numangles, mass_over_r, &jlo);
+    
+    curve.defl.psi_max = curve.defl.psi_b[3*numangles];
+    curve.defl.b_R_max = curve.defl.b_psi[3*numangles];
+
+    // std::cout << "b/R_max = " << curve.defl.b_R_max << std::endl;
+    /*
+      bend.open("test.txt", std::ios_base::trunc);
+      bend.precision(10);
+      bend << "# Mass = " <<  Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun "    << std::endl;
+      bend << "# R_sp = " << Units::nounits_to_cgs(radius, Units::LENGTH )*1.0e-5 << " km " << std::endl;
+      bend << "# M/R = " << curve.para.mass_over_r << std::endl;
+      bend << "# R/M = " << 1.0/curve.para.mass_over_r << std::endl;
+      bend << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
+
+      for (unsigned int i(0); i <= 3*NN; i++ ) { 
+
+	//b = curve.defl.b_psi[i] * radius;
+	sinalpha = curve.defl.b_psi[i] * sqrt( 1.0 - 2.0 * mass_over_r );
+	alpha = asin(sinalpha);
+	if (i==3*NN)
+	  alpha = Units::PI/2.0;
+
+	psi = curve.defl.psi_b[i];
+	dcosa_dcosp = curve.defl.dcosa_dcosp_b[i];
+	toa_val = curve.defl.toa_b[i];
+				
+	    bend 
+	      << alpha << " " 
+	      << curve.defl.b_psi[i] << " " 
+	      << psi << " " 
+	      << dcosa_dcosp << " " 
+	      << toa_val << " "
+	      << std::endl;	       		
+       	   
+      }
+
+    */
+
+    } // End interpflag==1
+
+
+    //std::cout << "Bend: TEST psi[10] = " << curve.defl.psi_b[10] << std::endl;
 
     return curve;
 

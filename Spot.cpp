@@ -19,6 +19,7 @@
 // 2016-08-05 - SMM: Bend is now called one time each latitude
 // 2016-09-19 - SMM: This version should do large spots correctly! However 2nd spot hasn't been changed.
 // 2016-11-13 - SMM: When spot goes over the pole, changed the order that pieces are computed.
+// 2016-12-01 - SMM: Adding dynamic memory allocation
 
 // INCLUDE ALL THE THINGS! 
 // If you do not get this reference, see 
@@ -42,6 +43,7 @@
 #include "Exception.h"
 #include "Struct.h"
 #include "time.h"
+#include "nrutil.h"
 #include <string.h>
 
 // MAIN
@@ -56,7 +58,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   std::ofstream allflux;      // Prints information about the star's surface area
   std::ofstream testout;  // testing output stream;
   std::ofstream param_out;// piping out the parameters and chisquared
-  
 
   double incl_1(90.0),          // Inclination angle of the observer, in degrees
     incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
@@ -69,7 +70,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mass_over_req,              // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
-    bbrat(1.0),                 // Ratio of blackbody to Compton scattering effects, unitless
     ts(0.0),                    // Phase shift or time off-set from data; Used in chi^2 calculation
     spot_temperature(0.0),      // Inner temperature of the spot, in the star's frame, in keV
     rho(0.0),                   // Angular radius of the inner bullseye part of the spot, in degrees (converted to radians)
@@ -112,11 +112,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
-         out_dir[80],                   // Directory we could send to; unused here, done in the shell script
-         T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
-         data_file[256],                // Name of input file for reading in data
-	  //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
-         filenameheader[256]="Run";
+    bend_file[256] = "No File Name Specified!", 
+    out_dir[80],                   // Directory we could send to; unused here, done in the shell script
+    T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
+    data_file[256],                // Name of input file for reading in data
+    //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
+    filenameheader[256]="Run";
 
          
   // flags!
@@ -128,6 +129,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
     	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
     	 ignore_time_delays(false),  // True if we are ignoring time delays
+    bend_file_is_set(false),
     	 T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
     	 normalize_flux(false),      // True if we are normalizing the output flux to 1
     	 //E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
@@ -148,12 +150,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for ( int i(1); i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
             switch ( argv[i][1] ) {
-	    case 'a':  // Anisotropy parameter
-	                sscanf(argv[i+1], "%lf", &aniso);
-	                break;
+
 	            
-	    case 'b': // Blackbody ratio
-	            	sscanf(argv[i+1], "%lf", &bbrat);
+	    case 'b': // Bending Angle File
+	            	sscanf(argv[i+1], "%s", bend_file);	
+			bend_file_is_set = true;
 	            	break;
 	            
 	    case 'D':  // Distance to NS
@@ -361,6 +362,28 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
             } // end switch	
         } // end if
     } // end for
+
+    // Allocate Memory for Bending Angle table for specific M/R
+      // Allocate Memory -- Look up table for specific M/R value
+    curve.defl.psi_b = dvector(0,3*NN+1);
+    curve.defl.b_psi = dvector(0,3*NN+1);
+    curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
+    curve.defl.toa_b = dvector(0,3*NN+1);
+
+    if (bend_file_is_set){ // Read in table of bending angles for all M/R
+
+      // ReadBend allocates memory for the look up tables
+      // Reads in tables for b, psi, d(cosalpha)/d(cospsi), toa
+      // All depend on M/R
+
+      curve = ReadBend(&curve,bend_file); 
+      //std::cout << "Spot: test psi = " << curve.defl.psi[10][10] << std::endl;
+
+    }
+
+
+
+
 
     /***********************************************/
     /* CHECKING THAT THE NECESSARY VALUES WERE SET */
@@ -730,8 +753,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.para.radius = rspot; // load rspot into structure
 	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
+	  std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+	  std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
 	  curve = Bend(&curve,defltoa);
+	  std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
+
 
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
@@ -765,7 +792,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){ 
 	      curve = ComputeAngles(&curve, defltoa); 
+	      
 	      curve = ComputeCurve(&curve);
+	      
 	    }
 	
 	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
@@ -947,11 +976,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		*/
 
 		
-		    for (unsigned int p(0);p<pieces;p++){
+	for (unsigned int p(0);p<pieces;p++){
 
-		      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve, model);
+	  curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve, model);
 
-      double deltatheta(0.0);
+	  double deltatheta(0.0);
 
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
@@ -981,12 +1010,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       // Values we need in some of the formulas.
 	  cosgamma = model->cos_gamma(mu_2);
-      curve.para.cosgamma = cosgamma;
+	  curve.para.cosgamma = cosgamma;
 
 	  curve.para.radius = rspot; // load rspot into structure
 	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
+	  std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+
+	  std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
+
+
 	  curve = Bend(&curve,defltoa);
 
 	  numphi = 2.0*(Units::PI-phi_edge)/dphi;
@@ -1276,7 +1311,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     out.close();
 
-    std::cout << "Flux[0] = " << curve.f[0][0] << std::endl;
+    /*    std::cout << "Flux[0] = " << curve.f[0][0] << std::endl;
    
     //std::ofstream allflux;      // output stream; printing information to the output file    
     allflux.open("allflux",std::fstream::app);
@@ -1296,7 +1331,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    << SurfaceArea * pow(Units::nounits_to_cgs(1.0, Units::LENGTH )*1.0e-5,2)
 	    << std::endl;
 
-    allflux.close();
+	    allflux.close();*/
 
     
     //delete defltoa;

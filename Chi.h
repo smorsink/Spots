@@ -30,6 +30,9 @@ class LightCurve ComputeAngles( class LightCurve* incurve,
 class LightCurve Bend ( class LightCurve* incurve,
 			class OblDeflectionTOA* defltoa);
 
+class LightCurve ReadBend ( class LightCurve* incurve,
+			    char *bend_file);
+
 
 class LightCurve ShiftCurve( class LightCurve* angles, double phishift);
 

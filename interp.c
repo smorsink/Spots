@@ -13,19 +13,16 @@
 
 /* Do a linear interpolation between two points. */
 
-double interplin(double *xp, double **yp, int numangles, double xb, int *n_nearest_pt){
+double * interplin(double *xp, double **yp, int numangles, double xb, int *n_nearest_pt){
 
   int k;
   double *yint;
 
-  yint = dvector(0,numangles);
+  yint = dvector(0,3*numangles+1);
 
   k=*n_nearest_pt;
 
-  // printf("xb = %lf; xp[k] = %lf; xp[k+1] = %lf \n",
-  //	 xb, xp[k], xp[k+1]);
-
-  for (unsigned int i(0);i<=numangles;i++){
+  for (unsigned int i(0);i<=3*numangles;i++){
 
     yint[i] =  yp[k][i] + (xb-xp[k])*(yp[k+1][i]-yp[k][i])/(xp[k+1]-xp[k]);
 
@@ -33,7 +30,7 @@ double interplin(double *xp, double **yp, int numangles, double xb, int *n_neare
 
   //return yp[k] + (xb-xp[k])*(yp[k+1]-yp[k])/(xp[k+1]-xp[k]);
  
-  return (*yint);
+  return (yint);
 }
 
 /* Polynomial interpolation.  This is based on the interpolation routine in
@@ -163,27 +160,6 @@ void hunt_surf(double xx[], int first, int n, double x, int *jlo)
 	}
 }
 
-
-
-/* Do a 2-dimensional interpolation.  */
-double interp2(double *xp, double *yp, double **zp, int nx, int ny,
-               double xb, double yb, int *x_nearest_pt, int *y_nearest_pt){
-
-  const int max_order = 4;  /*Interpolation in the x-direction is of the order
-                              max(max_order, m) where m is the order of 
-                              interpolation used in interp.*/
-  int i,lo;
-  int nnp;
-  double y_interp[max_order+1];
-  
-  //hunt(xp, nx, xb, x_nearest_pt);
-  lo = IMIN(IMAX(*x_nearest_pt-(max_order-1)/2, 1), nx+1-max_order);
-  for (i=1; i<=max_order; i++){
-    //y_interp[i] = interp(yp, zp[lo+i-1], ny, yb, y_nearest_pt);
-  }
-  nnp = max_order >> 1;
-  //return interp(&xp[lo-1], y_interp, max_order, xb, &nnp);
-}
 
 
 /* Do a 1-D interpolation on the first index of a 2-D array. */

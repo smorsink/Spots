@@ -144,6 +144,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	       //Convert to photons/(s cm^2 keV)
 	        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
             if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+
+	    //std::cout << "i=" << i << " flux = " << curve.f[0][i] << std::endl; 
 	    }
 
 	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 6 ){ // Blackbody, graybody factor

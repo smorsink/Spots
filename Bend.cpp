@@ -260,7 +260,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       double get_alpha, get_bR, get_psi, get_dcos, get_toa, get_mr;
       unsigned int get_i;
 
-      double *mr, **bR, **psi, **dcosa, **toa;
+  
 
       // Read in value of NN
       in.getline(line,265);      
@@ -275,15 +275,19 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       if ( num_mr > MR)
 	std::cerr << "Problem: num_mr > MR... check struct.h " << std::endl;
  
-      mr = dvector(0,num_mr);
-      psi = dmatrix(0,num_mr,0,numangles);
+      curve.defl.mr = dvector(0,num_mr);
+      curve.defl.psi = dmatrix(0,num_mr,0,3*numangles+1);
+      curve.defl.b = dmatrix(0,num_mr,0,3*numangles+1);
+      curve.defl.dcosa = dmatrix(0,num_mr,0,3*numangles+1);
+      curve.defl.toa = dmatrix(0,num_mr,0,3*numangles+1);
+
 
       // Loop through the M/R values
       for (unsigned int j(0);j<=num_mr; j++){
 	in.getline(line,265);      
 	sscanf( line, "#M/R= %lf", &get_mr );
 	std::cout << "line = " << line << std::endl;
-	mr[j] = curve.defl.mr[j] = get_mr;
+	curve.defl.mr[j] = get_mr;
 	in.getline(line,265);  
 
 	for (unsigned int i(0);i<=3*numangles; i++){
@@ -295,7 +299,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    std::cerr << "BIG PROBLEM!!!! " << std::endl;
 
 	  curve.defl.b[j][i] = get_bR;
-	  psi[j][i] = curve.defl.psi[j][i] = get_psi;
+	  curve.defl.psi[j][i] = get_psi;
 	  curve.defl.dcosa[j][i] = get_dcos;
 	  curve.defl.toa[j][i] = get_toa;
 	  
@@ -308,8 +312,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     // Interpolate to find bending angles for a particular m/r value
 
-    mr_lo = mr[0];
-    mr_hi = mr[num_mr];
+    mr_lo = curve.defl.mr[0];
+    mr_hi = curve.defl.mr[num_mr];
     mr_step = (mr_hi-mr_lo)/num_mr;
 
     mass_over_r = 0.1722729212;
@@ -326,15 +330,22 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
     std::cout << "mass_over_r = " << mass_over_r <<
-      " jlo=" << jlo << " m/r[jlo]=" << mr[jlo] << std::endl;
+      " jlo=" << jlo << " m/r[jlo]=" << curve.defl.mr[jlo] << std::endl;
     std::cout << "mass_over_r = " << mass_over_r <<
-      " jhi=" << jhi << " m/r[jhi]=" << mr[jhi] << std::endl;
+      " jhi=" << jhi << " m/r[jhi]=" << curve.defl.mr[jhi] << std::endl;
     
     incurve = &curve;
 
+    double *b_int, *psi_int, *dcosa_int, *toa_int;
+    psi_int = dvector(0,3*numangles+1);
+    b_int = dvector(0,3*numangles+1);
+    dcosa_int = dvector(0,3*numangles+1);
+    toa_int = dvector(0,3*numangles+1);
 
-    incurve->defl.psi_b = interplin( mr, psi, numangles, mass_over_r, &jlo);
-
+    psi_int = interplin( curve.defl.mr, curve.defl.psi, numangles, mass_over_r, &jlo);
+    b_int =  interplin( curve.defl.mr, curve.defl.b, numangles, mass_over_r, &jlo);
+    dcosa_int =  interplin( curve.defl.mr, curve.defl.dcosa, numangles, mass_over_r, &jlo);
+    toa_int =  interplin( curve.defl.mr, curve.defl.toa, numangles, mass_over_r, &jlo);
     }
 
     delete model;
