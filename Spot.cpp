@@ -647,7 +647,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
 
-      std::cout << " Oblate Neutron Star" << std::endl;
+      // std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
@@ -734,12 +734,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  mu_1 = cos(thetak);
 	  if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 
-	  if ( mu_1 < 0.0){
-	    std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
+	  //if ( mu_1 < 0.0){
+	    //std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
 			  //mu_1 = fabs(mu_1);
 			  //thetak = Units::PI - thetak;
 			  //curve.para.incl = Units::PI - incl_1;
-	  }
+	  //}
 
 	  if (NS_model != 3)
 	    rspot = model->R_at_costheta(mu_1);
@@ -753,11 +753,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.para.radius = rspot; // load rspot into structure
 	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+	  //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-	  std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
+	  //std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
 	  curve = Bend(&curve,defltoa);
-	  std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
+	  //std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
 
 
 	  numphi = 2.0*phi_edge/dphi;
@@ -791,10 +791,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){ 
-	      curve = ComputeAngles(&curve, defltoa); 
-	      
-	      curve = ComputeCurve(&curve);
-	      
+	      curve = ComputeAngles(&curve, defltoa); 	      
+	      curve = ComputeCurve(&curve);	      
 	    }
 	
 	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature

@@ -3,7 +3,7 @@
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
 base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-8"
+exe_dir="$base/Spot-master-9"
 #pwd
 make spot
 times
@@ -44,13 +44,14 @@ fi
 numtheta=1 # number of theta bins; for a small spot, only need one
 spotmodel=2
 NS_model=2
-out_file="$out_dir/test1a.txt"
+out_file="$out_dir/test1b.txt"
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel"
-times
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel" -b "angles100.txt"
+#times
 
 # TEST OS1b = 600 Hz, big spot
 NS_model=1
+spotmodel=0
 numbins=128
 numtheta=100
 rho=1.0
@@ -58,6 +59,19 @@ out_file="$out_dir/os1b.txt"
 ## RUNNING THE CODE
 #./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel"
 #times
+
+# TEST OS1b = 600 Hz, big spot
+NS_model=1
+spotmodel=0
+numbins=128
+numtheta=4
+rho=1.0
+out_file="$out_dir/test1b-1.txt"
+## RUNNING THE CODE
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel" -b "angles100.txt"
+times
+
+
 
 # TEST OS1z = 600 Hz, big spot
 NS_model=1

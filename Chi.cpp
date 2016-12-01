@@ -489,8 +489,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
-    std::cout << "ComputeAngles:" << std::endl;
-    std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
+    //std::cout << "ComputeAngles:" << std::endl;
+    //std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -1119,6 +1119,7 @@ class LightCurve Bend ( class LightCurve* incurve,
     
     curve.defl.psi_max = curve.defl.psi_b[3*numangles];
     curve.defl.b_R_max = curve.defl.b_psi[3*numangles];
+    curve.defl.b_max =  curve.defl.b_R_max * curve.para.radius;
 
     // std::cout << "b/R_max = " << curve.defl.b_R_max << std::endl;
     /*
