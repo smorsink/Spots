@@ -1034,7 +1034,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    phi_edge=-1*Units::PI;
 	    dphi=0.0;
 	    phishift = 0.0;
-	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho)) * curve.para.gamma_k[k] ;
+	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho)) ;
+	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
 	  }
 	  //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
        
