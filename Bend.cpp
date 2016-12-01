@@ -111,18 +111,26 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     radius = Units::cgs_to_nounits( radius*1.0e5, Units::LENGTH );   
     model = new SphericalOblModel( radius );
 
+    // Allocate Memory for Bending Angle table for specific M/R
+      // Allocate Memory -- Look up table for specific M/R value
+    curve.defl.psi_b = dvector(0,3*NN+1);
+    curve.defl.b_psi = dvector(0,3*NN+1);
+    curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
+    curve.defl.toa_b = dvector(0,3*NN+1);
+
+
     if (calcflag){ // Calculate a table of bending angles for a range of M/R values
 
       out.open(out_file);
       out.precision(10);
 
-      out << "#NN= " << NN << " #Number of alpha cells = 3NN+1 " << std::endl;
-      out << "#NUM_MR= " << num_mr << " #Number of M/R values " << std::endl;
+      out << NN <<  std::endl;
+      out << num_mr << std::endl;
 
       for (int j(0);j<=num_mr;j++){
 
 	mass_over_r = mr_lo + j*(mr_hi-mr_lo)/(num_mr);
-
+	std::cout << "M/R = " << mass_over_r << std::endl;
 	OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, mass_over_r , radius); 
 
 	/**********************************************************/
@@ -228,8 +236,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	// Finished computing lookup table
  
 
-	out << "#M/R= " << mass_over_r << std::endl;
-	out << "#alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
+	//	out << "%M/R= " << mass_over_r << std::endl;
+	//out << "%alpha #b/R #psi #dcosalpha/dcospsi #toa*C/R" << std::endl;
 
 	for (unsigned int i(0); i <= 3*NN; i++ ) { 
 
@@ -264,13 +272,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       // Read in value of NN
       in.getline(line,265);      
-      sscanf( line, "#NN= %u #Number of alpha cells = 3NN+1", &numangles);
+      sscanf( line, "%u", &numangles);
       if ( numangles != NN)
 	std::cerr << "Something is really wrong here: numangles != NN "<< std::endl;
 
       // Read in value of num_mr
       in.getline(line,265);      
-      sscanf( line, "#NUM_MR= %u", &num_mr);
+      sscanf( line, "%u", &num_mr);
       std::cout << "num_mr = " << num_mr << std::endl;
       if ( num_mr > MR)
 	std::cerr << "Problem: num_mr > MR... check struct.h " << std::endl;
@@ -284,11 +292,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       // Loop through the M/R values
       for (unsigned int j(0);j<=num_mr; j++){
-	in.getline(line,265);      
-	sscanf( line, "#M/R= %lf", &get_mr );
-	std::cout << "line = " << line << std::endl;
-	curve.defl.mr[j] = get_mr;
-	in.getline(line,265);  
+	//in.getline(line,265);      
+	//sscanf( line, "% M/R= %lf", &get_mr );
+	//std::cout << "line = " << line << std::endl;
+	//curve.defl.mr[j] = get_mr;
+	//in.getline(line,265);  
 
 	for (unsigned int i(0);i<=3*numangles; i++){
 
@@ -298,6 +306,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  if ( get_mr != curve.defl.mr[j] || get_i != i)
 	    std::cerr << "BIG PROBLEM!!!! " << std::endl;
 
+	  if (i==0)
+	    curve.defl.mr[j] = get_mr;
 	  curve.defl.b[j][i] = get_bR;
 	  curve.defl.psi[j][i] = get_psi;
 	  curve.defl.dcosa[j][i] = get_dcos;

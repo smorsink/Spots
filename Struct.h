@@ -19,7 +19,7 @@
 #include <vector>
 #include <float.h>
 
-#define NN 100            // lookup table for bending angle (deflection angle) calculation
+#define NN 50            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define MR 500             // Maximum number of m/r values

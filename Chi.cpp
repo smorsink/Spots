@@ -813,15 +813,16 @@ class LightCurve ReadBend ( class LightCurve* incurve,
   in.open(bend_file);
   // Read in value of NN
   in.getline(line,265);      
-  sscanf( line, "#NN= %u #Number of alpha cells = 3NN+1", &numangles);
+  sscanf( line, "%u", &numangles);
+  std::cout << "numangles = " << numangles << std::endl;
   if ( numangles != NN)
     std::cerr << "Something is really wrong here: numangles != NN "<< std::endl;
 
   // Read in value of num_mr
   in.getline(line,265);      
-  sscanf( line, "#NUM_MR= %u", &num_mr);
+  sscanf( line, "%u", &num_mr);
   curve.defl.num_mr = num_mr;
-  //std::cout << "num_mr = " << num_mr << std::endl;
+  std::cout << "num_mr = " << num_mr << std::endl;
   if ( num_mr > MR)
     std::cerr << "Problem: num_mr > MR... check struct.h " << std::endl;
  
@@ -833,19 +834,21 @@ class LightCurve ReadBend ( class LightCurve* incurve,
   
      // Loop through the M/R values
       for (unsigned int j(0);j<=num_mr; j++){
-	in.getline(line,265);      
-	sscanf( line, "#M/R= %lf", &get_mr );
+	//in.getline(line,265);      
+	//sscanf( line, "% M/R= %lf", &get_mr );
 	//std::cout << "line = " << line << std::endl;
-	curve.defl.mr[j] = get_mr;
-	in.getline(line,265);  
+	//curve.defl.mr[j] = get_mr;
+	//in.getline(line,265);  
 
 	for (unsigned int i(0);i<=3*numangles; i++){
 
 	  in.getline(line,265);  
 	  sscanf( line, "%lf %lf %lf %lf %lf %lf %u", &get_alpha, &get_bR, &get_psi, &get_dcos, &get_toa, &get_mr, &get_i );
 
-	  if ( get_mr != curve.defl.mr[j] || get_i != i)
-	    std::cerr << "BIG PROBLEM!!!! " << std::endl;
+	  if (i==0){
+	    curve.defl.mr[j] = get_mr;
+	    //std::cout << "M/R = " << curve.defl.mr[j] << std::endl;
+	  }
 
 	  curve.defl.b[j][i] = get_bR;
 	  curve.defl.psi[j][i] = get_psi;
