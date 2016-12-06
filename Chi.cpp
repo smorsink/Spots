@@ -894,6 +894,8 @@ class LightCurve Bend ( class LightCurve* incurve,
     int computeflag(0); // Set to 1 if you want to compute the bending angles.
     int interpflag(1);
 
+
+
     double 
       eps,
       mass,                      // Mass of the star, in M_sun
@@ -923,9 +925,17 @@ class LightCurve Bend ( class LightCurve* incurve,
     radius = curve.para.radius;
     mass_over_r = curve.para.mass_over_r;
 
+    if (curve.flags.bend_file){ // Pre-computed Bend File Is Read
+      computeflag = 0;
+      interpflag = 1;
+    } else {
+      computeflag = 1;
+      interpflag = 0;
+    }
+
     if (computeflag){ // Compute Lookup Table
 
-
+    cout << "calculating bend table" << endl;
    /**********************************************************/
     /* Compute maximum deflection for purely outgoing photons */
     /**********************************************************/

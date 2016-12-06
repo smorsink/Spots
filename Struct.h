@@ -21,7 +21,7 @@
 
 #define NN 50            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 100        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define MR 500             // Maximum number of m/r values
 
 struct Parameters {      // local bit of spot information
@@ -67,6 +67,7 @@ struct Flags {
 	double shift_t;               // for shifting of time, to match light curve phases
 	bool infile_is_set;           // if an input file has been set
 	bool ignore_time_delays;      // if we should ignore time delays
+	bool bend_file;				  // yes means bend file has been read, passing to bend.
 	unsigned int spectral_model;  // stating which model we're using -- definitions of models given elsewhere
 	unsigned int beaming_model;   // stating which model we're using -- definitions of models given elsewhere
   unsigned int ns_model; // Shape model: 3=spherical; 1=oblate

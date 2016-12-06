@@ -516,6 +516,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.spectral_model = spectral_model;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
+    curve.flags.bend_file = bend_file_is_set;
     curve.numbands = numbands;
     curve.flags.spotshape = spotshape;
 
