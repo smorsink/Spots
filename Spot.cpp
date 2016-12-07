@@ -996,7 +996,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  if (fabs(mu_2) < DBL_EPSILON) mu_2 = 0.0;
 
 	  if ( mu_2 < 0.0){
-	    std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
+	    //std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
 			//mu_2 = fabs(mu_2);
 			//thetak = Units::PI - thetak;
 			//curve.para.incl = Units::PI - incl_2;
@@ -1014,11 +1014,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.para.radius = rspot; // load rspot into structure
 	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+	  //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 
-	  std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
+	  //std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
 
 
 	  curve = Bend(&curve,defltoa);
