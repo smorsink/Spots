@@ -674,9 +674,15 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
             sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
-            cosalpha = sqrt( 1.0 - sinalpha * sinalpha ); 
-            alpha    = asin( sinalpha );
+	    
+	    cosalpha = sqrt( fabs(1.0 - sinalpha * sinalpha) ); 
+	    
+	    if (sinalpha > 1)
+	      alpha = 0.5*Units::PI;
+	    else
+	      alpha    = asin( sinalpha );
             
+	   
 
 	    if ( sign < 0 ) { // alpha is greater than pi/2
 	      //std::cout << "i=" << i << " sign < 0 " << std::endl;
@@ -707,6 +713,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            curve.cosbeta[i] = (cosalpha*cosgamma +  singamma * cosdelta.at(i));
 		    //std::cout << "small cosbeta=" << curve.cosbeta[i] << std::endl;
 		    }
+
+
 
 
             if ( curve.cosbeta[i] < 0.0 || curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
