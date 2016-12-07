@@ -104,10 +104,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     DeltaE = curve.para.DeltaE;
    
     redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
-
-    //bolo = 2.0e12/15.0 * pow(Units::H_PLANCK,-3) * pow(Units::C,-2) * pow( Units::PI * Units::EV * temperature, 4);
-    //bolo *= 1.0e-3/Units::EV;
-
     bolo = 2.0e9 * 2.404 * Units::C * pow(temperature * Units::EV/(Units::H_PLANCK * Units::C) , 3); // use this one! probably!
     // the e9 in the beginning is for changing T^3 from keV to eV
     // 2.404 comes from evaluating Bradt equation 6.17 (modified, for photon number count units), using the Riemann zeta function for z=3
@@ -124,148 +120,103 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
     for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
 
-    if ( curve.dOmega_s[i] != 0.0 ) {
+      if ( curve.dOmega_s[i] != 0.0 ) {
 
 	if (std::isnan(gray) || gray == 0) std::cout << "gray = " << gray << std::endl;
 	if (std::isnan(curve.eta[i]) || curve.eta[i] == 0) std::cout << "eta[i="<<i<<"] = " << curve.eta[i] << std::endl;
 	if (std::isnan(redshift) || redshift == 0) std::cout << "redshift = " << redshift << std::endl;
 
-    /*******************************************************************/
-    /* COMPUTING LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0           */
-    /*      First computes in [erg/(s cm^2 Hz), converts to            */
-    /*      photons/(s cm^2 keV)                                       */
-    /*******************************************************************/
-	if (curve.flags.spectral_model == 0){ // Monochromatic Observation
-    
-        if (curve.flags.beaming_model == 0){ // Blackbody, no beaming
-	       // Moonochromatic light curve in energy flux erg/(s cm^2 Hz)
-            curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-	       // Units: erg/(s cm^2 Hz)
-	       //Convert to photons/(s cm^2 keV)
-	        curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+	// Calculate Beaming for Modified Blackbodies
+	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || 
+	    curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){ // Blackbody, graybody factor
 
-	    //std::cout << "i=" << i << " flux = " << curve.f[0][i] << std::endl; 
-	    }
-
-	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){ // Blackbody, graybody factor
-	  //            gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+	  // Default value is gray = 1
+	  gray = 1.0; // beaming_model == 0
 
 	  if (curve.flags.beaming_model == 1)
-	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
+	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // Chandrasekhar limb-darkening
 	  if (curve.flags.beaming_model == 5)
 	    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
 	  if (curve.flags.beaming_model == 6)
 	    gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
 	  if (curve.flags.beaming_model == 7) // Hopf Function
 	    gray = 0.42822+0.92236*curve.cosbeta[i]*curve.eta[i]-0.085751*pow(curve.cosbeta[i]*curve.eta[i],2);
-	      //$0.42822+0.92236*\cos(\alpha^\prime)-0.085751*\cos^2(\alpha^\prime)$
+	     
+	}
 
-	  curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-	  curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-	  if (curve.f[0][i] != 0.0) nullcurve[0] = false;
-        }
+	/*******************************************************************/
+	/* COMPUTING LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0           */
+	/*      First computes in [erg/(s cm^2 Hz), converts to            */
+	/*      photons/(s cm^2 keV)                                       */
+	/*******************************************************************/
 
-        if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
-        }
+	if (curve.flags.spectral_model == 0){ // Monochromatic Observation of a modified blackbody
 
-        if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-            curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-        }
+	  if ( curve.flags.beaming_model == 0 ||
+	       curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || 
+	       curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
 
-        if (curve.flags.beaming_model == 4){ // Helium Atmosphere
-            curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-            curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-        }
-    }
+	    curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+	  }
 
-    /***********************/
-    /* FUNNY LINE EMISSION */
-    /***********************/
+	  if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
+	  }
+
+	  if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
+	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
+	  }
+
+	  if (curve.flags.beaming_model == 4){ // Helium Atmosphere
+	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
+	  }
+	} // Spectral_model == 0 
+
+	/***********************/
+	/* FUNNY LINE EMISSION */
+	/***********************/
 	if (curve.flags.spectral_model == 1){ // Funny Line Emission for NICER
 
-        for (unsigned int p=0; p<numbands; p++){
+	  for (unsigned int p=0; p<numbands; p++){
 	    
 	    E_obs = E0 + p*DeltaE;
-	    //curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Line(temperature,E_obs*redshift/curve.eta[i],E1,E2); 
-	    // Units: erg/(s cm^2 Hz)
-	    //Convert to photons/(s cm^2 keV)
-	    //curve.f[p][i] *= (1.0 / ( E_obs * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-	    // Multiply by the width of the energy band;
-	    //curve.f[p][i] *= DeltaE; // Units: photons/(s cm^2)
-
-	    //curve.eta[i] = 1.0;
-
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * LineBandFlux(temperature, (E_obs-0.5*DeltaE)*redshift/curve.eta[i], (E_obs+0.5*DeltaE)*redshift/curve.eta[i], E1, E2); // Units: photon/(s cm^2)
 
 	    if (curve.f[p][i] != 0.0) nullcurve[0] = false;
-        }
+	  }
 	}
 
-    /*******************************************************************/
-    /* COMPUTING BLACKBODY LIGHT CURVE FOR INTEGRATED FLUX             */
-    /* Units: photons/(cm^2 s)                                         */
-    /*******************************************************************/
+	/*******************************************************************/
+	/* COMPUTING BLACKBODY LIGHT CURVE FOR INTEGRATED FLUX             */
+	/* Units: photons/(cm^2 s)                                         */
+	/*******************************************************************/
 
-    if (curve.flags.spectral_model == 2){ // Integrated Flux of Energy Bands
-        double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+	if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
+	  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
-        for (unsigned int p = 0; p<numbands; p++){
-            if (curve.flags.beaming_model == 0){ //blackbody
-                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
-            }
-
-            if (curve.flags.beaming_model == 1 || curve.flags.beaming_model==7){ //blackbody with graybody
-
-	      if(curve.flags.beaming_model == 1)
-                gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor - Chandrasekhar
-	      if (curve.flags.beaming_model == 7) // Hopf Function
-		gray = 0.42822+0.92236*curve.cosbeta[i]*curve.eta[i]-0.085751*pow(curve.cosbeta[i]*curve.eta[i],2);
-
-	      curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
-            }
+	  for (unsigned int p = 0; p<numbands; p++){
            
-          
-        }
-    }
+	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) 
+	      * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
 
-    if (curve.flags.spectral_model == 3){ // *exactly* Integrated Flux of Energy Bands
-        double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-        for (unsigned int p = 0; p<numbands; p++){
+            }          
+        }
+      
+
+	if (curve.flags.spectral_model == 3){ // *exactly* Integrated Flux of Energy Bands
+	  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+	  for (unsigned int p = 0; p<numbands; p++){
             if (curve.flags.beaming_model == 3){ //hydrogen
-                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
             }
             if (curve.flags.beaming_model == 4){ //helium
-                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
             }
-        }
-    }
-
-	if (curve.flags.spectral_model == 7) { // Not Used Right Now.
-			
-	  /*******************************************/
-	  /* COMPUTING BOLOMETRIC LIGHT CURVE, p = 0 */
-	  /* Units: photons/(cm^2 s)                 */
-	  /*******************************************/
-    		
-	  // Bolometric Light Curve for energy flux erg/(cm^2 s)
-	  curve.f[0][i] = bolo * gray * curve.dOmega_s[i] * pow(curve.eta[i],5) * pow(redshift,-4); // Units: erg/(cm^2 s)
-
-	  // Bolometric Light Curve for photon number flux photons/(cm^2 s)
-	  curve.f[0][i] = bolo * gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3); // Units: photons/(cm^2 s)
-                                     
-	  /***************************************************/
-	  /* COMPUTING PHOTON NUMBER FLUX FOR AN ENERGY BAND */
-	  /*   	1 < p < NCURVES-1                          */
-	  /*      Units: photons/(s cm^2)                    */
-	  /***************************************************/
-    		
-	  // First energy band
-	  curve.f[NCURVES-2][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, E_band_lower_1*redshift/curve.eta[i], E_band_upper_1*redshift/curve.eta[i]); // Units: photon/(s cm^2)
-	  // Second energy band
-	  curve.f[NCURVES-1][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, E_band_lower_2*redshift/curve.eta[i], E_band_upper_2*redshift/curve.eta[i]); // Units: photon/(s cm^2)
-	}		
+	  }
+	}
       }
       else { // if curve.dOmega_s[i] == 0.0
 	for ( unsigned int p(0); p < numbands; p++) {
@@ -1609,7 +1560,8 @@ double EnergyBandFlux( double T, double E1, double E2 ) {
 	double b = E2 / T;          // upper bound of integration
 	double current_x(0.0);      // current value of x, at which we are evaluating the integrand; x = E / T; unitless
 	unsigned int current_n(0);  // current step
-	unsigned int n_steps(3000); // total number of steps
+	unsigned int n_steps(100); // total number of steps
+	// This number of steps (100) is optimized for Delta(E) = 0.3 keV
 	double h = (b - a) / n_steps;     // step amount for numerical integration; the size of each step
 	double integral_constants = 2.0 * pow(T*Units::EV,3) / pow(Units::C,2) / pow(Units::H_PLANCK,3); // what comes before the integral when calculating flux using Bradt eqn 6.6 (in units of photons/cm^2/s)
 	double flux(0.0);           // the resultant energy flux density; Bradt eqn 6.17
