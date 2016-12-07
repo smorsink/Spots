@@ -624,9 +624,16 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 	//Change so that bval is really b/radius;
 
+	/*	if (curve.psi[i] > curve.defl.psi_max )
+	  std::cout << "Compute_Curve: bmax/R = " << curve.defl.b_max/radius 
+	  << " bmin/R = " << b_R_min << std::endl;*/
+
         result = defltoa->b_from_psi( curve.psi[i], radius, mu, b_R_val, sign, curve.defl.b_max, 
 				      curve.defl.psi_max, b_R_min*radius,psimin, b_guess,
 				      &curve.problem );
+
+	/*if (curve.psi[i] > curve.defl.psi_max )
+	  std::cout << "b_R = " << b_R_val << std::endl;*/
 
         if ( result == false && i == 0) { 
             curve.visible[i] = false;
@@ -758,6 +765,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            	std::cout << "speed = " << speed << " at i = " << i << std::endl;
 
 	            if ( ingoing ) {
+		      b = b_R * radius;
+		      //std::cout << "Entering toa_ingoing: b/R = " << b/radius << std::endl;
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
                 

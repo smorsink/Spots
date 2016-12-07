@@ -151,9 +151,9 @@ double OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u ( double u, bool *prob 
 double OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u ( double u, bool *prob ) {
   	double integrand( OblDeflectionTOA_object->toa_ingoing_integrand_minus_b0_u( OblDeflectionTOA_b_over_r, u ) );
   	if ( std::isnan(integrand) ) {
-    	std::cout << "toa_minus_b0_u integrand is nan!" << std::endl;
-    	std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
-    	std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
+	  std::cout << "toa_minus_b0_u ingoing integrand is nan!" << std::endl;
+	  std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
+	  std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
     	*prob = true;
     	integrand = -7888.0;
     	return integrand;
@@ -526,10 +526,15 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
   	else { // psi > psi_out_max 
 	  // Test to see if ingoing photons are allowed
 	  bool ingoing_allowed( this->ingoing_allowed(cos_theta) );
+	 
 
 	  if ( ingoing_allowed ) {
 
+	    //std::cout << "b_from_psi: Ingoing!!!" << std::endl;
+
+
 	    if ( psi > psimin ) {
+	      //std::cout << "b_from_psi: psi > psimin" << std::endl;
 	      return false;
 	    }
 	    else if ( psi == psimin ) {
@@ -543,20 +548,31 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      OblDeflectionTOA_psi_value = psi;
 	      OblDeflectionTOA_rspot = rspot;
 
-
+	      /*
 	      bcand = MATPACK::FindZero(bmin, bmax_out,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
+	      */
+
+	      double bcand_R = MATPACK::FindZero(bmin/rspot, bmax_out/rspot,
+					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
+					OblDeflectionTOA::FINDZERO_EPS);
+
+
+	      /*std::cout << "b_from_psi: bmin_R = " << bmin/rspot
+			<< " bmax_R = " << bmax_out/rspot
+			<< " bcand_R = " << bcand_R 
+			<< std::endl;*/
 
  
-	      if( fabs(bmin - bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
+	      if( fabs(bmin/rspot - bcand_R) <= EPSILON || fabs(bmax_out/rspot - bcand_R) <= EPSILON ) { // this indicates no soln
 		std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): ingoing returned no solution?" << std::endl;
 		*prob = true;
 		b_R = -7888.0;
 		return b_R;
 	      }
 	      else {
-		b_R = bcand;
+		b_R = bcand_R;
 		rdot = -1;
 		return true;
 	      }
@@ -700,13 +716,18 @@ double OblDeflectionTOA::toa_ingoing ( const double& b, const double& rspot, con
 
   
 	double rcrit = this->rcrit( b, rspot, &curve.problem );
- 
+	/*	std::cout << "b = " << b
+		  << " rspot = " << rspot
+		  << " rcrit = " << rcrit << std::endl;*/
 
 	//	double bmax(rspot/sqrt(1.0-2.0*get_mass_over_r()));
 
 	OblDeflectionTOA_b_over_r = b/rcrit;
 
-	toa_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u,1000 );
+	// test=1000;
+	int test(1000);
+
+	toa_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u,test );
 	//std::cout << "Approx 10000: toa_in = " << toa_in << std::endl;
 
 	OblDeflectionTOA_b_over_r = b/rspot;
