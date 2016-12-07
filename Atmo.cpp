@@ -148,7 +148,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    //std::cout << "i=" << i << " flux = " << curve.f[0][i] << std::endl; 
 	    }
 
-	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 6 ){ // Blackbody, graybody factor
+	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){ // Blackbody, graybody factor
 	  //            gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
 
 	  if (curve.flags.beaming_model == 1)
@@ -157,7 +157,9 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
 	  if (curve.flags.beaming_model == 6)
 	    gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
-
+	  if (curve.flags.beaming_model == 7) // Hopf Function
+	    gray = 0.42822+0.92236*curve.cosbeta[i]*curve.eta[i]-0.085751*pow(curve.cosbeta[i]*curve.eta[i],2);
+	      //$0.42822+0.92236*\cos(\alpha^\prime)-0.085751*\cos^2(\alpha^\prime)$
 
 	  curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
 	  curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
@@ -214,16 +216,17 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
                 curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
             }
 
-            if (curve.flags.beaming_model == 1){ //blackbody with graybody
-                gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor
-                curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
+            if (curve.flags.beaming_model == 1 || curve.flags.beaming_model==7){ //blackbody with graybody
+
+	      if(curve.flags.beaming_model == 1)
+                gray = Gray(curve.cosbeta[i]*curve.eta[i]); // gets the graybody factor - Chandrasekhar
+	      if (curve.flags.beaming_model == 7) // Hopf Function
+		gray = 0.42822+0.92236*curve.cosbeta[i]*curve.eta[i]-0.085751*pow(curve.cosbeta[i]*curve.eta[i],2);
+
+	      curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
             }
-            if (curve.flags.beaming_model == 3){ //hydrogen
-                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
-            }
-            if (curve.flags.beaming_model == 4){ //helium
-                curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
-            }
+           
+          
         }
     }
 
