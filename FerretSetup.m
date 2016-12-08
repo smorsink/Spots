@@ -37,13 +37,13 @@ par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction
 % ====================================
 % General
 % multiple smaller populations is better than one very large population
-par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation.
+par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation.
 %par.general.NPop=2;
-par.general.popSize=250; % i [integer >= 1]: Size of each population.
-%par.general.popSize=3;
+%par.general.popSize=250; % i [integer >= 1]: Size of each population.
+par.general.popSize=50;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
-par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-%par.general.NGen=4;
+%par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
+par.general.NGen=3;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -54,12 +54,30 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 % -e emission angle, angle from geographic north to center of hot spot (degrees)
 % -l phase shift (between 0 and 1)
 % -p rho = angular spot radius in degrees
-% 
+%
+
 % Fixed spot size
+%par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift'};
+%par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00];
+%par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
+
+% Fixed spot size with new background
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift'};
 par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00];
 par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
-% Background
+
+%{
+for i = 1:5
+    name1 = strcat('background',num2str(i));
+    par.general.XLabels{i+5} = name1;
+    par.general.min(i+5) = 0;
+    par.general.max(i+5) = 0.01;
+end
+%}
+
+
+
+% ****Old Background****
 %par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', '\theta (degrees)', 'phase shift','Low BG','High BG'};
 %par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00, 0.0, 0.0];
 %par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00, 1.0, 1.0];

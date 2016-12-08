@@ -65,10 +65,10 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     numbins = obsdata->numbins;
     numbands = curve->numbands;
     ts = curve->para.ts;
-    cout << "pointers set" << endl;
-    cout << "timeshift is " << ts << endl;
+    //cout << "pointers set" << endl;
+    //cout << "timeshift is " << ts << endl;
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
-        cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
+        //cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
         //cout << obsdata->f[1][0] << " " << curve->f[1][0] << " " << obsdata->err[1][0] << endl;
         //cout << obsdata->f[2][0] << " " << curve->f[2][0] << " " << obsdata->err[2][0] << endl;
         
@@ -83,7 +83,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         int new_b = min_location;
         double new_shift = (min_location-new_b)/(numbins*1.0);
         //cout << numbins << endl;
-        cout << ts << " " << min_location << " " << new_shift << " " << new_b << endl;
+        //cout << ts << " " << min_location << " " << new_shift << " " << new_b << endl;
 
         // Rebinning the data and store shifted data back in Flux
         
@@ -99,7 +99,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
           q = 1;
           tempflux[p][i] = curve->f[q][k]; // putting things from curve->f's k bin into tempflux's i bin
         }
-        cout << "integer shift complete" << endl;
+        //cout << "integer shift complete" << endl;
         for ( unsigned int i(0); i < numbins; i++ ) {
             n = i - 1;
             if ( n < 0 ) n += numbins;
@@ -113,7 +113,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
           q = 1;
           curve->f[q][i] = tempflux[p][i] + (tempflux[p][n]-tempflux[p][i]) * new_shift * numbins;
         }
-        cout << "fractional shift complete complete" << endl;
+        //cout << "fractional shift complete complete" << endl;
         
         // Compute chisquare for shifted data
         
@@ -123,6 +123,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         //cout << obsdata->f[0][i] << " " << curve->f[0][i] << " " << obsdata->err[0][i] << endl;
         for ( unsigned int i(0); i < numbins; i++ ) {
             chisquare += pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2);
+            //cout << obsdata->f[p][i] << " " << curve->f[q][i] << " " << pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2) << endl;
             // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
         }
         cout << "chisquare for band 1 is " << chisquare << endl;
@@ -142,7 +143,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         
         // energy band 2 and after
         unsigned int j = 1;
-        cout << numbins << " " << numbands << endl;
+        //cout << numbins << " " << numbands << endl;
         while (j < numbands){
         p += 1;
         q += 1;

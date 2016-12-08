@@ -32,6 +32,7 @@
 #include "Struct.h"
 #include "time.h"
 #include "io64.h"
+#include "nrutil.h"
 #include "mex.h"
 #include <sstream>
 #include "Atmo.h"    
@@ -50,6 +51,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
   /*********************************************/
     
   std::ofstream out;      // output stream; printing information to the output file
+  std::ofstream allflux;  // Prints information about the star's surface area
   std::ofstream testout;  // testing output stream;
   std::ofstream param_out;// piping out the parameters and chisquared
   
@@ -65,7 +67,6 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     mass_over_req,              // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
-    bbrat(1.0),                 // Ratio of blackbody to Compton scattering effects, unitless
     ts(0.0),                    // Phase shift or time off-set from data; Used in chi^2 calculation
     spot_temperature(0.0),      // Inner temperature of the spot, in the star's frame, in keV
     rho(0.0),                   // Angular radius of the inner bullseye part of the spot, in degrees (converted to radians)
@@ -92,7 +93,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     *curveOut,
     *chiOut;
 
-  double E0, E1, E2, DeltaE, rot_par;
+  double SurfaceArea(0.0);
+  double E0, L1, L2, DeltaE, rot_par;
     
   unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
@@ -104,12 +106,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     numbands(NCURVES); // Number of energy bands;
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
-         out_dir[80],                   // Directory we could send to; unused here, done in the shell script
-         T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
-         data_file[256],                // Name of input file for reading in data
-	  //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
-         filenameheader[256]="Run";
-
+       bend_file[256] = "angles100.txt", 
+       out_dir[80],                   // Directory we could send to; unused here, done in the shell script
+       T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
+       data_file[256],                // Name of input file for reading in data
+       //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
+       filenameheader[256]="Run";
          
   // flags!
   bool incl_is_set(false),         // True if inclination is set at the command line (inclination is a necessary variable)
@@ -120,7 +122,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
     	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
     	 ignore_time_delays(false),  // True if we are ignoring time delays
-    	 T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
+    	 bend_file_is_set(false),
+         T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
     	 normalize_flux(false),      // True if we are normalizing the output flux to 1
     	 //E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
     	 //E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
@@ -168,20 +171,60 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	E_band_upper_1 = mxGetScalar(theInput[15]); // keV; double
 	beaming_model = mxGetScalar(theInput[16]); // 3 for hydrogen, 4 for helium; int			
 	int spots_2 = mxGetScalar(theInput[17]); // int
-	if (spots_2 == 1)
+	if (spots_2 == 1){
 		two_spots = false;
-	if (spots_2 == 2) 
+        std::cout << "one spot" << std::endl;
+	}
+    if (spots_2 == 2){ 
 		two_spots = true;
-    std::cout << two_spots << std::endl;
-	//E0 = mxGetScalar(theInput[18]); // monochromatic band energy; double
+        std::cout << "two_spots" << std::endl;
+	}
+    //E0 = mxGetScalar(theInput[18]); // monochromatic band energy; double
 	obsdata.t = mxGetPr(theInput[18]); // array of double
-	// To be changed to a for loop that depends on number of bands
-	for (int i = 0; i < numbands; i++){
-    obsdata.f[i] = mxGetPr(theInput[19+2*i]); // array of double
-    obsdata.err[i] = mxGetPr(theInput[19+2*i+1]); // array of double
+	int bend_file_is = mxGetScalar(theInput[19]);
+    if (bend_file_is == 1){
+        bend_file_is_set = true;
+        curve.flags.bend_file = true;
+        curve.defl.mr = mxGetPr(theInput[20]);
+        curve.defl.num_mr = 100;
+        double *bend_data_b = mxGetPr(theInput[21]);
+        double *bend_data_psi = mxGetPr(theInput[22]);
+        double *bend_data_dcosa = mxGetPr(theInput[23]);
+        double *bend_data_toa = mxGetPr(theInput[24]);
+        std::cout << "reorganizing bending data" << std::endl;
+
+        curve.defl.psi = dmatrix(0,101,0,151);
+        curve.defl.b = dmatrix(0,101,0,151);
+        curve.defl.dcosa = dmatrix(0,101,0,151);
+        curve.defl.toa = dmatrix(0,101,0,151);
+        curve.defl.psi_b = dvector(0,151);
+        curve.defl.b_psi = dvector(0,151);
+        curve.defl.dcosa_dcosp_b = dvector(0,151);
+        curve.defl.toa_b = dvector(0,151);
+
+        for (int j = 0; j < 101; j++){
+            for (int i = 0; i < 151; i++){
+                curve.defl.b[j][i] = bend_data_b[j*151+i];
+                curve.defl.psi[j][i] = bend_data_psi[j*151+i];
+                curve.defl.dcosa[j][i] = bend_data_dcosa[j*151+i];
+                curve.defl.toa[j][i] = bend_data_toa[j*151+i];
+            }
+        }
+        std::cout << curve.defl.b[1][0] << std::endl;
     }
 
+    spotshape = mxGetScalar(theInput[26]);
+
+    for (int i = 0; i < numbands; i++){
+    obsdata.f[i] = mxGetPr(theInput[26+3*i]); // array of double
+    obsdata.err[i] = mxGetPr(theInput[27+3*i]); // array of double
+    background[i] = mxGetScalar(theInput[28+3*i]);
+    }
     
+    std::cout << "input completed" << std::endl;
+ 
+ 
+  
 
     /***********************************************/
     /* CHECKING THAT THE NECESSARY VALUES WERE SET */
@@ -315,6 +358,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     curve.flags.spectral_model = spectral_model;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
+    curve.flags.spotshape = spotshape;
 
 
 
@@ -326,19 +370,22 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     }
     if (curve.flags.spectral_model == 1){ // NICER Line
       curve.para.E0 = E0; // Observed Energy in keV
-      curve.para.E1 = E1; // Lowest Energy in keV in Star's frame
-      curve.para.E2 = E2; // Highest Energy in keV
+      curve.para.L1 = L1; // Lowest Energy in keV in Star's frame
+      curve.para.L2 = L2; // Highest Energy in keV
       curve.para.DeltaE = DeltaE; // Delta(E) in keV
     }
 
+    std::cout << " Starting L1 = " << L1 << std::endl;
 
     // initialize background
-    for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
+    //for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
+    //background initialized as extPar
 
     //ts = obsdata.t[0]; // Don't do this if you want manually setting ts to do anything!!
     //obsdata.shift = obsdata.t[0];
     obsdata.shift = ts;
     obsdata.numbins = numbins;
+    std::cout << " background initialized " << std::endl; 
 
     /*************************/
     /* OPENING THE DATA FILE */
@@ -431,29 +478,31 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     OblModelBase* model;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
-
+        
       std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
-
+        
       //std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
 
        
     }
     else if ( NS_model == 2 ) { // Oblate Colour-Flavour Locked Quark Star model
         // Alternative model for quark stars (not very different)
+        
         model = new PolyOblModelCFLQS( req,
-				     PolyOblModelBase::zetaparam(mass,rspot),
-				     PolyOblModelBase::epsparam(omega, mass, rspot) );
+				     mass_over_req,
+				     rot_par );
         //printf("Oblate Colour-Flavour Locked Quark Star. ");
+        
     }
     else if ( NS_model == 3 ) { // Standard spherical model
         // Spherical neutron star
       //req = rspot;
       rspot = req;
         model = new SphericalOblModel( rspot );
-        //printf("Spherical Model. ");
+        printf("Spherical Model. ");
     }
     else {
     	/*
@@ -499,7 +548,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     for (unsigned int p(0);p<pieces;p++){
 
-      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve);
+      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
 
       double deltatheta(0.0);
 
@@ -509,6 +558,9 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       deltatheta = curve.para.dtheta[k];
 
       double thetak = curve.para.theta_k[k];
+      // std::cout << "k = " << k 
+      //        << "theta = " << thetak
+      //        << std::endl;
 
       double phi_edge = curve.para.phi_k[k];
 
@@ -517,12 +569,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       mu_1 = cos(thetak);
       if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 
-      if ( mu_1 < 0.0){
-        std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
-              //  mu_1 = fabs(mu_1);
+      //if ( mu_1 < 0.0){
+        //std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
+              //mu_1 = fabs(mu_1);
               //thetak = Units::PI - thetak;
               //curve.para.incl = Units::PI - incl_1;
-      }
+      //}
 
       if (NS_model != 3)
         rspot = model->R_at_costheta(mu_1);
@@ -536,14 +588,23 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       curve.para.radius = rspot; // load rspot into structure
       curve.para.mass_over_r = mass_over_req * req/rspot;
 
+      //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
       OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+      //std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
       curve = Bend(&curve,defltoa);
+      //std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
+
 
       numphi = 2.0*phi_edge/dphi;
       phishift = 2.0*phi_edge - numphi*dphi;
 
       curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+      if (spotshape!=2)
+        curve.para.dS *= curve.para.gamma_k[k];
+
       curve.para.theta = thetak;
+
+      SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
 
       if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
         numphi=1;
@@ -551,7 +612,11 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         dphi=0.0;
         phishift = 0.0;
         curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+        if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+        if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
       }
+       
+      //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
        
       if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
@@ -561,8 +626,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
         //Heart of spot, calculate curve for the first phi bin - otherwise just shift
         if ( j==0){ 
-          curve = ComputeAngles(&curve, defltoa); 
-          curve = ComputeCurve(&curve);
+          curve = ComputeAngles(&curve, defltoa);         
+          curve = ComputeCurve(&curve);       
         }
     
         if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
@@ -608,30 +673,145 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     //Setting new parameters for second spot
     if ( two_spots ) {
-    	incl_2 = Units::PI - incl_1 + d_incl_2; // keeping theta the same, but changing inclination
-    	curve.para.incl = incl_2;
-    	theta_2 = theta_1 + d_theta_2;
-    	curve.para.theta = theta_2;  // keeping theta the same, but changing inclination
-    	cosgamma = model->cos_gamma(mu_2);
-    	curve.para.cosgamma = cosgamma;
-    		    		
-    	if ( T_mesh_in ) {
-      		std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
-      		spot_temperature = 2;
-    	}
-    	curve.para.temperature = spot_temperature;
+        incl_2 = Units::PI - incl_1 + d_incl_2; // keeping theta the same, but changing inclination
+        curve.para.incl = incl_2;
+        theta_2 = theta_1 + d_theta_2;
+        curve.para.theta = theta_2;  // keeping theta the same, but changing inclination
+        cosgamma = model->cos_gamma(mu_2);
+        curve.para.cosgamma = cosgamma;
+                        
+        if ( T_mesh_in ) {
+            std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
+            spot_temperature = 2;
+        }
+        curve.para.temperature = spot_temperature;
 
-    	int pieces;
-    	//Does the spot go over the pole?
-    	if ( rho > theta_2){ // yes
-      		pieces=2;
-   		}
-    	else //no
- 			pieces=1;
+        int pieces;
+        //Does the spot go over the pole?
+        if ( rho > theta_2){ // yes
+            pieces=2;
+        }
+        else{ //no
+            pieces=1;
+        }
 
-    	for (unsigned int p(0);p<pieces;p++){
+        /*
+        for (unsigned int p(0);p<pieces;p++){
 
-      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve);
+            double deltatheta = 2.0*rho/numtheta;
+            if (pieces==2){
+                if (p==0) deltatheta = (rho-theta_2)/numtheta;
+                else deltatheta = (2.0*theta_2)/numtheta;
+            }      
+            //std::cout << "numtheta=" << numtheta << " theta = " << theta_2 << " delta(theta) = " << deltatheta << std::endl;
+     
+            // Looping through the mesh of the spot
+            for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+                //std::cout << "k=" << k << std::endl;
+
+                double thetak = theta_2 - rho + (k+0.5)*deltatheta; 
+                double phi_edge, phij;
+
+                if (pieces==2){
+                    if (p==0){
+                        thetak = (k+0.5)*deltatheta;
+                        phi_edge = Units::PI;
+                    }
+                    else thetak = rho - theta_2 + (k+0.5)*deltatheta;   
+                }
+
+                //std::cout << "k=" << k << " thetak = " << thetak << std::endl;
+                dphi = 2.0*Units::PI/(numbins*1.0);
+
+                // What is the value of radius at this angle?
+                // For spherical star, rspot = req;
+                rspot = req; // Spherical star
+                curve.para.radius = rspot; // load rspot into structure
+                curve.para.mass_over_r = mass_over_req * req/rspot;
+
+                OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+                //std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
+                curve = Bend(&curve,defltoa);
+
+                if ( (pieces==2 && p==1) || (pieces==1)){ //crescent-shaped 2nd piece, or the one circular piece if spot doesn't go over pole
+                    double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(thetak))/(sin(theta_2)*sin(thetak)) * -1;
+                    //std::cout << cos_phi_edge << std::endl;
+                    if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
+                    if ( fabs( sin(theta_2) * sin(thetak) ) > 0.0) { // checking for a divide by 0
+                        phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
+                        //std::cout << phi_edge << std::endl;
+                    }
+                    else {  // trying to divide by zero
+                        throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 2. Likely, thetak = 0. Exiting.") );
+                        return -1;
+                    }
+                } 
+                numphi = 2.0*(Units::PI-phi_edge)/dphi;
+                phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
+
+                curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+                curve.para.theta = thetak;
+
+                if (numtheta==1){
+                    numphi=1;
+                    phi_edge=-1*Units::PI;
+                    dphi=0.0;
+                    phishift = 0.0;
+                    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+                }
+       
+                //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
+
+                for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
+                    phij = phi_edge + (j+0.5)*dphi;
+                    curve.para.phi_0 = phij;
+                    //std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << std::endl;
+
+                    if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
+                    if ( j==0){ // Only do computation if its the first phi bin - otherwise just shift
+                        curve = ComputeAngles(&curve, defltoa); 
+                        curve = ComputeCurve(&curve);
+                    }
+    
+                    if ( curve.para.temperature == 0.0 ) {
+                        for ( unsigned int i(0); i < numbins; i++ ) {
+                            for ( unsigned int p(0); p < numbands; p++ )  curve.f[p][i] = 0.0;
+                        }
+                    }
+
+                    // Add curves, load into Flux array
+                    for ( unsigned int i(0); i < numbins; i++ ) {
+                        int q(i+j);
+                        if (q>=numbins) q+=-numbins;
+                        for ( unsigned int p(0); p < numbands; p++ ) Flux[p][i] += curve.f[p][q];  
+                    } // ending Add curves
+                } // end for-j-loop
+
+                // Add in the missing bit.      
+                if (phishift != 0.0){ // Add light from last bin, which requires shifting
+                    for ( unsigned int i(0); i < numbins; i++ ) {
+                        int q(i+numphi-1);
+                        if (q>=numbins) q+=-numbins;
+                        for ( unsigned int p(0); p < numbands; p++ ) Temp[p][i] = curve.f[p][q];      
+                    }
+
+                    for (unsigned int p(0); p < numbands; p++ ){
+                        for ( unsigned int i(0); i < numbins; i++ ) curve.f[p][i] = Temp[p][i];   
+                    }
+                    curve = ShiftCurve(&curve,phishift);
+       
+                    for( unsigned int p(0); p < numbands; p++ ){
+                        for ( unsigned int i(0); i < numbins; i++ ) Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
+                    }
+                } // closing the missing bit.      
+            } // closing for loop through theta divisions
+        } // closing for loop for calculating each piece, either the symmetric or crescent
+        */
+
+        
+    for (unsigned int p(0);p<pieces;p++){
+
+      curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve, model);
 
       double deltatheta(0.0);
 
@@ -650,7 +830,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       if (fabs(mu_2) < DBL_EPSILON) mu_2 = 0.0;
 
       if ( mu_2 < 0.0){
-        std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
+        //std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
             //mu_2 = fabs(mu_2);
             //thetak = Units::PI - thetak;
             //curve.para.incl = Units::PI - incl_2;
@@ -668,14 +848,20 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       curve.para.radius = rspot; // load rspot into structure
       curve.para.mass_over_r = mass_over_req * req/rspot;
 
+      //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+
       OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+
+      //std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
+
+
       curve = Bend(&curve,defltoa);
 
       numphi = 2.0*(Units::PI-phi_edge)/dphi;
       phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
       //phishift = 2.0*(Units::PI-phi_edge)+ numphi*dphi;
 
-      curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+      curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi * curve.para.gamma_k[k];
       curve.para.theta = thetak;
 
       if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
@@ -683,7 +869,9 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         phi_edge=-1*Units::PI;
         dphi=0.0;
         phishift = 0.0;
-        curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+        curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho)) ;
+        if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+        if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
       }
       //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
        
@@ -735,12 +923,25 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       delete defltoa;
         } // closing for loop through theta divisions
     } // End Standard Case of second spot
-	} // closing second spot
+    
+
+    } // closing second spot
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
      
-    
+    /*******************************/
+    /* ADDING BACKGROUND TO CURVE  */
+    /*******************************/
+
+    for (unsigned int p = 0; p < numbands; p++){
+        //std::cout << "band " << p << std::endl; 
+        for (unsigned int i = 0; i < numbins; i++){
+            //std::cout << Flux[p][i] << std::endl;
+            Flux[p][i] += background[p];
+        }
+    }
+
     /*******************************/
     /* NORMALIZING THE FLUXES TO 1 */
     /*******************************/
@@ -748,13 +949,18 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     // Normalizing the flux to 1 in low energy band. 
     if ( normalize_flux ) {
       normcurve = Normalize1( Flux, numbins );
+      std::cout << "Normalize!!" << std::endl;
 
       // Add background to normalized flux
+      // background implemented in previous section.
+    /*  
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) {
 	  Flux[p][i] = normcurve.f[p][i] + background[p];
 	}
-      } 
+      }
+    */
+
       
       // Renormalize to 1.0
       normcurve = Normalize1( Flux, numbins );
@@ -808,18 +1014,74 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     //std::cout << "Pre output." << std::endl;
 	
     chiOut[0] = chisquared; // saved this to theOutput[0] at top just after declarations
-    //std::cout << "Output 1." << std::endl;
+    std::cout << "Output 1." << std::endl;
     dimSize[1] = 3; // number of columns (1: time, 2: flux in 1st energy band, 3: flux in 2nd energy band)
-    //std::cout << "Output 2." << std::endl;
+    std::cout << "Output 2." << std::endl;
 
     dimSize[0] = (int)numbins; // number of rows ( = numbins)
-    //std::cout << "Output 3." << std::endl;
+    std::cout << "Output 3." << std::endl;
 
     theOutput[1] = mxCreateNumericArray(2, dimSize, mxDOUBLE_CLASS, mxREAL); // formatting/setting up the output
-    //std::cout << "Output 4." << std::endl;
+    std::cout << "Output 4." << std::endl;
 
-    curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
+    //curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
 	
+
+    /*********************************/
+    /* Writing lightcurve output     */
+    /*********************************/
+        
+    out.open("output_spotMex.txt");
+
+
+    if (curve.flags.spectral_model==2){
+        double E_diff;
+        E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+        for (unsigned int k(0); k < numbands; k++){
+            out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";          
+        }
+        out << "%" << std::endl;
+        for ( unsigned int i(0); i < numbins; i++ ) {
+            out << curve.t[i]<< "\t" ;
+            for ( unsigned int p(0); p < numbands; p++ ) { 
+                out << curve.f[p][i] << "\t" ;
+                out << 1e-3 << "\t" ; // Fake errors. 
+            }
+            out << i;
+            out << std::endl;
+        }
+    }
+
+
+    if (curve.flags.spectral_model==3){
+        double E_diff;
+        E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+        for (unsigned int k(0); k < numbands; k++){
+            out << "% Column " << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";         
+        }
+        out << "%" << std::endl;
+        for ( unsigned int i(0); i < numbins; i++ ) {
+            out << curve.t[i]<< "\t" ;
+            for ( unsigned int p(0); p < numbands; p++ ) { 
+                out << curve.f[p][i] << "\t" ;
+                //out << 1e-6 << "\t" ; // Fake errors.  
+            }
+            //out << i;
+            out << std::endl;
+        }
+    }
+
+
+
+      //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
+      //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
+
+    
+  
+
+
+    out.close();
+
 
  
     delete model;
