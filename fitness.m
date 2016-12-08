@@ -75,4 +75,4 @@ r=X(strcmpi(parameterNames,'radius (km)'));     % the label here needs to match 
 %mr_ratio=extPar.fixed.mass/extPar.fixed.radius;
 mr_ratio=m/r;
 %isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.203;
-isPhysical=  mr_ratio < 0.175;
+isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.175;
