@@ -3,7 +3,7 @@
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
 base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-11"
+exe_dir="$base/Spot-master-12"
 #pwd
 make spot
 times
@@ -121,14 +121,14 @@ out_file="$out_dir/sp1d.txt"
 numbins=128
 NS_model=1
 spotmodel=0
-numtheta=40 # number of theta bins; for a small spot, only need one
+numtheta=100 # number of theta bins; for a small spot, only need one
 rho=1  # in radians
 spin=600
 inclination=30 # in degrees
 emission=60 # in degrees
-out_file="$out_dir/test-os1e.txt"
+out_file="$out_dir/newos1e.txt"
 ## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel" -b "angles1000.txt"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel" -b "angles1000.txt"
 #times
 
 # TEST sp1e = 600 Hz, large spot; spherical; circular spot in rotating frame
@@ -219,13 +219,13 @@ out_file="$out_dir/sp1f.txt"
 NS_model=1
 spotmodel=0
 numbins=128
-numtheta=100 # number of theta bins; for a small spot, only need one
+numtheta=200 # number of theta bins; for a small spot, only need one
 rho=1  # in radians
 spin=600
 inclination=80 # in degrees
 emission=20 # in degrees
 beaming=0
-out_file="$out_dir/test100-os1f.txt"
+out_file="$out_dir/new-os1f.txt"
 ## RUNNING THE CODE
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel" -b "angles1000.txt"
 #times
