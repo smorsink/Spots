@@ -65,10 +65,10 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     numbins = obsdata->numbins;
     numbands = curve->numbands;
     ts = curve->para.ts;
-    //cout << "pointers set" << endl;
-    //cout << "timeshift is " << ts << endl;
+    cout << "pointers set" << endl;
+    cout << "timeshift is " << ts << endl;
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
-        //cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
+        cout << obsdata->f[0][0] << " " << curve->f[0][0] << " " << obsdata->err[0][0] << endl;
         //cout << obsdata->f[1][0] << " " << curve->f[1][0] << " " << obsdata->err[1][0] << endl;
         //cout << obsdata->f[2][0] << " " << curve->f[2][0] << " " << obsdata->err[2][0] << endl;
         
@@ -83,7 +83,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         int new_b = min_location;
         double new_shift = (min_location-new_b)/(numbins*1.0);
         //cout << numbins << endl;
-        //cout << ts << " " << min_location << " " << new_shift << " " << new_b << endl;
+        cout << ts << " " << min_location << " " << new_shift << " " << new_b << endl;
 
         // Rebinning the data and store shifted data back in Flux
         
@@ -99,7 +99,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
           q = 1;
           tempflux[p][i] = curve->f[q][k]; // putting things from curve->f's k bin into tempflux's i bin
         }
-        //cout << "integer shift complete" << endl;
+        cout << "integer shift complete" << endl;
         for ( unsigned int i(0); i < numbins; i++ ) {
             n = i - 1;
             if ( n < 0 ) n += numbins;
@@ -113,7 +113,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
           q = 1;
           curve->f[q][i] = tempflux[p][i] + (tempflux[p][n]-tempflux[p][i]) * new_shift * numbins;
         }
-        //cout << "fractional shift complete complete" << endl;
+        cout << "fractional shift complete complete" << endl;
         
         // Compute chisquare for shifted data
         
@@ -123,7 +123,6 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         //cout << obsdata->f[0][i] << " " << curve->f[0][i] << " " << obsdata->err[0][i] << endl;
         for ( unsigned int i(0); i < numbins; i++ ) {
             chisquare += pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2);
-            //cout << obsdata->f[p][i] << " " << curve->f[q][i] << " " << pow( (obsdata->f[p][i] - curve->f[q][i])/obsdata->err[p][i], 2) << endl;
             // using different 'p' and 'q' because we're not comparing the exact same columns of obsdata.f and Flux
         }
         cout << "chisquare for band 1 is " << chisquare << endl;
@@ -143,7 +142,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         
         // energy band 2 and after
         unsigned int j = 1;
-        //cout << numbins << " " << numbands << endl;
+        cout << numbins << " " << numbands << endl;
         while (j < numbands){
         p += 1;
         q += 1;
@@ -430,11 +429,13 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            shift_t,                   // Time off-set from data
            b_guess(0.0),              // Impact parameter; starting off with reasonable guess then refining it
            mu(1.0),                   // = cos(theta_0), unitless
+      sintheta,
+      sinpsi,
            speed(0.0),                // Velocity of the spot, defined in MLCB34
            alpha(0.0),                // Zenith angle, in radians
            sinalpha(0.0),             // Sin of zenith angle, defined in MLCB19
            cosalpha(1.0),             // Cos of zenith angle, used in MLCB30
-           b(0.0),                    // Photon's impact parameter
+      b(0.0),                    // Photon's impact parameter
       b_R, // b/radius
            toa_val(0.0),              // Time of arrival, MLCB38
            phi_0,                     // Azimuthal location of the spot, in radians
@@ -483,15 +484,15 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     shift_t = curve.para.ts;
     infile_is_set = curve.flags.infile_is_set;
     //speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
-    speed = omega*radius*sin(theta_0)*red; // MLCB34
+
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
+    sintheta = sqrt(1.0 - mu*mu);
+    speed = omega*radius*sintheta*red; // MLCB34
 
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
-    //std::cout << "ComputeAngles:" << std::endl;
-    //std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -514,9 +515,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         // SMM: Time is normalized to the spin period so 0 < t_e < 1 
         // curve.t[i] = i/(1.0*numbins) + shift_t; (This is computed in Spot.cpp)
         phi_em.at(i) = phi_0 + (2.0*Units::PI) * curve.t[i]; // phi_em is the same thing as "phi" in PG; changes with t
-	curve.cospsi[i] = cos(incl)*cos(theta_0) + sin(incl)*sin(theta_0)*cos(phi_em.at(i));
+	curve.cospsi[i] = cos(incl)*mu + sin(incl)*sintheta*cos(phi_em.at(i));
 	curve.psi[i] = acos(curve.cospsi[i]);
-       
+	sinpsi = sqrt( 1.0 - pow(curve.cospsi[i],2));
     } // closing For-Loop-1
 
     int j(0);
@@ -525,7 +526,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     // Check to see if this is an oblate star
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
-      b_R_min = defltoa->b_R_min_ingoing(radius, cos(theta_0));
+      b_R_min = defltoa->b_R_min_ingoing(radius, mu);
       psimin = defltoa->psi_ingoing(b_R_min,curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
     }
     
@@ -535,17 +536,11 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         int sign(0);
         double b_R_val(0.0);
         bool result(false);
-        double b1(0.0), b2(0.0), psi1(0.0), psi2(0.0);
-	double dc1(0.0), dc2(0.0), t1(0.0), t2(0.0);
         double xb(0.0);
         int k(0);
-        //j=0;
         /**************************************************************************/
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
-
-	//	std::cout << "i = " << i 
-	//	  << " psi = " << curve.psi[i] << std::endl; 
 
         if ( curve.psi[i] < curve.defl.psi_max ) {
             if (curve.psi[i] > curve.defl.psi_b[j] )
@@ -558,16 +553,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            }
 	           j++;
             }
-      
-            b1 = curve.defl.b_psi[j-1];
-            b2 = curve.defl.b_psi[j];
-            psi1 = curve.defl.psi_b[j-1];
-            psi2 = curve.defl.psi_b[j];
-	    dc1 = curve.defl.dcosa_dcosp_b[j-1];
-	    dc2 = curve.defl.dcosa_dcosp_b[j];
-	    t1 = curve.defl.toa_b[j-1];
-	    t2 = curve.defl.toa_b[j];
-	   
+
             k = j - 2;      
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
@@ -617,24 +603,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         } // ending psi.at(i) < curve.defl.psi_max
 
 	b_guess *= radius;
-	b2 *= radius;
 
         /***********************************************/
 	/* FINDING IF A SOLUTION EXISTS, SETTING FLAGS */
 	/***********************************************/
 
-	//Change so that bval is really b/radius;
-
-	/*	if (curve.psi[i] > curve.defl.psi_max )
-	  std::cout << "Compute_Curve: bmax/R = " << curve.defl.b_max/radius 
-	  << " bmin/R = " << b_R_min << std::endl;*/
-
         result = defltoa->b_from_psi( curve.psi[i], radius, mu, b_R_val, sign, curve.defl.b_max, 
 				      curve.defl.psi_max, b_R_min*radius,psimin, b_guess,
 				      &curve.problem );
-
-	/*if (curve.psi[i] > curve.defl.psi_max )
-	  std::cout << "b_R = " << b_R_val << std::endl;*/
 
         if ( result == false && i == 0) { 
             curve.visible[i] = false;
@@ -650,7 +626,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             curve.eclipse = true;
         }
         else { // there is a solution
-	  //b = bval;
 	    b_R = b_R_val;
             if ( sign < 0 ) { // if the photon is initially ingoing (only a problem in oblate models)
 	            ingoing = true;
@@ -664,13 +639,13 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            throw( Exception("Chi.cpp: sign not returned as + or - with success.") ); // used to say "ObFluxApp.cpp"
             }
             
-	    double b_maximum = radius/sqrt(1.0 - 2.0*mass_over_r);
-	    if ( (fabs(b-b_maximum) < 1e-7) && (b > 0.0) && (b > b_maximum) ) { 
+
+	    if ( (fabs(b_R-curve.defl.b_R_max) < 1e-7) && (b_R > 0.0) ) { 
 	      // this corrects for b being ever so slightly over bmax, which yields all kinds of errors in OblDeflectionTOA
 	      std::cout << "Setting b = b_max." << std::endl;
-	      b = b_maximum - DBL_EPSILON;
+	      b_R = curve.defl.b_R_max - DBL_EPSILON;
 	    }
-            curve.b[i] = b/radius;
+            //curve.b[i] = b_R;
             
             /*******************************************************/
 	    /* IF A SOLUTION EXISTS, CALCULATING ANGLES:  sinalpha */
@@ -681,8 +656,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    /*******************************************************/
 
 
-            sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
-	    
+            sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured	    
 	    cosalpha = sqrt( fabs(1.0 - sinalpha * sinalpha) ); 
 	    
 	    if (sinalpha > 1)
@@ -691,22 +665,19 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	      alpha    = asin( sinalpha );
             
 	   
-
 	    if ( sign < 0 ) { // alpha is greater than pi/2
 	      //std::cout << "i=" << i << " sign < 0 " << std::endl;
 	      alpha = Units::PI - alpha;
 	      cosalpha *= -1;
 	    }
 
-
-
-            cosdelta.at(i) =  (cos(incl) - cos(theta_0)*curve.cospsi[i]) / (sin(theta_0)*sin(curve.psi[i])) ;
+            cosdelta.at(i) =  (cos(incl) - mu*curve.cospsi[i]) / (sintheta*sinpsi) ;
 
             if ( theta_0 == 0.0 )  // cosdelta needs to be redone if theta_0 = 0
-            	cosdelta.at(i) = sqrt( 1 - pow( sin(incl) * sin(phi_em.at(i)) / sin(curve.psi[i]) ,2) );
+            	cosdelta.at(i) = sqrt( 1 - pow( sin(incl) * sin(phi_em.at(i)) / sinpsi ,2) );
 	    // law of sines from MLCB Fig 1 and in MLCB17 and just above
      
-            if ( (cos(theta_0) < 0) && (cos(incl) < 0 ) ) {
+            if ( (mu < 0) && (cos(incl) < 0 ) ) {
 	            cosdelta.at(i) *= -1.0;
             }
 
@@ -755,7 +726,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             	if (alpha == 0.0 && curve.psi[i] == 0.0 & phi_em.at(i) == 0.0) 
             		cosxi.at(i) = 0.0; // to avoid NAN errors from dividing by 0; appears when incl = theta at i=0
 	            else 
-	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sin(curve.psi[i]);  // PG11
+	            	cosxi.at(i) = - sinalpha * sin(incl) * sin(phi_em.at(i)) / sinpsi;  // PG11
 	            curve.eta[i] = sqrt( 1.0 - speed*speed ) / (1.0 - speed*cosxi.at(i) ); // Doppler boost factor, MLCB33
 	            
 		    
