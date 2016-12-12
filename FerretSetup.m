@@ -40,10 +40,10 @@ par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction
 par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation.
 %par.general.NPop=2;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
-par.general.popSize=50;
+par.general.popSize=100;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-par.general.NGen=3;
+par.general.NGen=1;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -66,14 +66,14 @@ par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', '
 par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00];
 par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
 
-%{
+
 for i = 1:5
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+5} = name1;
     par.general.min(i+5) = 0;
     par.general.max(i+5) = 0.01;
 end
-%}
+
 
 
 

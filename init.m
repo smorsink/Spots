@@ -43,8 +43,8 @@ extPar.fixed.beaming_model=0;         % 0 for bb, 1 for bb+chandra gray, 2 for b
 extPar.fixed.spots_2=1;				% 1 for 1 spot, 2 for 2 spots
 extPar.fixed.bend_file_is=1;          % 1 means bend file is read
 if extPar.fixed.bend_file_is == 1
-    bendfile = load('angles100-1.txt');
-    bendfile1 = reshape(bendfile(:,6),151,101);
+    bendfile = load('angles1000-1.txt');
+    bendfile1 = reshape(bendfile(:,6),301,1001);
     extPar.fixed.mr = bendfile1(1,:)';
     extPar.fixed.b = bendfile(:,2);
     extPar.fixed.psi = bendfile(:,3);
@@ -63,7 +63,7 @@ extPar.fixed.spotshape = 0;
 % ------------
 % Load data.
 % NEED TO CHANGE THIS IN outputFerret.m TOO, ~ line 80
-exe_dir='/Users/kitung/Desktop/thesis_material/Spot';
+exe_dir='/home/kitung/Spot';
 fileName=strcat(exe_dir,'/input/bb_only_fake_data.txt'); % *** need to change this in outputFerret too
 eval('dataFile=load(fileName);');
 % ------------

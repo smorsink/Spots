@@ -14,13 +14,13 @@ for i=size(X,2):-1:1  % we want to count backwards here
         emission=X(4,i);
         timeShift=X(5,i);
         
-        %{
+        
         background1=X(6,i);
         background2=X(7,i);
         background3=X(8,i);
         background4=X(9,i);
         background5=X(10,i);
-        %}
+        
         
         
         %radius=extPar.fixed.radius;
@@ -29,12 +29,13 @@ for i=size(X,2):-1:1  % we want to count backwards here
         %emission=extPar.fixed.emission;
         %timeShift=extPar.fixed.phaseshift;
         
-        
+        %{
         background1=extPar.fixed.background(1);
         background2=extPar.fixed.background(2);
         background3=extPar.fixed.background(3);
         background4=extPar.fixed.background(4);
         background5=extPar.fixed.background(5);
+        %}
         
 % Call Mex function in order of fixed quantities
         %{

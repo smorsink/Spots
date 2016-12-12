@@ -186,31 +186,32 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         bend_file_is_set = true;
         curve.flags.bend_file = true;
         curve.defl.mr = mxGetPr(theInput[20]);
-        curve.defl.num_mr = 100;
+        curve.defl.num_mr = 1000;
         double *bend_data_b = mxGetPr(theInput[21]);
         double *bend_data_psi = mxGetPr(theInput[22]);
         double *bend_data_dcosa = mxGetPr(theInput[23]);
         double *bend_data_toa = mxGetPr(theInput[24]);
         std::cout << "reorganizing bending data" << std::endl;
 
-        curve.defl.psi = dmatrix(0,101,0,151);
-        curve.defl.b = dmatrix(0,101,0,151);
-        curve.defl.dcosa = dmatrix(0,101,0,151);
-        curve.defl.toa = dmatrix(0,101,0,151);
-        curve.defl.psi_b = dvector(0,151);
-        curve.defl.b_psi = dvector(0,151);
-        curve.defl.dcosa_dcosp_b = dvector(0,151);
-        curve.defl.toa_b = dvector(0,151);
+        curve.defl.psi = dmatrix(0,1001,0,301);
+        curve.defl.b = dmatrix(0,1001,0,301);
+        curve.defl.dcosa = dmatrix(0,1001,0,301);
+        curve.defl.toa = dmatrix(0,1001,0,301);
+        curve.defl.psi_b = dvector(0,301);
+        curve.defl.b_psi = dvector(0,301);
+        curve.defl.dcosa_dcosp_b = dvector(0,301);
+        curve.defl.toa_b = dvector(0,301);
 
-        for (int j = 0; j < 101; j++){
-            for (int i = 0; i < 151; i++){
-                curve.defl.b[j][i] = bend_data_b[j*151+i];
-                curve.defl.psi[j][i] = bend_data_psi[j*151+i];
-                curve.defl.dcosa[j][i] = bend_data_dcosa[j*151+i];
-                curve.defl.toa[j][i] = bend_data_toa[j*151+i];
+        for (int j = 0; j < 1001; j++){
+            for (int i = 0; i < 301; i++){
+                curve.defl.b[j][i] = bend_data_b[j*301+i];
+                curve.defl.psi[j][i] = bend_data_psi[j*301+i];
+                curve.defl.dcosa[j][i] = bend_data_dcosa[j*301+i];
+                curve.defl.toa[j][i] = bend_data_toa[j*301+i];
             }
         }
-        std::cout << curve.defl.b[1][0] << std::endl;
+        std::cout << "M/R[5] = " << curve.defl.mr[5] << std::endl;
+        std::cout << "b[5][10] = " << curve.defl.b[5][10] << std::endl;
     }
 
     spotshape = mxGetScalar(theInput[26]);
@@ -224,85 +225,10 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     std::cout << "input completed" << std::endl;
  
  
-  
-
-    /***********************************************/
-    /* CHECKING THAT THE NECESSARY VALUES WERE SET */
-    /***********************************************/
-    /*
-    if( !( incl_is_set && theta_is_set
-	    && mass_is_set && rspot_is_set
-	    && omega_is_set && model_is_set ) ) {
-        throw( Exception(" Not all required parameters were specified. Exiting.\n") );
-        return -1;
-    }
-    */
    
-    /*******************************************************************/
-    /* READING TEMPERATURE VALUES FROM AN INPUT FILE, NOT USED FOR NOW */
-    /*******************************************************************/
-	/*
-    if ( T_mesh_in ) {
-    	std::ifstream inStream(T_mesh_file);
-    	std::cout << "** Tmeshfile name = " << T_mesh_file << std::endl;
-    	unsigned int n(0);
-
-    	if ( !inStream ) {
-        	throw( Exception( "Temperature mesh input file could not be opened. \nCheck that the actual input file name is the same as the -z flag parameter value. \nExiting.\n") );
-        	return -1;
-        }
-        std::string inLine;
-        while ( std::getline(inStream, inLine) )  // getting numtheta from the file
-        	n++;
-        if (n != numtheta) {
-        	throw( Exception( "Numtheta from mesh file does not match numtheta from command line input. \nExiting.\n") );
-        	return -1;
-        }
-        numtheta = numphi = n;
-        // go back to the beginning of the file
-        inStream.clear();
-        inStream.seekg (0, std::ios::beg);
-        for ( unsigned int k(0); k < numtheta; k++ ) {
-    		for ( unsigned int j(0); j < numphi; j++ ) {
-    			inStream >> T_mesh[k][j];
-    		}
-    	}
-    	inStream.close();
-    	
-    	// Printing the temperature mesh, for checking that it was read in correctly
-    	std::cout << "Temperature Mesh of Spot:" << std::endl;
-    	for ( unsigned int i(0); i < numtheta; i++ ) {
-    		for ( unsigned int j(0); j < numphi; j++ ) {
-    	    	std::cout << T_mesh[i][j] << "  ";
-    		}
-    		std::cout << std::endl;
-    	}
-    }
-    */
-    /******************************************/
-    /* SENSIBILITY CHECKS ON INPUT PARAMETERS */
-    /******************************************/
-    /*
-    if ( numtheta < 1 ) {
-        throw( Exception(" Illegal number of theta bins. Must be positive. Exiting.\n") );
-        return -1;
-    }
-    if ( spot_temperature < 0.0 || rho < 0.0 || mass < 0.0 || rspot < 0.0 || omega < 0.0 ) {
-        throw( Exception(" Cannot have a negative temperature, spot size, NS mass, NS radius, spin frequency. Exiting.\n") );
-        return -1;
-    }
-    if ( rho == 0.0 && numtheta != 1 ) {
-        std::cout << "\nWarning: Setting theta bin to 1 for a trivially sized spot.\n" << std::endl;
-        numtheta = 1;
-    }
    
-    if ( numbins > MAX_NUMBINS || numbins <= 0 ) {
-    	throw( Exception(" Illegal number of phase bins. Must be between 1 and MAX_NUMBINS, inclusive. Exiting.\n") );
-    	return -1;
-    }
-    
  
- 	*/
+ 	
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
@@ -375,7 +301,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       curve.para.DeltaE = DeltaE; // Delta(E) in keV
     }
 
-    std::cout << " Starting L1 = " << L1 << std::endl;
+    //std::cout << " Starting L1 = " << L1 << std::endl;
 
     // initialize background
     //for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
@@ -385,7 +311,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     //obsdata.shift = obsdata.t[0];
     obsdata.shift = ts;
     obsdata.numbins = numbins;
-    std::cout << " background initialized " << std::endl; 
+    //std::cout << " background initialized " << std::endl; 
 
     /*************************/
     /* OPENING THE DATA FILE */
@@ -983,7 +909,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /***************************************************/
     /* Data file should already be available           */
     /***************************************************/
-	std::cout << "numbins " << numbins << " numbands " << numbands << std::endl;
+	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
     chisquared = ChiSquare ( &obsdata, &curve );
     
     
