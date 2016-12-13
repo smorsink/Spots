@@ -91,7 +91,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     background[NCURVES],
     T_mesh[30][30],             // Temperature mesh over the spot; same mesh as theta and phi bins, assuming square mesh
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
-    distance(3.0857e22),        // Distance from earth to the NS, in meters; default is 10kpc
+    distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
+    obstime(1.0),               // Length of observation (in seconds)
     B;                          // from param_degen/equations.pdf 2
    
   double SurfaceArea(0.0);
@@ -157,8 +158,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			bend_file_is_set = true;
 	            	break;
 	            
-	    case 'D':  // Distance to NS
+	    case 'D':  // Distance to NS in kpc
 	            	sscanf(argv[i+1], "%lf", &distance);
+			distance *= 3.0857e19; // Convert to metres
 	            	break;
 	                
 	    case 'e':  // Emission angle of the spot (degrees), latitude
@@ -182,6 +184,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                // 2 = Fake Spectral Line
 	                // 3 = Hydrogen
 	                // 4 = Helium
+			// 7 = Hopf Function
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -304,6 +307,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	sscanf(argv[i+1], "%s", T_mesh_file);
 	            	T_mesh_in = true;
 	            	break;
+			
+	    case 'Z': // Observation time (in seconds)
+	      sscanf(argv[i+1], "%lf", &obstime);
+	      break;
+
 	            	
 	    case '2': // If the user want two spots
 	            	two_spots = true;
@@ -539,7 +547,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     // initialize background
-    for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
+    //    for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
 
     /*************************/
     /* OPENING THE DATA FILE */
@@ -1123,9 +1131,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }  
     } // Finished Normalizing
     else{ // Curves are not normalized
+
+      std::cout << "background = " << background[2] << std::endl;
+
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) {
-	  curve.f[p][i] = Flux[p][i];
+	  curve.f[p][i] = (Flux[p][i] + background[2] ) * obstime;
 	}
       }  
     }
