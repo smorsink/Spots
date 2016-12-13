@@ -163,7 +163,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	NS_model = mxGetScalar(theInput[7]); // int
 	rho = mxGetScalar(theInput[8]); // spot size in radian; double 
     spot_temperature = mxGetScalar(theInput[9]); // keV; double
-	distance = mxGetScalar(theInput[10]); // in meters; double
+	distance = mxGetScalar(theInput[10]); // in kpc; double
+    distance *= 3.0857e19; // convert distance to meters
 	numtheta = mxGetScalar(theInput[11]); // int
 	spectral_model = mxGetScalar(theInput[12]); // 3 for new integrated atmosphere scheme; int
 	numbands = mxGetScalar(theInput[13]); // int
