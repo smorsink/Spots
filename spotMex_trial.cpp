@@ -744,9 +744,9 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	      << std::endl;    
  
 
-	if (std::isnan(chisquared)) {
+	if (std::isnan(chisquared)||std::isinf(chisquared)) {
 		mexPrintf("Chisquared is nan! Setting it to 1,000,000.\n");
-		chisquared = 10000000.0;
+		chisquared = 100000000000.0;
 	}
 	else {
 		mexPrintf("X^2 = %f\n\n", chisquared);
@@ -840,6 +840,6 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     out.close();
 
 */
- 
+    
     delete model;
 }
