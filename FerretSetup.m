@@ -43,7 +43,7 @@ par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation
 par.general.popSize=100;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-par.general.NGen=1;
+par.general.NGen=25;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -62,18 +62,18 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 %par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
 
 % Fixed spot size with new background
-par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift'};
-par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00];
-par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
+par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'ObsTime'};
+par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00,     0.01];
+par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,     10.0];
 
-
-for i = 1:5
+% For ML2015 data require 30 energy bands
+for i = 1:30
     name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+5} = name1;
-    par.general.min(i+5) = 0;
-    par.general.max(i+5) = 0.01;
+    par.general.XLabels{i+6} = name1;
+    par.general.min(i+6) = 0;
+    % for ML2015 allow a larger background of 1.0
+    par.general.max(i+6) = 1.0;
 end
-
 
 
 

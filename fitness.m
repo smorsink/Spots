@@ -13,16 +13,41 @@ for i=size(X,2):-1:1  % we want to count backwards here
         inclination=X(3,i);
         emission=X(4,i);
         timeShift=X(5,i);
+        ObsTime=X(6,i);
         
-        
-        background1=X(6,i);
-        background2=X(7,i);
-        background3=X(8,i);
-        background4=X(9,i);
-        background5=X(10,i);
-        
-        
-        
+        background1=X(7,i);
+        background2=X(8,i);
+        background3=X(9,i);
+        background4=X(10,i);
+        background5=X(11,i);
+       	background6=X(12,i);
+        background7=X(13,i);
+        background8=X(14,i);
+        background9=X(15,i);
+        background10=X(16,i);
+        background11=X(17,i);
+        background12=X(18,i);
+        background13=X(19,i);
+        background14=X(20,i);
+        background15=X(21,i);
+        background16=X(22,i);
+        background17=X(23,i);
+        background18=X(24,i);
+        background19=X(25,i);
+        background20=X(26,i);
+        background21=X(27,i);
+        background22=X(28,i);
+        background23=X(29,i);
+        background24=X(30,i);
+        background25=X(31,i);
+        background26=X(32,i);
+        background27=X(33,i);
+        background28=X(34,i);
+        background29=X(35,i);
+        background30=X(36,i);
+
+	%ObsTime=X(36,i);
+
         %radius=extPar.fixed.radius;
         %mass=extPar.fixed.mass;
         %inclination=extPar.fixed.inclination;
@@ -48,7 +73,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         eval(cmd);
         %}
         
-        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, extPar.fixed.rho, extPar.fixed.spot_temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape';
+        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, extPar.fixed.rho, extPar.fixed.spot_temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime';
         for j = 1:extPar.fixed.numbands
             cmd = [cmd,', extPar.obsdata2.f(',num2str(j),',:), extPar.obsdata2.err(',num2str(j),',:), background',num2str(j),''];
         end
