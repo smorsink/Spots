@@ -203,6 +203,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         curve.defl.dcosa_dcosp_b = dvector(0,301);
         curve.defl.toa_b = dvector(0,301);
 
+       
+        
         for (int j = 0; j < 1001; j++){
             for (int i = 0; i < 301; i++){
                 curve.defl.b[j][i] = bend_data_b[j*301+i];
@@ -840,6 +842,16 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     out.close();
 
 */
+     free_dmatrix(curve.defl.psi,0,1001,0,301);
+        free_dmatrix(curve.defl.b,0,1001,0,301);
+        free_dmatrix(curve.defl.dcosa,0,1001,0,301);
+        free_dmatrix(curve.defl.toa,0,1001,0,301);
+        
+        free_dvector(curve.defl.psi_b,0,301);
+        free_dvector(curve.defl.b_psi,0,301);
+        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+        free_dvector(curve.defl.toa_b,0,301);
+    
     
     delete model;
 }
