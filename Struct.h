@@ -20,8 +20,8 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define NCURVES 100        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define NCURVES 50        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define MR 1000             // Maximum number of m/r values
 
 struct Parameters {      // local bit of spot information
@@ -140,7 +140,8 @@ class DataStruct {             // if reading in data, this would be the experime
 	double *t;                       // time
 	double *f[NCURVES];              // flux; an array of double pointers
 	double *err[NCURVES];            // error bars
-	double chisquare;                // chi squared
+	double chisquare;                // total chi squared 
+	double chi[NCURVES];            // chi square for each energy band
 	double shift;                    // if we need it; unused
 	unsigned int numbins;            // Number of time or phase bins for one spin period; 
 	//Also the number of flux data points

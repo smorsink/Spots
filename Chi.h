@@ -11,13 +11,13 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 512 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-#define NCURVES 100      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
+#define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define NCURVES 50      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
 
 
 
 // Calculates chi^2
-double ChiSquare( class DataStruct* obsdata, class LightCurve* curve );
+double ChiSquare( class DataStruct* obsdata, class LightCurve* curve);
 
 class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve,  class OblModelBase* modptr);
 

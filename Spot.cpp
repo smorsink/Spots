@@ -1159,6 +1159,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      << std::endl;    
 
 
+    std::cout << "Chi^2[0] = " << obsdata.chi[0] << std::endl;
+
     /*******************************/
     /* CALCULATING PULSE FRACTIONS */
     /*******************************/

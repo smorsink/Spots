@@ -197,6 +197,11 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
 	  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
+	  std::cout << "Atmos: gray = " << gray
+		   << " p=0: E_lo=" << E_band_lower_1
+		   << " E_hi = " << E_band_lower_1+E_diff
+		   << std::endl;
+
 	  for (unsigned int p = 0; p<numbands; p++){
            
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) 
