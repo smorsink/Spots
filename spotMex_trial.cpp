@@ -344,7 +344,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 		   		    mass_over_req,
 				    rot_par );
         
-      //std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
+      //vstd::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
 
        
     }
@@ -372,6 +372,22 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     }
 
    
+    if (NS_model != 3)
+        rspot = model->R_at_costheta(cos(theta_1));
+      else
+        rspot = req;
+    
+    std::cout << "Spot Temperature = " << spot_temperature << "keV" << std::endl;
+    std::cout << "Obs Temperature = " << spot_temperature*sqrt(1-2.0*mass_over_req*req/rspot) << std::endl;
+    std::cout << "Correct Temperature = " << 2.0*sqrt(3.0/5.0) << std::endl;
+    
+    if ( fabs(spot_temperature*sqrt(1-2.0*mass_over_req*req/rspot) - 2.0*sqrt(3.0/5.0)) > 0.05 ){
+            chisquared = 1e10;
+            std::cout << " Wrong temperature!!!!!!!!!" << std::endl;
+    }
+    else{
+            // Correct Temperature!
+    
     /****************************/
     /* Initialize time and flux */
     /****************************/
@@ -736,8 +752,10 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
     chisquared = ChiSquare ( &obsdata, &curve );
     
-    std::cout << "Warning chi^2 is only for band 0 " << std::endl;
-    chisquared = obsdata.chi[0];
+    std::cout << "Warning chi^2 is only for band 0+1+2 " << std::endl;
+    chisquared = obsdata.chi[0] + obsdata.chi[1] + obsdata.chi[2];
+    
+    }
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
 	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
@@ -745,7 +763,9 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	      << " Hz, i = " << incl_1 * 180.0 / Units::PI 
 	      << ", e = " << theta_1 * 180.0 / Units::PI 
 	      << ", X^2 = " << chisquared 
-	      << std::endl;    
+	      << std::endl;   
+    
+   
  
 
 	if (std::isnan(chisquared)||std::isinf(chisquared)) {

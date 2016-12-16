@@ -40,7 +40,7 @@ par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction
 par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation.
 %par.general.NPop=2;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
-par.general.popSize=100;
+par.general.popSize=300;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
 par.general.NGen=125;
@@ -63,11 +63,11 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 % Fixed spot size with new background
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'ObsTime', 'rho', 'temperature'};
-par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00,      0.1,       0.1,   1.5];
-par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      10.0,      1.0,   2.5];
+par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00,      0.1,       0.1,   1.9];
+par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      10.0,      1.0,   2.1];
 
 % For ML2015 data require 30 energy bands
-for i = 1:1
+for i = 1:3
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+8} = name1;
     par.general.min(i+8) = 0.02;

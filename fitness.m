@@ -52,8 +52,9 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background30=extPar.fixed.background(30);
         
         background1=X(9,i);
+        background2=X(10,i);
+        background3=X(11,i);
         
-        %background2=X(8,i);
         %background3=X(9,i);
         %background4=X(10,i);
         %background5=X(11,i);
@@ -135,7 +136,14 @@ function isPhysical=applyConstraints(X, extPar)
 parameterNames=extPar.QubistPar.general.XLabels;
 m=X(strcmpi(parameterNames,'mass (M_{sun})'));  % the label here needs to match the one in FerretSetup
 r=X(strcmpi(parameterNames,'radius (km)'));     % the label here needs to match the one in FerretSetup
+t=X(strcmpi(parameterNames,'temperature'));
 %mr_ratio=extPar.fixed.mass/extPar.fixed.radius;
-mr_ratio=m/r;
+%mr_ratio=m/r;
+mr_ratio=1.477*m/r;
+tsquare=t*t;
+%tsquare constraint comes from ML2015
+thing=12.0/(5.0*(1.0-2.0*mr_ratio));
 %isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.203;
-isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.175;
+%isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284 && tsquare<thing+0.1 && tsquare > thing-0.1;
+isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284;
+%isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.175;
