@@ -16,6 +16,8 @@ for i=size(X,2):-1:1  % we want to count backwards here
         ObsTime=X(6,i);
         rho=X(7,i);
         %rho = extPar.fixed.rho;
+        temperature=X(8,i);
+        %temperature=extPar.fixed.spot_temperature;
         
         % Initialize background to zero
         background1=extPar.fixed.background(1);
@@ -49,7 +51,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background29=extPar.fixed.background(29);
         background30=extPar.fixed.background(30);
         
-        background1=X(8,i);
+        background1=X(9,i);
         
         %background2=X(8,i);
         %background3=X(9,i);
@@ -108,7 +110,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         eval(cmd);
         %}
         
-        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, extPar.fixed.rho, extPar.fixed.spot_temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime';
+        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, rho, temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime';
         for j = 1:extPar.fixed.numbands
             cmd = [cmd,', extPar.obsdata2.f(',num2str(j),',:), extPar.obsdata2.err(',num2str(j),',:), background',num2str(j),''];
         end
