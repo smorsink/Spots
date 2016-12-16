@@ -736,6 +736,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
     chisquared = ChiSquare ( &obsdata, &curve );
     
+    std::cout << "Warning chi^2 is only for band 0 " << std::endl;
+    chisquared = obsdata.chi[0];
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
 	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
