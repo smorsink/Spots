@@ -67,10 +67,10 @@ par.general.min=[        6.0,           1.0,                 0.01,              
 par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      10.0,      1.0,   2.1];
 
 % For ML2015 data require 30 energy bands
-for i = 1:3
+for i = 1:30
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0.02;
+    par.general.min(i+8) = 0.0002;
     % for ML2015 allow a larger background of 1.0%
     par.general.max(i+8) = 0.1;
 end
