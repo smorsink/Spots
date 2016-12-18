@@ -754,7 +754,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     
     chisquared = 0.0;
     
-    for (unsigned int i(0);i<15;i++){
+    for (unsigned int i(0);i<30;i++){
      chisquared += obsdata.chi[i];   
     }
     

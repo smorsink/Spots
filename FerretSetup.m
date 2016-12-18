@@ -63,21 +63,28 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 % Fixed spot size with new background
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'ObsTime', 'rho', 'temperature'};
-par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00,      0.1,       0.1,   1.9];
-par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      10.0,      1.0,   2.1];
+par.general.min=[        6.0,           1.0,                 70.0,                 70.0,               0.00,      1.03,       0.1,   1.9];
+par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      1.1,      1.0,   2.1];
 
 % For ML2015 data require 30 energy bands
 for i = 1:30
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0.0002;
+    par.general.min(i+8) = 0.000001;
     % for ML2015 allow a larger background of 1.0%
     par.general.max(i+8) = 0.1;
 end
 
 % par.general.XLabels(7) = 'background1';
 %par.general.min(7) = 0.02;
-%par.general.max(7) = 0.1;
+
+%background 1
+par.general.max(9) = 0.08;
+
+%background 2
+par.general.max(10) = 0.08;
+
+
 
 % ****Old Background****
 %par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', '\theta (degrees)', 'phase shift','Low BG','High BG'};
