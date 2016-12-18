@@ -328,7 +328,7 @@ double OblDeflectionTOA::rcrit ( const double& b, const double& rspot, bool *pro
 				modptr->R_at_costheta(0.0),
 				OblDeflectionTOA_rcrit_zero_func_wrapper);*/ // rcrit_guess
 
-	candidate = MATPACK::FindZero(0.6*rspot,
+	candidate = MATPACK::FindZero(0.9*rspot,
 				      rspot,
 				      OblDeflectionTOA_rcrit_zero_func_wrapper); // rcrit_guess
  
@@ -427,13 +427,15 @@ double OblDeflectionTOA::psi_max_outgoing_u ( const double& b_R, bool *prob ) co
 double OblDeflectionTOA::psi_ingoing ( const double& b_R, const double& b_R_max, const double& psimax, 
 				       const double& rspot, bool *prob ) const {
 
-  double psi, psi_in, rcrit;
+  double psi(psimax), psi_in, rcrit;
 	
   	// set globals
   	OblDeflectionTOA_object = this;
   	OblDeflectionTOA_b_value = b_R * rspot;
 	OblDeflectionTOA_b_max_value = b_R_max * rspot;
 	OblDeflectionTOA_psi_max_value = psimax;
+
+	std::cout << "Psi_ingoing! rspot = " << rspot << std::endl;
 
 	if ( fabs(b_R-b_R_max) < 1e-6){
 	  psi_in = 0.0;
@@ -442,17 +444,32 @@ double OblDeflectionTOA::psi_ingoing ( const double& b_R, const double& b_R_max,
 
 	  rcrit = this->rcrit( b_R*rspot, rspot, &curve.problem );	 
 	  OblDeflectionTOA_b_over_r = b_R*rspot/rcrit;
+
+	if ( fabs(OblDeflectionTOA_b_over_r - sqrt( 1.0 - 2.0*get_mass_over_r() * rspot/rcrit )) > 1e-3){
+		psi_in = 0.0;
+		std::cout << "rcrit failed " << std::endl;
+		}	
+	else	
 	  psi_in = 2.0*Integration( rcrit/rspot, 1.0, OblDeflectionTOA_psi_ingoing_integrand_wrapper_u,10000 );
-	}
-	
-  	
-   	OblDeflectionTOA_b_over_r = b_R;
+
+		OblDeflectionTOA_b_over_r = b_R;
 	
 	if ( b_R == b_R_max)
 	  psi = psi_in +  OblDeflectionTOA_psi_max_value;
 	  else
 	  psi = psi_in + this->psi_outgoing_u( b_R, b_R_max,
 						      OblDeflectionTOA_psi_max_value , &curve.problem );
+
+	}
+	
+  	
+   	//OblDeflectionTOA_b_over_r = b_R;
+	
+	//if ( b_R == b_R_max)
+	  //psi = psi_in +  OblDeflectionTOA_psi_max_value;
+	  //else
+	  //psi = psi_in + this->psi_outgoing_u( b_R, b_R_max,
+		//				      OblDeflectionTOA_psi_max_value , &curve.problem );
 
 	//	std::cout << "Total psi = " << psi << std::endl;
 
@@ -530,11 +547,11 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 
 	  if ( ingoing_allowed ) {
 
-	    //std::cout << "b_from_psi: Ingoing!!!" << std::endl;
+	    std::cout << "b_from_psi: Ingoing!!!" << std::endl;
 
 
 	    if ( psi > psimin ) {
-	      //std::cout << "b_from_psi: psi > psimin" << std::endl;
+	      std::cout << "b_from_psi: psi > psimin" << std::endl;
 	      return false;
 	    }
 	    else if ( psi == psimin ) {
@@ -553,6 +570,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
 	      */
+		std::cout << "b_from_psi: calculating b/R for ingoing photon " << std::endl;
 
 	      double bcand_R = MATPACK::FindZero(bmin/rspot, bmax_out/rspot,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,

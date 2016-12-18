@@ -86,6 +86,8 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             if (k < 0) k += numbins;
             
 	    for (unsigned int p(0);p<numbands;p++){
+          if (std::isinf(curve->f[p][k]))
+              std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 	      tempflux[p][i] = curve->f[p][k]; // putting things from curve->f's k bin into tempflux's i bin           
 	    }
         }
@@ -659,6 +661,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
             sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
+	if (sinalpha > 1.0)
+std::cout << "sinalpha = " << sinalpha << std::endl;
+
             cosalpha = sqrt(fabs( 1.0 - sinalpha * sinalpha )); 
 	    //   alpha    = asin( sinalpha );
             
@@ -760,6 +765,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                               * curve.dcosalpha_dcospsi[i];  // PG8
 
 	        
+                if (std::isinf(curve.dOmega_s[i]))
+                    std::cout << "ComputeAngles: dOmega = infinity!!!! i="<< i << std::endl;
+                
 
             } // end visible
             
