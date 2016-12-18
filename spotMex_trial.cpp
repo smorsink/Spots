@@ -752,8 +752,15 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
     chisquared = ChiSquare ( &obsdata, &curve );
     
-    std::cout << "Warning chi^2 is only for band 0+1+2 " << std::endl;
-    chisquared = obsdata.chi[0] + obsdata.chi[1] + obsdata.chi[2];
+    chisquared = 0.0;
+    
+    for (unsigned int i(0);i<15;i++){
+     chisquared += obsdata.chi[i];   
+    }
+    
+    
+    //std::cout << "Warning chi^2 is only for band 0+1+2 " << std::endl;
+    //chisquared = obsdata.chi[0] + obsdata.chi[1] + obsdata.chi[2];
     
     }
     
