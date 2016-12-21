@@ -108,7 +108,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     spotshape(0), // Spot shape; 0=standard
     numbands(NCURVES); // Number of energy bands;
 
-  
+  unsigned int databins(MAX_NUMBINS);   // Number of phase bins in the data
   
 
 
@@ -225,7 +225,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                break;
 	          
 	    case 'n':  // Number of phase or time bins
-	                sscanf(argv[i+1], "%u", &numbins);
+	                sscanf(argv[i+1], "%u", &databins);
+			if ( databins < MIN_NUMBINS) {
+			  numbins = MIN_NUMBINS;
+			}
+			else
+			  numbins = databins;
+			 
 	                break;
 	                
 	    case 'N': // Flag for not normalizing the flux output
@@ -568,9 +574,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       // need to do the following to use arrays of pointers (as defined in Struct)
       for (unsigned int y(0); y < numbands; y++) {
       	std::cout << "setting pointers" << std::endl;
-	obsdata.t = new double[numbins];
-	obsdata.f[y] = new double[numbins];
-	obsdata.err[y] = new double[numbins];
+	obsdata.t = new double[databins];
+	obsdata.f[y] = new double[databins];
+	obsdata.err[y] = new double[databins];
       }
  
       /****************************************/
@@ -602,7 +608,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     if (data.is_open()){
     	double temp;
-    	for (unsigned int j = 0; j < numbins; j++){
+    	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
     		obsdata.t[j] = temp;
     		for (unsigned int k = 0; k < numbands; k++){
@@ -631,7 +637,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       // Read in data file to structure "obsdata" (observed data)
       // f[1][i] flux in low energy band
       // f[2][i] flux in high energy band
-      obsdata.numbins = numbins;
+      obsdata.numbins = databins;
       obsdata.numbands = numbands;
 
       data.close();
@@ -869,119 +875,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  			pieces=1;
 		}
 
-		/*
-    	for (unsigned int p(0);p<pieces;p++){
-
-    		double deltatheta = 2.0*rho/numtheta;
-    		if (pieces==2){
-				if (p==0) deltatheta = (rho-theta_2)/numtheta;
-				else deltatheta = (2.0*theta_2)/numtheta;
-    		}      
-    		//std::cout << "numtheta=" << numtheta << " theta = " << theta_2 << " delta(theta) = " << deltatheta << std::endl;
-     
-      		// Looping through the mesh of the spot
-    		for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-				//std::cout << "k=" << k << std::endl;
-
-				double thetak = theta_2 - rho + (k+0.5)*deltatheta; 
-				double phi_edge, phij;
-
-				if (pieces==2){
-	  				if (p==0){
-	    				thetak = (k+0.5)*deltatheta;
-	    				phi_edge = Units::PI;
-	  				}
-	  				else thetak = rho - theta_2 + (k+0.5)*deltatheta;  	
-				}
-
-				//std::cout << "k=" << k << " thetak = " << thetak << std::endl;
-				dphi = 2.0*Units::PI/(numbins*1.0);
-
-				// What is the value of radius at this angle?
-				// For spherical star, rspot = req;
-				rspot = req; // Spherical star
-				curve.para.radius = rspot; // load rspot into structure
-				curve.para.mass_over_r = mass_over_req * req/rspot;
-
-				OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-				//std::cout << "Now Compute the bending angles by entering Bend" << std::endl;
-				curve = Bend(&curve,defltoa);
-
-				if ( (pieces==2 && p==1) || (pieces==1)){ //crescent-shaped 2nd piece, or the one circular piece if spot doesn't go over pole
-	  				double cos_phi_edge = (cos(rho) - cos(theta_2)*cos(thetak))/(sin(theta_2)*sin(thetak)) * -1;
-	  				//std::cout << cos_phi_edge << std::endl;
-	  				if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
-					if ( fabs( sin(theta_2) * sin(thetak) ) > 0.0) { // checking for a divide by 0
-	    				phi_edge = acos( cos_phi_edge );   // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-	    				//std::cout << phi_edge << std::endl;
-	  				}
-	  				else {  // trying to divide by zero
-	    				throw( Exception(" Tried to divide by zero in calculation of phi_edge for spot 2. Likely, thetak = 0. Exiting.") );
-	    				return -1;
-	  				}
-				} 
-				numphi = 2.0*(Units::PI-phi_edge)/dphi;
-				phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
-
-				curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
-				curve.para.theta = thetak;
-
-				if (numtheta==1){
-	  				numphi=1;
-	  				phi_edge=-1*Units::PI;
-	  				dphi=0.0;
-	  				phishift = 0.0;
-	  				curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
-				}
-       
-       	        //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
-
-    			for ( unsigned int j(0); j < numphi; j++ ) {   // looping through the phi divisions
-					phij = phi_edge + (j+0.5)*dphi;
-					curve.para.phi_0 = phij;
-	                //std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << std::endl;
-
-					if ( NS_model == 1 || NS_model == 2 ) curve.para.dS /= curve.para.cosgamma;
-					if ( j==0){ // Only do computation if its the first phi bin - otherwise just shift
-	  					curve = ComputeAngles(&curve, defltoa); 
-	  					curve = ComputeCurve(&curve);
-					}
 	
-					if ( curve.para.temperature == 0.0 ) {
-	  					for ( unsigned int i(0); i < numbins; i++ ) {
-	    					for ( unsigned int p(0); p < numbands; p++ )  curve.f[p][i] = 0.0;
-	  					}
-					}
-
-					// Add curves, load into Flux array
-					for ( unsigned int i(0); i < numbins; i++ ) {
-	 					int q(i+j);
-	  					if (q>=numbins) q+=-numbins;
-	  					for ( unsigned int p(0); p < numbands; p++ ) Flux[p][i] += curve.f[p][q];  
-					} // ending Add curves
-    			} // end for-j-loop
-
-      			// Add in the missing bit.      
-      			if (phishift != 0.0){ // Add light from last bin, which requires shifting
-      				for ( unsigned int i(0); i < numbins; i++ ) {
-	  					int q(i+numphi-1);
-	  					if (q>=numbins) q+=-numbins;
-	  					for ( unsigned int p(0); p < numbands; p++ ) Temp[p][i] = curve.f[p][q];	  
-					}
-
-					for (unsigned int p(0); p < numbands; p++ ){
-	  					for ( unsigned int i(0); i < numbins; i++ ) curve.f[p][i] = Temp[p][i];	  
-   	     			}
-					curve = ShiftCurve(&curve,phishift);
-       
-					for( unsigned int p(0); p < numbands; p++ ){
-	  					for ( unsigned int i(0); i < numbins; i++ ) Flux[p][i] += curve.f[p][i]*phishift/dphi      ;
-					}
-      			} // closing the missing bit.      
-    		} // closing for loop through theta divisions
-    	} // closing for loop for calculating each piece, either the symmetric or crescent
-		*/
-
 		
 	for (unsigned int p(0);p<pieces;p++){
 
@@ -1141,6 +1035,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }  
     }
      
+    // If databins < numbins then rebin the theoretical curve down 
+    
+    if (databins < numbins)
+      curve = ReBinCurve(&obsdata,&curve);
+
+
+
+
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
@@ -1191,6 +1093,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         std::cerr << "Couldn't open output file. Exiting." << std::endl;
         return -1;
     }
+    
+    numbins = obsdata.numbins;
 
     if ( rho == 0.0 ) rho = Units::PI/180.0;
 

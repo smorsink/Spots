@@ -23,6 +23,9 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 
 double SpotIntegrand( double rho, double zeta, class LightCurve* curve, class OblModelBase* model);
 
+class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* curve);
+
+
 // Calculates angles
 class LightCurve ComputeAngles( class LightCurve* incurve,
 				                class OblDeflectionTOA* defltoa );

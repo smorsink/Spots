@@ -385,7 +385,30 @@ double SpotIntegrand( double rho, double zeta, class LightCurve* incurve, class 
   return integrand;
 }
 
+class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve) {
 
+  class LightCurve curve;
+    curve = *incurve;
+
+    unsigned int numbands(NCURVES);  // Number of Energy Bands
+    unsigned int jj(MIN_NUMBINS/obsdata->numbins);
+
+    std::cout << "MIN_NUMBINS = " << MIN_NUMBINS << std::endl;
+    std::cout << "OBS_BINS = " << obsdata->numbins << std::endl;
+    std::cout << "ratio = " << jj << std::endl;
+
+    for (unsigned int p(0); p<numbands; p++){
+      for (unsigned int i(0); i<obsdata->numbins; i++){
+
+	curve.t[i] = obsdata->t[i];
+	
+	curve.f[p][i] = incurve->f[p][i*jj];
+
+      }
+    }
+
+    return curve;
+}
 
 
 /**************************************************************************************/
