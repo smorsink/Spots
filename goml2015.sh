@@ -3,7 +3,7 @@
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
 base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-12"
+exe_dir="$base/Spot-master-14"
 #pwd
 make spot
 times
@@ -13,7 +13,7 @@ out_dir="$exe_dir/ML2015_data"
 normalizeFlux=false  # false = no, true = yes; still need to add or remove -N flag in command line (-N means yes)
 
 # integers
-numtheta=10     # number of theta bins; for a small spot, only need one
+numtheta=4     # number of theta bins; for a small spot, only need one
 NS_model=2     # 1 (oblate) or 3 (spherical); 2 is for old-fashioned shape model
 numbins=16    # phase bins
 numbands=30     # energy bands
@@ -26,6 +26,8 @@ beaming=7      # Hopf function limb-darkening
 spotmodel=2    # circular in the static frame, no gamma
 obstime=1040500.0      #length of observation (in seconds)
 back=0.0705    #constant background (same in all energy bands)
+#obstime=1
+#back=0
 
 # doubles -- using "e" notation
 spin=600 # in Hz
@@ -47,19 +49,21 @@ fi
 
 # TEST OS1a = 600 Hz, tiny spot; oblate
 
-out_file="$out_dir/testa.txt"
+out_file="$out_dir/newa-10.txt"
 ## RUNNING THE CODE
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -I "ML2015_data/out3a.txt"
 #times
 
-# TEST OS1b = 600 Hz, big spot
-NS_model=1
-spotmodel=0
-numbins=128
-numtheta=100
-rho=1.0
-out_file="$out_dir/os1b.txt"
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -P "$spotmodel"
-#times
+
+# Example of a Problem
+mass=1.6
+radius=12
+inclination=89.5
+emission=89.5
+phaseshift=0.5
+
+out_file="$out_dir/bad.txt"
+
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -I "ML2015_data/out3a.txt"
+times
 
