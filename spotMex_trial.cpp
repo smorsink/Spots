@@ -100,10 +100,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
     beaming_model(0),     // Beaming model choice (initialized to isotropic)
     numbins(MAX_NUMBINS), // Number of time or phase bins for one spin period; Also the number of flux data points
+    databins(MAX_NUMBINS),
     numphi(1),            // Number of azimuthal (projected) angular bins per spot
     numtheta(1),          // Number of latitudinal angular bins per spot
     spotshape(0), // Spot shape; 0=standard
     numbands(NCURVES); // Number of energy bands;
+
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
        bend_file[256] = "angles100.txt", 
@@ -159,7 +161,13 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	incl_1 = mxGetScalar(theInput[3]); // inclination angle; double
 	theta_1 = mxGetScalar(theInput[4]); // emission angle; double
 	ts = mxGetScalar(theInput[5]); // phase shift/time shift; double
-	numbins = mxGetScalar(theInput[6]); // int
+	databins = mxGetScalar(theInput[6]); // int
+    if (databins < MIN_NUMBINS){
+        numbins = MIN_NUMBINS;
+    }
+    else{
+        numbins = databins;
+    }
 	NS_model = mxGetScalar(theInput[7]); // int
 	rho = mxGetScalar(theInput[8]); // spot size in radian; double 
     spot_temperature = mxGetScalar(theInput[9]); // keV; double
@@ -322,7 +330,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
  
     obsdata.shift = ts;
-    obsdata.numbins = numbins;
+    obsdata.numbins = databins;
 
 
    
@@ -376,7 +384,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         rspot = model->R_at_costheta(cos(theta_1));
       else
         rspot = req;
-    
+    /*
     std::cout << "Spot Temperature = " << spot_temperature << "keV" << std::endl;
     std::cout << "Obs Temperature = " << spot_temperature*sqrt(1-2.0*mass_over_req*req/rspot) << std::endl;
     std::cout << "Correct Temperature = " << 2.0*sqrt(3.0/5.0) << std::endl;
@@ -387,6 +395,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     }
     else{
             // Correct Temperature!
+    */
     
     /****************************/
     /* Initialize time and flux */
@@ -745,11 +754,15 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	}
       }  
     }
+
+    if (databins < numbins)
+      curve = ReBinCurve(&obsdata,&curve);
      
     /***************************************************/
     /* Data file should already be available           */
     /***************************************************/
 	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
+
     chisquared = ChiSquare ( &obsdata, &curve );
     
     chisquared = 0.0;
@@ -762,7 +775,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     //std::cout << "Warning chi^2 is only for band 0+1+2 " << std::endl;
     //chisquared = obsdata.chi[0] + obsdata.chi[1] + obsdata.chi[2];
     
-    }
+    //}
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
 	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
@@ -809,6 +822,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /*********************************/
     /* Writing lightcurve output     */
     /*********************************/
+
 /*        
     out.open("output_spotMex.txt");
 

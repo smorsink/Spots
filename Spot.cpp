@@ -607,6 +607,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	*/
 
     if (data.is_open()){
+    	std::cout << "reading data" << std::endl;
+    	std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
     	double temp;
     	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
@@ -619,10 +621,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     			obsdata.err[k][j] = temp;
     			//std::cout << temp << std::endl;
     		}
+    		data >> temp;
     	}
     	data.close();
     }
-
 
       //if ( numLines != numbins ) {
 	//throw (Exception( "Numbins indicated in command-line not equal to numbins in data file."));
@@ -998,6 +1000,19 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
      
+    /*******************************/
+    /* ADDING BACKGROUND TO CURVE  */
+    /*******************************/
+
+    for (unsigned int p = 0; p < numbands; p++){
+        //std::cout << "band " << p << std::endl; 
+        for (unsigned int i = 0; i < numbins; i++){
+            //std::cout << Flux[p][i] << std::endl;
+            Flux[p][i] += background[2];
+                Flux[p][i] *= obstime;  
+        }
+    }
+
     
     /*******************************/
     /* NORMALIZING THE FLUXES TO 1 */
@@ -1024,13 +1039,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}
       }  
     } // Finished Normalizing
+
     else{ // Curves are not normalized
 
       std::cout << "background = " << background[2] << std::endl;
 
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) {
-	  curve.f[p][i] = (Flux[p][i] + background[2] ) * obstime;
+	  curve.f[p][i] = Flux[p][i];
 	}
       }  
     }
@@ -1046,7 +1062,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
-	
+	std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     if ( datafile_is_set ) {
     	std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
@@ -1193,6 +1209,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	out << curve.t[i]<< "\t" ;
 			for ( unsigned int p(0); p < numbands; p++ ) { 
             	out << curve.f[p][i] << "\t" ;
+            	//out << sqrt(curve.f[p][i]) << "\t" ; // semi-Fake errors. 
         	}
 			out << i;
         	out << std::endl;

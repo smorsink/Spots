@@ -2,8 +2,8 @@
 
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
-base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-14"
+base="/Users/kitung/Desktop/thesis_material"
+exe_dir="$base/Spot"
 #pwd
 make spot
 times
@@ -51,7 +51,7 @@ fi
 
 out_file="$out_dir/newa-10.txt"
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -I "ML2015_data/out3a.txt"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -I "input/newa-10-err.txt"
 #times
 
 
