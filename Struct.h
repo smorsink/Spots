@@ -71,8 +71,10 @@ struct Flags {
 	bool bend_file;				  // yes means bend file has been read, passing to bend.
 	unsigned int spectral_model;  // stating which model we're using -- definitions of models given elsewhere
 	unsigned int beaming_model;   // stating which model we're using -- definitions of models given elsewhere
-  unsigned int ns_model; // Shape model: 3=spherical; 1=oblate
-  unsigned int spotshape;
+    unsigned int ns_model; // Shape model: 3=spherical; 1=oblate
+    unsigned int attenuation;	  // attenuation flag for the four NICER target files
+    unsigned int inst_curve;      // instrument response curve flag for NICER
+    unsigned int spotshape;
 };
 
 

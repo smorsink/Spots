@@ -34,7 +34,8 @@
 #include <string>
 #include "OblDeflectionTOA.h"
 #include "Chi.h"
-#include "Atmo.h"    
+#include "Atmo.h"
+#include "Instru.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
@@ -105,8 +106,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numbins(MAX_NUMBINS), // Number of time or phase bins for one spin period; Also the number of flux data points
     numphi(1),            // Number of azimuthal (projected) angular bins per spot
     numtheta(1),          // Number of latitudinal angular bins per spot
-    spotshape(0), // Spot shape; 0=standard
-    numbands(NCURVES); // Number of energy bands;
+    spotshape(0), 		  // Spot shape; 0=standard
+    numbands(NCURVES),    // Number of energy bands;
+    attenuation(0),       // Attenuation flag, specific to NICER targets with implemented factors
+    inst_curve(0);		  // Instrument response flag, 1 = NICER response curve
 
   unsigned int databins(MAX_NUMBINS);   // Number of phase bins in the data
   
@@ -130,7 +133,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
     	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
     	 ignore_time_delays(false),  // True if we are ignoring time delays
-    bend_file_is_set(false),
+         bend_file_is_set(false),
     	 T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
     	 normalize_flux(false),      // True if we are normalizing the output flux to 1
     	 //E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
@@ -152,6 +155,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
             switch ( argv[i][1] ) {
 
+        case 'a': // Attenuation flag, corresponds to four attenuation files for NICER targets
+        			sscanf(argv[i+1], "%u", &attenuation);
+        			// 0 = nothing happens, light curve produced as normal
+        			// 1 = NICER J0030 WABS
+        			// 2 = NICER J0030 TBABS
+        			// 3 = NICER J0437 WABS
+        			// 4 = NICER J0437 TBABS
+        			break;
 	            
 	    case 'b': // Bending Angle File
 	            	sscanf(argv[i+1], "%s", bend_file);	
@@ -258,6 +269,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%u", &NS_model);
 	                model_is_set = true;
 	                break;
+
+	    case 'R':  // Instrument Response Curve
+	    			sscanf(argv[i+1], "%u", &inst_curve);
+	    			break;
 	      	          
 	    case 'r':  // Radius of the star at the equator(km)
 	                sscanf(argv[i+1], "%lf", &req);
@@ -268,7 +283,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%u", &spectral_model);
 			// 0 = blackbody
 			// 1 = thin line for nicer
-	        // 2 = integrated flux for energy bands
+	        // 2 = *slow and old* integrated flux for energy bands
+	        // 3 = *fast and correct* integrated flux for energy bands
 			break;
 			
 	    case 'S': // Number of Energy bands
@@ -394,8 +410,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //std::cout << "Spot: test psi = " << curve.defl.psi[10][10] << std::endl;
 
     }
-
-
 
 
 
@@ -531,6 +545,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
     curve.flags.bend_file = bend_file_is_set;
+    curve.flags.attenuation = attenuation;
+    curve.flags.inst_curve = inst_curve;
     curve.numbands = numbands;
     curve.flags.spotshape = spotshape;
 
@@ -551,9 +567,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     }
 
+   // Force energy band settings into NICER specified bands
+   
+    std::cout << "attenuation flag is " << curve.flags.attenuation << std::endl;
 
-    // initialize background
-    //    for ( unsigned int p(0); p < numbands; p++ ) background[p] = 0.0;
+   	if (curve.flags.attenuation >= 1){
+   		curve.para.E_band_lower_1 = 0.05;
+   		curve.para.E_band_upper_1 = 3.05;
+   		curve.numbands = 30;
+   	} 
 
     /*************************/
     /* OPENING THE DATA FILE */
@@ -573,7 +595,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }
       // need to do the following to use arrays of pointers (as defined in Struct)
       for (unsigned int y(0); y < numbands; y++) {
-      	std::cout << "setting pointers" << std::endl;
+      	//std::cout << "setting pointers" << std::endl;
 	obsdata.t = new double[databins];
 	obsdata.f[y] = new double[databins];
 	obsdata.err[y] = new double[databins];
@@ -607,8 +629,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	*/
 
     if (data.is_open()){
-    	std::cout << "reading data" << std::endl;
-    	std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
+    	//std::cout << "reading data" << std::endl;
+    	//std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
     	double temp;
     	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
@@ -649,7 +671,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
     } // Finished reading in the data file
-		
+	
     /***************************/
     /* START SETTING THINGS UP */
     /***************************/ 
@@ -999,17 +1021,62 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
+
+
+	/**********************************/
+	/*       APPLYING ATTENUATION     */
+	/**********************************/
+
+	std::cout << "Applying attenuation" << std::endl;
+
+	if (curve.flags.attenuation != 0){
+    	for (unsigned int p = 0; p < numbands; p++){
+        	for (unsigned int i = 0; i < numbins; i++){
+        		Flux[p][i] = Attenuate(Flux[p][i],curve.flags.attenuation);
+        	}
+		}
+	}
      
-    /*******************************/
-    /* ADDING BACKGROUND TO CURVE  */
-    /*******************************/
+    /******************************************/
+    /*         ADDING BACKGROUND              */
+    /******************************************/
+
+	std::cout << "Applying background" << std::endl;
 
     for (unsigned int p = 0; p < numbands; p++){
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
             //std::cout << Flux[p][i] << std::endl;
             Flux[p][i] += background[2];
-                Flux[p][i] *= obstime;  
+        }
+    }
+
+    /******************************************/
+    /*  APPLYING INSTRUMENT RESPONSE CURVE    */
+    /******************************************/
+
+	std::cout << "Applying instrument response curve" << std::endl;
+
+    if (curve.flags.inst_curve >= 1){
+    	for (unsigned int p = 0; p < numbands; p++){
+        	for (unsigned int i = 0; i < numbins; i++){
+        		Flux[p][i] = Inst_Res(Flux[p][i],curve.flags.inst_curve);
+        	}
+		}
+	}
+
+
+    /******************************************/
+    /*     MULTIPLYING OBSERVATION TIME       */
+    /******************************************/
+
+	std::cout << "Applying observation time" << std::endl;
+
+    for (unsigned int p = 0; p < numbands; p++){
+        //std::cout << "band " << p << std::endl; 
+        for (unsigned int i = 0; i < numbins; i++){
+            //std::cout << Flux[p][i] << std::endl;
+            Flux[p][i] *= obstime;  
         }
     }
 
@@ -1052,8 +1119,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
      
     // If databins < numbins then rebin the theoretical curve down 
-    
-    if (databins < numbins)
+
+    std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
+
+    if (databins < numbins && datafile_is_set)
       curve = ReBinCurve(&obsdata,&curve);
 
 
@@ -1062,9 +1131,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
-	std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
+	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     if ( datafile_is_set ) {
-    	std::cout << "calculating chi squared" << std::endl;
+    	//std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
     }
     
