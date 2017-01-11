@@ -35,7 +35,8 @@
 #include "nrutil.h"
 #include "mex.h"
 #include <sstream>
-#include "Atmo.h"    
+#include "Atmo.h" 
+#include "Instru.h"   
 #include <string.h>
 
 // MAIN
@@ -94,6 +95,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     *chiOut;
 
   double SurfaceArea(0.0);
+
   double E0, L1, L2, DeltaE, rot_par;
     
   unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
@@ -103,8 +105,10 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     databins(MAX_NUMBINS),
     numphi(1),            // Number of azimuthal (projected) angular bins per spot
     numtheta(1),          // Number of latitudinal angular bins per spot
-    spotshape(0), // Spot shape; 0=standard
-    numbands(NCURVES); // Number of energy bands;
+    spotshape(0),         // Spot shape; 0=standard
+    numbands(NCURVES),    // Number of energy bands;
+    attenuation(0),       // Attenuation flag, specific to NICER targets with implemented factors
+    inst_curve(0);        // Instrument response flag, 1 = NICER response curve
 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
@@ -114,6 +118,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
        data_file[256],                // Name of input file for reading in data
        //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
        filenameheader[256]="Run";
+
          
   // flags!
   bool incl_is_set(false),         // True if inclination is set at the command line (inclination is a necessary variable)
@@ -131,7 +136,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     	 //E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
     	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
     	 only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
-    	 pd_neg_soln(false);
+    	 pd_neg_soln(false),
+         background_file_is_set(false);
 		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
@@ -227,9 +233,9 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     spotshape = mxGetScalar(theInput[25]);
         //std::cout << "spotshape = " << spotshape << std::endl;
-    double ObsTime;
-    ObsTime = mxGetScalar(theInput[26]); // in Mega-seconds
-    ObsTime *= 1e6; // convert to seconds
+    double obstime;
+    obstime = mxGetScalar(theInput[26]); // in Mega-seconds
+    obstime *= 1e6; // convert to seconds
         //std::cout << "ObsTime = " << ObsTime << std::endl;
     
        std::cout << "Spot: m = " << mass
@@ -238,15 +244,17 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	      << " Hz, i = " << incl_1 
 	      << ", e = " << theta_1  
 	      << ", ts = " << ts
-               << ", ObsTime = " << ObsTime << "s" 
+               << ", ObsTime = " << obstime << "s" 
 	      << std::endl;   
-    
-    
+
+    inst_curve = mxGetScalar(theInput[27]);
+    attenuation = mxGetScalar(theInput[28]);
+
        
     for (int i = 0; i < numbands; i++){
-    obsdata.f[i] = mxGetPr(theInput[27+3*i]); // array of double
-    obsdata.err[i] = mxGetPr(theInput[28+3*i]); // array of double
-    background[i] = mxGetScalar(theInput[29+3*i]);
+    obsdata.f[i] = mxGetPr(theInput[29+3*i]); // array of double
+    obsdata.err[i] = mxGetPr(theInput[30+3*i]); // array of double
+    background[i] = mxGetScalar(theInput[31+3*i]);
         std::cout << " bg["<<i<<"]=" << background[i] ;
     }
        std::cout << std::endl;
@@ -312,6 +320,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
     curve.flags.spotshape = spotshape;
+    curve.flags.attenuation = attenuation;
+    curve.flags.inst_curve = inst_curve;
 
 
 
@@ -331,6 +341,20 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
  
     obsdata.shift = ts;
     obsdata.numbins = databins;
+
+    // Force energy band settings into NICER specified bands
+
+    if (curve.flags.attenuation >= 1){
+          
+        std::cout << "You are using attenuation files for NICER, specified for each NS target." << std::endl;
+        std::cout << "Please check if your object info, ex. distance and spin frequency, are correct for the NS." << std::endl;
+        E_band_lower_1 = 0.05;
+        E_band_upper_1 = 3.05;
+        numbands = 30;
+        curve.para.E_band_lower_1 = E_band_lower_1;
+        curve.para.E_band_upper_1 = E_band_upper_1;
+        curve.numbands = numbands;
+    }
 
 
    
@@ -703,6 +727,22 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
+
+
+    /**********************************/
+    /*       APPLYING ATTENUATION     */
+    /**********************************/
+
+    std::cout << "Applying attenuation" << std::endl;
+
+    if (curve.flags.attenuation != 0){
+        for (unsigned int p = 0; p < numbands; p++){
+            for (unsigned int i = 0; i < numbins; i++){
+                Flux[p][i] = Attenuate(p,Flux[p][i],curve.flags.attenuation);
+            }
+        }
+    }
+
      
     /*******************************/
     /* ADDING BACKGROUND TO CURVE  */
@@ -712,10 +752,41 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
             //std::cout << Flux[p][i] << std::endl;
-            Flux[p][i] += background[p];
-                Flux[p][i] *= ObsTime;  
+            Flux[p][i] += background[p]; 
         }
     }
+
+
+    /******************************************/
+    /*  APPLYING INSTRUMENT RESPONSE CURVE    */
+    /******************************************/
+
+    std::cout << "Applying instrument response curve" << std::endl;
+
+    if (curve.flags.inst_curve >= 1){
+        for (unsigned int p = 0; p < numbands; p++){
+            for (unsigned int i = 0; i < numbins; i++){
+                Flux[p][i] = Inst_Res(p,Flux[p][i],curve.flags.inst_curve);
+            }
+        }
+    }
+
+
+    /******************************************/
+    /*     MULTIPLYING OBSERVATION TIME       */
+    /******************************************/
+
+    std::cout << "Applying observation time" << std::endl;
+
+    for (unsigned int p = 0; p < numbands; p++){
+        //std::cout << "band " << p << std::endl; 
+        for (unsigned int i = 0; i < numbins; i++){
+            //std::cout << Flux[p][i] << std::endl;
+            Flux[p][i] *= obstime;  
+        }
+    }
+
+
 
     /*******************************/
     /* NORMALIZING THE FLUXES TO 1 */

@@ -15,8 +15,9 @@
 
 //
 
-double Attenuate (double flux_before, unsigned int attenuation);
+double Attenuate (unsigned int p, double flux_before, unsigned int attenuation);
 
-double Inst_Res (double flux_before, unsigned int inst_curve);
+double Inst_Res (unsigned int p, double flux_before, unsigned int inst_curve);
 
+double Background_list (unsigned int p, double flux_before, char *background_file);
 

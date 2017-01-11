@@ -89,7 +89,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
     E_band_lower_2(5.0),        // Lower bound of second energy band to calculate flux over, in keV.
     E_band_upper_2(6.0),        // Upper bound of second energy band to calculate flux over, in keV.
-    background[NCURVES],
+    background(0.0),	        // One background value for all bands.
     T_mesh[30][30],             // Temperature mesh over the spot; same mesh as theta and phi bins, assuming square mesh
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
@@ -104,6 +104,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
     beaming_model(0),     // Beaming model choice (initialized to isotropic)
     numbins(MAX_NUMBINS), // Number of time or phase bins for one spin period; Also the number of flux data points
+    databins(MAX_NUMBINS),   // Number of phase bins in the data
     numphi(1),            // Number of azimuthal (projected) angular bins per spot
     numtheta(1),          // Number of latitudinal angular bins per spot
     spotshape(0), 		  // Spot shape; 0=standard
@@ -111,17 +112,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     attenuation(0),       // Attenuation flag, specific to NICER targets with implemented factors
     inst_curve(0);		  // Instrument response flag, 1 = NICER response curve
 
-  unsigned int databins(MAX_NUMBINS);   // Number of phase bins in the data
-  
-
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
-    bend_file[256] = "No File Name Specified!", 
-    out_dir[80],                   // Directory we could send to; unused here, done in the shell script
-    T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
-    data_file[256],                // Name of input file for reading in data
-    //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
-    filenameheader[256]="Run";
+       bend_file[256] = "No File Name Specified!", 
+       out_dir[80],                   // Directory we could send to; unused here, done in the shell script
+       T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
+       data_file[256],                // Name of input file for reading in data
+       //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
+       filenameheader[256]="Run",
+       background_file[256];
 
          
   // flags!
@@ -140,7 +139,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 //E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
     	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
     	 only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
-    	 pd_neg_soln(false);
+    	 pd_neg_soln(false),
+    	 background_file_is_set(false);
 		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
@@ -223,11 +223,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                break;
 
 	    case 'k': // Background in low energy band (between 0 and 1)
-	      sscanf(argv[i+1], "%lf", &background[2]);
+	      sscanf(argv[i+1], "%lf", &background);
 	      break;
 
-	    case 'K': // Background in high energy band (between 0 and 1)
-	      sscanf(argv[i+1], "%lf", &background[3]);
+	    case 'K': // Background file specified for each band (between 0 and 1)
+	      			sscanf(argv[i+1], "%s", background_file);
+	      			background_file_is_set = true;
 	      break;
 	          	          
 	    case 'm':  // Mass of the star (solar mass units)
@@ -411,8 +412,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     }
 
-
-
     /***********************************************/
     /* CHECKING THAT THE NECESSARY VALUES WERE SET */
     /***********************************************/
@@ -568,13 +567,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
    // Force energy band settings into NICER specified bands
-   
-    std::cout << "attenuation flag is " << curve.flags.attenuation << std::endl;
 
    	if (curve.flags.attenuation >= 1){
-   		curve.para.E_band_lower_1 = 0.05;
-   		curve.para.E_band_upper_1 = 3.05;
-   		curve.numbands = 30;
+   		  
+    	std::cout << "You are using attenuation files for NICER, specified for each NS target." << std::endl;
+    	std::cout << "Please check if your object info, ex. distance and spin frequency, are correct for the NS." << std::endl;
+		E_band_lower_1 = 0.05;
+   		E_band_upper_1 = 3.05;
+   		numbands = 30;
+    	curve.para.E_band_lower_1 = E_band_lower_1;
+    	curve.para.E_band_upper_1 = E_band_upper_1;
+   		curve.numbands = numbands;
    	} 
 
     /*************************/
@@ -1032,7 +1035,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	if (curve.flags.attenuation != 0){
     	for (unsigned int p = 0; p < numbands; p++){
         	for (unsigned int i = 0; i < numbins; i++){
-        		Flux[p][i] = Attenuate(Flux[p][i],curve.flags.attenuation);
+        		Flux[p][i] = Attenuate(p,Flux[p][i],curve.flags.attenuation);
         	}
 		}
 	}
@@ -1043,13 +1046,26 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	std::cout << "Applying background" << std::endl;
 
-    for (unsigned int p = 0; p < numbands; p++){
-        //std::cout << "band " << p << std::endl; 
-        for (unsigned int i = 0; i < numbins; i++){
-            //std::cout << Flux[p][i] << std::endl;
-            Flux[p][i] += background[2];
-        }
-    }
+	if (background_file_is_set){
+		for (unsigned int p = 0; p < numbands; p++){
+        	//std::cout << "band " << p << std::endl; 
+        	for (unsigned int i = 0; i < numbins; i++){
+            	//std::cout << Flux[p][i] << std::endl;
+				Flux[p][i] = Background_list(p,Flux[p][i],background_file);
+			}
+		}
+	} 
+
+	else {
+
+    	for (unsigned int p = 0; p < numbands; p++){
+        	//std::cout << "band " << p << std::endl; 
+        	for (unsigned int i = 0; i < numbins; i++){
+            	//std::cout << Flux[p][i] << std::endl;
+            	Flux[p][i] += background;
+        	}
+    	}
+	}
 
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
@@ -1060,7 +1076,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if (curve.flags.inst_curve >= 1){
     	for (unsigned int p = 0; p < numbands; p++){
         	for (unsigned int i = 0; i < numbins; i++){
-        		Flux[p][i] = Inst_Res(Flux[p][i],curve.flags.inst_curve);
+        		Flux[p][i] = Inst_Res(p,Flux[p][i],curve.flags.inst_curve);
         	}
 		}
 	}
@@ -1092,7 +1108,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       // Add background to normalized flux
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) {
-	  Flux[p][i] = normcurve.f[p][i] + background[p];
+	  Flux[p][i] = normcurve.f[p][i] + background;
 	}
       } 
       
@@ -1108,8 +1124,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     } // Finished Normalizing
 
     else{ // Curves are not normalized
-
-      std::cout << "background = " << background[2] << std::endl;
 
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) {
@@ -1179,7 +1193,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         return -1;
     }
     
-    numbins = obsdata.numbins;
+    //numbins = obsdata.numbins;
 
     if ( rho == 0.0 ) rho = Units::PI/180.0;
 
@@ -1270,6 +1284,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if (curve.flags.spectral_model==2){
     	double E_diff;
 		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+		std::cout << "numbins = " << numbins << ", numbands = " << numbands << std::endl;
     	for (unsigned int k(0); k < numbands; k++){
       		out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
     	}
