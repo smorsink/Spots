@@ -31,6 +31,7 @@ double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
 	double flux_after(0), temp;
 	char cwd[1024], ismdir[1024];
 	std::vector<double> atten_ener, atten_width, atten_factors;
+	unsigned int atten_size(0);
 
     //Read in ism attenuation factors
     getcwd(cwd, sizeof(cwd));
@@ -61,6 +62,7 @@ double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
             atten_width.push_back(temp);
             file >> temp;
             atten_factors.push_back(temp);
+            atten_size += 1;
             //cout << temp << endl;
         }
     }
@@ -70,7 +72,11 @@ double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
     file.close();
 	chdir(cwd);
 
-	flux_after = flux_before * atten_factors[p];
+	if (p >= atten_size){
+		flux_after = flux_before;
+	}else{
+		flux_after = flux_before * atten_factors[p];
+	}
 
 	if (flux_before < flux_after){
 		cout << "attenuation factor greater than 1!" << endl;
@@ -81,10 +87,41 @@ double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
 
 double Inst_Res (unsigned int p, double flux_before, unsigned int inst_curve){
 
-	double flux_after(0);
-	flux_after = flux_before;
-	return flux_after;
+	unsigned int response_size(0);
+	double flux_after(0),temp;
+	char cwd[1024], resdir[1024];
+	std::vector<double> response_list;
 
+	getcwd(cwd, sizeof(cwd));
+	sprintf(resdir,"%s/Area",cwd);
+	chdir(resdir);
+
+	ifstream file;
+	file.open("niceravgarea.txt");
+
+	if(file.is_open()) {
+		while (file >> temp) {
+			file >> temp;
+			response_list.push_back(temp);
+			response_size += 1;
+		}
+	}else{
+        throw( Exception( "instrument response curve file is not found" ));
+    }
+    file.close();
+	chdir(cwd);
+
+	if (p >= response_size){
+
+		 throw( Exception( "instrument response curve doesn't have this band" ));
+		 return -1;
+
+	}else{
+
+		flux_after = flux_before * response_list[p];
+		return flux_after;
+	}
+	
 }
 
 
@@ -117,10 +154,13 @@ double Background_list (unsigned int p, double flux_before, char *background_fil
 	chdir(cwd);
 
 	if (p >= background_size){
-		throw( Exception("Energy band number exceeds background list size.") );
-	}
 
-	flux_after = flux_before + background_list[p];
+		flux_after = flux_before;
+
+	}else{
+
+		flux_after = flux_before * background_list[p];
+	}
 
 	return flux_after;
 }
