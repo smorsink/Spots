@@ -632,21 +632,22 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	*/
 
     if (data.is_open()){
-    	//std::cout << "reading data" << std::endl;
-    	//std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
+      //std::cout << "reading data" << std::endl;
+      //std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
     	double temp;
     	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
     		obsdata.t[j] = temp;
+		//	std::cout << "data t["<<j <<"] = " << obsdata.t[j] << std::endl;
     		for (unsigned int k = 0; k < numbands; k++){
     			data >> temp;
     			obsdata.f[k][j] = temp;
-    			//std::cout << temp << std::endl;
+			//	std::cout << " f[k][j] = " << temp ;
     			data >> temp;
     			obsdata.err[k][j] = temp;
-    			//std::cout << temp << std::endl;
+    			//std::cout << " err[k][j] = " << temp << std::endl;
     		}
-    		data >> temp;
+    		//data >> temp;
     	}
     	data.close();
     }
@@ -1134,12 +1135,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
      
     // If databins < numbins then rebin the theoretical curve down 
 
-    std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
+    // std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
+    //std::cout << " Rebin the data? " << std::endl;
 
-    if (databins < numbins && datafile_is_set)
+    if (databins < numbins && datafile_is_set) {
       curve = ReBinCurve(&obsdata,&curve);
-
-
+      numbins = databins;
+    }
 
 
     /************************************************************/
@@ -1282,22 +1284,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     if (curve.flags.spectral_model==2){
-    	double E_diff;
-		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-		std::cout << "numbins = " << numbins << ", numbands = " << numbands << std::endl;
-    	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-    	}
-      	out << "%" << std::endl;
-      	for ( unsigned int i(0); i < numbins; i++ ) {
-        	out << curve.t[i]<< "\t" ;
-			for ( unsigned int p(0); p < numbands; p++ ) { 
-            	out << curve.f[p][i] << "\t" ;
-            	//out << sqrt(curve.f[p][i]) << "\t" ; // semi-Fake errors. 
-        	}
-			out << i;
-        	out << std::endl;
-      	}
+      double E_diff;
+      E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+      //std::cout << "numbins = " << numbins << ", numbands = " << numbands << std::endl;
+      for (unsigned int k(0); k < numbands; k++){
+	out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " 
+	    << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+      }
+      out << "%" << std::endl;
+      for ( unsigned int i(0); i < numbins; i++ ) {
+	//	std::cout << "i = " << i << " time[i] = " << curve.t[i] << std::endl;
+	out << curve.t[i]<< "\t" ;
+	for ( unsigned int p(0); p < numbands; p++ ) { 
+	  out << curve.f[p][i] << "\t" ;
+	  //out << sqrt(curve.f[p][i]) << "\t" ; // semi-Fake errors. 
+	}
+	out << i;
+	out << std::endl;
+      }
     }
 
 
@@ -1309,6 +1313,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	}
       	out << "%" << std::endl;
       	for ( unsigned int i(0); i < numbins; i++ ) {
+
         	out << curve.t[i]<< "\t" ;
 			for ( unsigned int p(0); p < numbands; p++ ) { 
             	out << curve.f[p][i] << "\t" ;
