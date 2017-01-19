@@ -139,6 +139,7 @@ double Background_list (unsigned int p, double flux_before, char *background_fil
     chdir(bgddir);
 
 	ifstream file;
+	//std::cout << "background_file = " << background_file << std::endl;
 	file.open(background_file);
 
 	if(file.is_open()){
@@ -146,11 +147,11 @@ double Background_list (unsigned int p, double flux_before, char *background_fil
             background_list.push_back(temp);
             background_size += 1;
         }
-    }
-    else{
-        throw( Exception( "background list file is not found" ));
-    }
-    file.close();
+	}
+	else{
+	  throw( Exception( "background list file is not found" ));
+	}
+	file.close();
 	chdir(cwd);
 
 	if (p >= background_size){
@@ -159,7 +160,10 @@ double Background_list (unsigned int p, double flux_before, char *background_fil
 
 	}else{
 
-		flux_after = flux_before * background_list[p];
+	  //std::cout << "p = " << p << " back[p] = " << background_list[p] << " flux = " << flux_before << "+"
+	  //	    << background_list[p] << std::endl;
+
+		flux_after = flux_before + background_list[p];
 	}
 
 	return flux_after;
