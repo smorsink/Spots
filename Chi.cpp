@@ -547,8 +547,6 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         int sign(0);
         double b_R_val(0.0);
         bool result(false);
-        double b1(0.0), b2(0.0), psi1(0.0), psi2(0.0);
-	double dc1(0.0), dc2(0.0), t1(0.0), t2(0.0);
         double xb(0.0);
         int k(0);
         //j=0;
@@ -570,16 +568,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            }
 	           j++;
             }
-      
-            b1 = curve.defl.b_psi[j-1];
-            b2 = curve.defl.b_psi[j];
-            psi1 = curve.defl.psi_b[j-1];
-            psi2 = curve.defl.psi_b[j];
-	    dc1 = curve.defl.dcosa_dcosp_b[j-1];
-	    dc2 = curve.defl.dcosa_dcosp_b[j];
-	    t1 = curve.defl.toa_b[j-1];
-	    t2 = curve.defl.toa_b[j];
-	   
+      	   
             k = j - 2;      
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
@@ -622,14 +611,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*t_k.at(3)/
                 	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
 
-	    // b_guess = (b2-b1)/(psi2-psi1) * (curve.psi[i] - psi2) + b2;
-	    // curve.dcosalpha_dcospsi[i] = (dc2-dc1)/(psi2-psi1) * (curve.psi[i] - psi2) + dc2;
-	    // toa_val = (t2-t1)/(psi2-psi1) * (curve.psi[i] - psi2) + t2;
-
+	   
         } // ending psi.at(i) < curve.defl.psi_max
 
 	b_guess *= radius;
-	b2 *= radius;
 
         /***********************************************/
 	/* FINDING IF A SOLUTION EXISTS, SETTING FLAGS */
