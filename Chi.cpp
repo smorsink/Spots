@@ -467,12 +467,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     std::vector< double > cosdelta(numbins, 0.0);             // 
     std::vector< double > cosxi(numbins, 0.0);                // Used in Doppler boost factor, defined in MLCB35
 
-    // vectors for 4-point interpolation
-    std::vector< double > psi_k(4, 0.0);       // Bending angle, sub k?
-    std::vector< double > b_k(4, 0.0);         // Impact parameter, sub k?
-    std::vector< double > dp_k(4, 0.0);      
-    std::vector< double > t_k(4, 0.0);          
-
+  
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
     /************************************************************************************/
@@ -547,69 +542,51 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
         int sign(0);
         double b_R_val(0.0);
         bool result(false);
-        double xb(0.0);
+	double psi(0.0);
+	double err(0.0);
         int k(0);
-        //j=0;
+    
         /**************************************************************************/
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
+	
+	psi = curve.psi[i];
 
-	//std::cout << "Compute Angles: i = " << i 
+	//	std::cout << "Compute Angles: i = " << i 
 	//	  << " psi = " << curve.psi[i] << std::endl; 
 
-        if ( curve.psi[i] < curve.defl.psi_max ) {
-            if (curve.psi[i] > curve.defl.psi_b[j] )
-	            while ( curve.psi[i] > curve.defl.psi_b[j] ) {
+	//std::cout << " Before: j= " << j << std::endl;
+
+        if ( psi < curve.defl.psi_max ) {
+            if (psi > curve.defl.psi_b[j] )
+	            while ( psi > curve.defl.psi_b[j] ) {
 	                j++;      
 		    }
             else {
-	            while ( curve.psi[i] < curve.defl.psi_b[j] ) {
+	            while ( psi < curve.defl.psi_b[j] ) {
 	              j--;
 	            }
 	           j++;
             }
+
+	    //std::cout << " After: j= " << j << std::endl;
       	   
             k = j - 2;      
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
-
-	   
-            for ( j = 0; j < 4; j++ ) {
-	            b_k.at(j) = curve.defl.b_psi[k+j];
-	            psi_k.at(j) = curve.defl.psi_b[k+j];
-	            dp_k.at(j) = curve.defl.dcosa_dcosp_b[k+j];
-	            t_k.at(j) = curve.defl.toa_b[k+j];
-            }
   
             // 4-pt interpolation to find the correct value of b given psi.
-	    xb = curve.psi[i];
-            b_guess = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*b_k.at(0)/
-	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*b_k.at(1)/
-	                  ((psi_k.at(1)-psi_k.at(0))*(psi_k.at(1)-psi_k.at(2))*(psi_k.at(1)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(3))*b_k.at(2)/
-	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*b_k.at(3)/
-                	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
-			 
+	   
+	    b_guess =  polint(&curve.defl.psi_b[k], &curve.defl.b_psi[k], 4, psi, &err);
+	    //  std::cout << "b = " << b_guess << " err = " << err << std::endl;
 
-	    curve.dcosalpha_dcospsi[i] = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*dp_k.at(0)/
-	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*dp_k.at(1)/
-	                  ((psi_k.at(1)-psi_k.at(0))*(psi_k.at(1)-psi_k.at(2))*(psi_k.at(1)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(3))*dp_k.at(2)/
-	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*dp_k.at(3)/
-                	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
+	    curve.dcosalpha_dcospsi[i] = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
+	    //std::cout << "dcosa = " << curve.dcosalpha_dcospsi[i] << " err = " << err << std::endl;
 
-            toa_val = (xb-psi_k.at(1))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*t_k.at(0)/
-	                  ((psi_k.at(0)-psi_k.at(1))*(psi_k.at(0)-psi_k.at(2))*(psi_k.at(0)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(2))*(xb-psi_k.at(3))*t_k.at(1)/
-	                  ((psi_k.at(1)-psi_k.at(0))*(psi_k.at(1)-psi_k.at(2))*(psi_k.at(1)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(3))*t_k.at(2)/
-	                  ((psi_k.at(2)-psi_k.at(0))*(psi_k.at(2)-psi_k.at(1))*(psi_k.at(2)-psi_k.at(3)))
-	                  +(xb-psi_k.at(0))*(xb-psi_k.at(1))*(xb-psi_k.at(2))*t_k.at(3)/
-                	  ((psi_k.at(3)-psi_k.at(0))*(psi_k.at(3)-psi_k.at(1))*(psi_k.at(3)-psi_k.at(2)));
+	    toa_val =  polint(&curve.defl.psi_b[k], &curve.defl.toa_b[k], 4, psi, &err);
+	    //std::cout << "toa = " << toa_val << " err = " << err << std::endl;
+
+	
 
 	   
         } // ending psi.at(i) < curve.defl.psi_max
@@ -672,8 +649,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
             sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
-	if (sinalpha > 1.0)
-std::cout << "sinalpha = " << sinalpha << std::endl;
+	    if (sinalpha > 1.0)
+	      std::cout << "sinalpha = " << sinalpha << std::endl;
 
             cosalpha = sqrt(fabs( 1.0 - sinalpha * sinalpha )); 
 	    //   alpha    = asin( sinalpha );
@@ -717,7 +694,7 @@ std::cout << "sinalpha = " << sinalpha << std::endl;
 
 
             if ( curve.cosbeta[i] < 0.0 || curve.cosbeta[i] > 1.0 ) { // cosbeta > 1.0 added by Abbie, Feb 22 2013
-	      /* std::cerr << "i = " << i
+	      /*std::cerr << "i = " << i
 	        	          << ", Not visible at phi_em = " << 180.0 * phi_em.at(i) / Units::PI 
 	                   	  << ", cos(beta) = " << curve.cosbeta[i] 
 		                  << ", cos(alpha) = " << cosalpha
@@ -774,6 +751,9 @@ std::cout << "sinalpha = " << sinalpha << std::endl;
 	                               * (1.0 / (1.0 - 2.0 * mass_over_r)) 
 	                               * curve.cosbeta[i] 
 	                               * curve.dcosalpha_dcospsi[i];  // PG8
+
+		    //if (curve.dOmega_s[i] < 0) 
+		    //std::cout << "dOmega < 0 " << std::endl;
 
 	        
                 if (std::isinf(curve.dOmega_s[i]))

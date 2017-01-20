@@ -9,7 +9,7 @@
 #define IMIN(iminarg1,iminarg2) ((iminarg1) < (iminarg2) ?\
         (iminarg1) : (iminarg2))
 
-
+double polint(double *xp, double *yp, int order, double xb, double *err);
 
 double interp1(double *xp, double **yp, int first, int np, double xb, int *x_nearest_pt);
 

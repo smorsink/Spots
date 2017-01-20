@@ -188,7 +188,7 @@ double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper ( double b_R ) {
 
 // Defining constants
 //const double OblDeflectionTOA::INTEGRAL_EPS = 1.0e-7;
-const double OblDeflectionTOA::FINDZERO_EPS = 1.0e-6;
+const double OblDeflectionTOA::FINDZERO_EPS = 1.0e-5;
 
 const double OblDeflectionTOA::RFINAL_MASS_MULTIPLE = 1.0e7;
 //const double OblDeflectionTOA::DIVERGENCE_GUARD = 2.0e-2; // set to 0 to turn off
