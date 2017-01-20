@@ -324,13 +324,15 @@ double OblDeflectionTOA::rcrit ( const double& b, const double& rspot, bool *pro
   	OblDeflectionTOA_object = this;
   	OblDeflectionTOA_b_value = b;
 
+	//std::cout << "rcrit: b = " << OblDeflectionTOA_b_value << " rspot = " << rspot << std::endl;
+
 	/*	candidate = MATPACK::FindZero(modptr->R_at_costheta(1.0),
 				modptr->R_at_costheta(0.0),
 				OblDeflectionTOA_rcrit_zero_func_wrapper);*/ // rcrit_guess
 
 	candidate = MATPACK::FindZero(0.9*rspot,
 				      rspot,
-				      OblDeflectionTOA_rcrit_zero_func_wrapper); // rcrit_guess
+				      OblDeflectionTOA_rcrit_zero_func_wrapper, FINDZERO_EPS ); // rcrit_guess
  
  
   	return candidate;
@@ -435,17 +437,25 @@ double OblDeflectionTOA::psi_ingoing ( const double& b_R, const double& b_R_max,
 	OblDeflectionTOA_b_max_value = b_R_max * rspot;
 	OblDeflectionTOA_psi_max_value = psimax;
 
-	std::cout << "Psi_ingoing! rspot = " << rspot << std::endl;
+	//std::cout << "Psi_ingoing! rspot = " << rspot << std::endl;
 
 	if ( fabs(b_R-b_R_max) < 1e-6){
 	  psi_in = 0.0;
 	}
 	else{
 
-	  rcrit = this->rcrit( b_R*rspot, rspot, &curve.problem );	 
+	  //std::cout << "psi_ingoing: Computing rcrit for b = " << OblDeflectionTOA_b_value << std::endl;
+	  rcrit = this->rcrit( OblDeflectionTOA_b_value, rspot, &curve.problem );
+	 
 	  OblDeflectionTOA_b_over_r = b_R*rspot/rcrit;
 
-	if ( fabs(OblDeflectionTOA_b_over_r - sqrt( 1.0 - 2.0*get_mass_over_r() * rspot/rcrit )) > 1e-3){
+	if ( fabs(1.0/OblDeflectionTOA_b_over_r - sqrt( 1.0 - 2.0*get_mass_over_r() * rspot/rcrit )) > 1e-3){
+	  std::cout << "psi_ingoing: rcrit = " << rcrit 
+		    << "b = " << OblDeflectionTOA_b_value
+		    << "b/rcrit = " << OblDeflectionTOA_b_over_r 
+		    << " sqrt() = " << sqrt( 1.0 - 2.0*get_mass_over_r() * rspot/rcrit )
+		    << std::endl;
+
 		psi_in = 0.0;
 		std::cout << "rcrit failed " << std::endl;
 		}	
@@ -462,7 +472,8 @@ double OblDeflectionTOA::psi_ingoing ( const double& b_R, const double& b_R_max,
 
 	}
 	
-  	
+	//	std::cout << "psi_in = " << psi << std::endl;
+
    	//OblDeflectionTOA_b_over_r = b_R;
 	
 	//if ( b_R == b_R_max)
@@ -547,11 +558,11 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 
 	  if ( ingoing_allowed ) {
 
-	    std::cout << "b_from_psi: Ingoing!!!" << std::endl;
+	    //std::cout << "b_from_psi: Ingoing!!!" << std::endl;
 
 
 	    if ( psi > psimin ) {
-	      std::cout << "b_from_psi: psi > psimin" << std::endl;
+	      //std::cout << "b_from_psi: psi > psimin" << std::endl;
 	      return false;
 	    }
 	    else if ( psi == psimin ) {
@@ -570,11 +581,11 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
 					OblDeflectionTOA::FINDZERO_EPS);
 	      */
-		std::cout << "b_from_psi: calculating b/R for ingoing photon " << std::endl;
+	      //	std::cout << "b_from_psi: calculating b/R for ingoing photon " << std::endl;
 
 	      double bcand_R = MATPACK::FindZero(bmin/rspot, bmax_out/rspot,
 					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
-					OblDeflectionTOA::FINDZERO_EPS);
+					FINDZERO_EPS);
 
 
 	      /*std::cout << "b_from_psi: bmin_R = " << bmin/rspot
@@ -829,6 +840,10 @@ double OblDeflectionTOA::toa_integrand_minus_b0_u ( const double& b_R, const dou
 /*****************************************************/
 double OblDeflectionTOA::rcrit_zero_func ( const double& rc, const double& b ) const { 
   //	return double( rc - b * sqrt( 1.0 - 2.0 * get_mass() / rc ) );
+  //std::cout << "rcrit_zero_func: rc = " << rc << " b = " << b
+  //	    << " zero = " << rc - b * sqrt( 1.0 - 2.0 * get_mass_over_r() *get_rspot() / rc)  << std::endl;
+
+
   return double( rc - b * sqrt( 1.0 - 2.0 * get_mass_over_r() *get_rspot() / rc ) );
 }
 
@@ -838,7 +853,12 @@ double OblDeflectionTOA::rcrit_zero_func ( const double& rc, const double& b ) c
 double OblDeflectionTOA::b_from_psi_ingoing_zero_func ( const double& b_R, const double& b_R_max, const double& psimax,
 							const double& rspot, 
 							const double& psi ) const { 
-  return double( psi - this->psi_ingoing(b_R, b_R_max, psimax, rspot, &curve.problem) );
+  double comppsi(this->psi_ingoing(b_R, b_R_max, psimax, rspot, &curve.problem));
+
+  //  std::cout << "b_from_psi_ingoing_zero_func: psi=" << psi
+  //	    << " computed psi = "  << comppsi <<std::endl;
+
+  return double( psi - comppsi );
 
 }
 

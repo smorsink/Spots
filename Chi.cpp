@@ -393,9 +393,9 @@ class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve
     unsigned int numbands(NCURVES);  // Number of Energy Bands
     unsigned int jj(MIN_NUMBINS/obsdata->numbins);
 
-    std::cout << "MIN_NUMBINS = " << MIN_NUMBINS << std::endl;
-    std::cout << "OBS_BINS = " << obsdata->numbins << std::endl;
-    std::cout << "ratio = " << jj << std::endl;
+    //std::cout << "MIN_NUMBINS = " << MIN_NUMBINS << std::endl;
+    //std::cout << "OBS_BINS = " << obsdata->numbins << std::endl;
+    //std::cout << "ratio = " << jj << std::endl;
 
     for (unsigned int p(0); p<numbands; p++){
       for (unsigned int i(0); i<obsdata->numbins; i++){
@@ -499,7 +499,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
-    //std::cout << "ComputeAngles:" << std::endl;
+    // std::cout << "ComputeAngles:" << std::endl;
     //std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
@@ -535,7 +535,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
       b_R_min = defltoa->b_R_min_ingoing(radius, cos(theta_0));
+      //std::cout << "b_R_min = " << b_R_min << std::endl;
       psimin = defltoa->psi_ingoing(b_R_min,curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
+      //std::cout << "psi_max = " << curve.defl.psi_max << std::endl;
+      //std::cout << "psi_min = " << psimin << std::endl;
     }
     
 
@@ -553,7 +556,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	/* TEST FOR VISIBILITY FOR EACH VALUE OF b, THE PHOTON'S IMPACT PARAMETER */
 	/**************************************************************************/
 
-	//	std::cout << "i = " << i 
+	//std::cout << "Compute Angles: i = " << i 
 	//	  << " psi = " << curve.psi[i] << std::endl; 
 
         if ( curve.psi[i] < curve.defl.psi_max ) {
