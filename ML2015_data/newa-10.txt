@@ -1,0 +1,63 @@
+% Photon Flux for hotspot on a NS. 
+% R_sp = 11.7621 km; % R_eq = 11.8 km; % M = 1.6 Msun; % Spin = 600 Hz 
+% Gravitational redshift 1+z = 1.29301
+% Inclination angle = 90 degrees 
+% Emission angle = 90 degrees 
+% Angular radius of spot = 0.4363 radians 
+% Number of spot bins = 4 
+% Distance to NS = 3.0857e+20 m 
+% Phase shift or time lag = 0 
+
+% Data file /Users/kitung/Desktop/thesis_material/Spot/ML2015_data/newa-10-err.txt, chisquared = 2.58877e-05
+% Spot temperature, (star's frame) kT = 2 keV 
+% Limb Darkening for Gray Atmosphere (Hopf Function) 
+% Flux not normalized 
+%
+% Column 1: phase bins (0 to 1)
+% Column2: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 3.5 keV and 3.8 keV
+% Column3: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 3.8 keV and 4.1 keV
+% Column4: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 4.1 keV and 4.4 keV
+% Column5: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 4.4 keV and 4.7 keV
+% Column6: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 4.7 keV and 5 keV
+% Column7: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 5 keV and 5.3 keV
+% Column8: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 5.3 keV and 5.6 keV
+% Column9: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 5.6 keV and 5.9 keV
+% Column10: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 5.9 keV and 6.2 keV
+% Column11: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 6.2 keV and 6.5 keV
+% Column12: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 6.5 keV and 6.8 keV
+% Column13: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 6.8 keV and 7.1 keV
+% Column14: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 7.1 keV and 7.4 keV
+% Column15: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 7.4 keV and 7.7 keV
+% Column16: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 7.7 keV and 8 keV
+% Column17: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 8 keV and 8.3 keV
+% Column18: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 8.3 keV and 8.6 keV
+% Column19: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 8.6 keV and 8.9 keV
+% Column20: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 8.9 keV and 9.2 keV
+% Column21: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 9.2 keV and 9.5 keV
+% Column22: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 9.5 keV and 9.8 keV
+% Column23: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 9.8 keV and 10.1 keV
+% Column24: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 10.1 keV and 10.4 keV
+% Column25: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 10.4 keV and 10.7 keV
+% Column26: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 10.7 keV and 11 keV
+% Column27: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 11 keV and 11.3 keV
+% Column28: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 11.3 keV and 11.6 keV
+% Column29: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 11.6 keV and 11.9 keV
+% Column30: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 11.9 keV and 12.2 keV
+% Column31: Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of 12.2 keV and 12.5 keV
+%
+0	87089.9	86344.2	85539.3	84701.9	83853.5	83011.6	82189.9	81398.7	80645.6	79935.8	79272.5	78657.3	78090.5	77571.4	77098.5	76669.8	76282.9	75935.1	75623.7	75345.7	75098.4	74879.1	74685	74513.8	74363	74230.6	74114.5	74012.9	73924.3	73846.9	0
+0.0625	83654.4	83007.9	82327	81632.6	80941.3	80266	79616.4	78999.7	78420.4	77881.5	77384.2	76928.7	76514.1	76138.9	75801.2	75498.7	75228.8	74989.1	74776.9	74589.6	74424.9	74280.5	74154.2	74044	73948	73864.7	73792.5	73730	73676	73629.5	1
+0.125	80194.9	79712.3	79213.8	78713.7	78223	77750.2	77301.3	76880.2	76489.4	76129.9	75802	75504.9	75237.5	74998.2	74785.1	74596.3	74429.6	74283.1	74154.7	74042.7	73945.2	73860.6	73787.3	73724.1	73669.6	73622.8	73582.6	73548.2	73518.8	73493.7	2
+0.1875	77364.9	77056.6	76742.6	76431.5	76129.7	75842	75571.5	75320.2	75089.2	74878.7	74688.3	74517.5	74365	74229.8	74110.4	74005.5	73913.7	73833.8	73764.3	73704.2	73652.3	73607.7	73569.4	73536.6	73508.5	73484.6	73464.3	73447.1	73432.5	73420.1	3
+0.25	75347.7	75185.8	75022.4	74861.8	74707.2	74560.8	74424.2	74298.1	74182.8	74078.5	73984.8	73901.2	73827	73761.6	73704.2	73654.1	73610.5	73572.8	73540.2	73512.1	73488.1	73467.5	73449.9	73435	73422.3	73411.5	73402.4	73394.7	73388.3	73382.8	4
+0.3125	74066.6	74007.2	73947.5	73889.1	73833	73780.2	73731	73685.8	73644.6	73607.4	73574.1	73544.5	73518.4	73495.4	73475.2	73457.7	73442.5	73429.4	73418.1	73408.4	73400.1	73393.1	73387.1	73382	73377.6	73374	73370.9	73368.3	73366.2	73364.3	5
+0.375	73460.9	73452	73443	73434.3	73425.9	73418	73410.7	73404	73397.9	73392.4	73387.4	73383	73379.2	73375.8	73372.8	73370.2	73368	73366.1	73364.4	73363	73361.8	73360.7	73359.9	73359.1	73358.5	73358	73357.5	73357.1	73356.8	73356.6	6
+0.4375	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	7
+0.5	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	8
+0.5625	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	73355.2	9
+0.625	73656.9	73649	73639.1	73627.8	73615.3	73602.1	73588.3	73574.4	73560.4	73546.6	73533.1	73520	73507.4	73495.4	73483.9	73473.1	73463	73453.5	73444.6	73436.4	73428.8	73421.8	73415.4	73409.5	73404.1	73399.1	73394.7	73390.6	73386.9	73383.6	10
+0.6875	75999.9	75928	75839.2	75737.5	75626.3	75508.5	75386.7	75263.2	75139.8	75017.9	74898.9	74783.6	74672.9	74567.3	74467.2	74372.7	74284.1	74201.2	74124.2	74052.7	73986.7	73926	73870.2	73819.1	73772.4	73729.9	73691.3	73656.2	73624.5	73595.8	11
+0.75	80596.2	80384.9	80128.1	79836.7	79520.5	79187.7	78845.5	78499.9	78155.9	77817.7	77488.4	77170.8	76866.6	76577.4	76304	76046.9	75806.4	75582.3	75374.4	75182.3	75005.3	74842.8	74694.1	74558.2	74434.5	74322.1	74220.2	74128.1	74044.8	73969.8	12
+0.8125	85655.9	85249.6	84768.6	84232.6	83658.5	83060.8	82451.9	81842.1	81239.6	80651.4	80082.7	79537.5	79018.8	78528.4	78067.6	77636.8	77236.1	76864.9	76522.5	76207.7	75919.3	75655.9	75416.1	75198.3	75001	74822.6	74661.8	74517.1	74387.1	74270.5	13
+0.875	88966	88361.2	87667.7	86911.8	86116.2	85299.9	84478.8	83665.7	82871	82102.8	81367.2	80668.4	80009.5	79392	78816.8	78283.5	77791.5	77339.5	76925.9	76548.8	76206	75895.4	75614.8	75361.9	75134.6	74930.8	74748.3	74585.4	74440.2	74310.9	14
+0.9375	89301.1	88567.2	87752.1	86884.5	85988.6	85084.5	84188.4	83313	82468.3	81661.6	80898.1	80181	79512.3	78892.4	78320.9	77796.8	77318.2	76883.1	76488.9	76133.1	75812.9	75525.7	75268.8	75039.5	74835.4	74654.2	74493.5	74351.5	74226	74115.5	15
