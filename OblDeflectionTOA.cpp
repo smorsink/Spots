@@ -23,6 +23,7 @@
 #include "OblModelBase.h"
 #include "Exception.h"
 #include "Units.h"
+#include "interp.h"
 #include "Struct.h" //Jan 21 (year? prior to 2012)
 // Globals are bad, but there's no easy way to get around it
 // for this particular case (need to pass a member function
@@ -188,7 +189,7 @@ double OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper ( double b_R ) {
 
 // Defining constants
 //const double OblDeflectionTOA::INTEGRAL_EPS = 1.0e-7;
-const double OblDeflectionTOA::FINDZERO_EPS = 1.0e-5;
+const double OblDeflectionTOA::FINDZERO_EPS = 1.0e-4;
 
 const double OblDeflectionTOA::RFINAL_MASS_MULTIPLE = 1.0e7;
 //const double OblDeflectionTOA::DIVERGENCE_GUARD = 2.0e-2; // set to 0 to turn off
@@ -498,6 +499,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 				    const double& psi_out_max,
 				    const double& bmin, const double& psimin,
 				    const double& b_guess, 
+				    double *b_R_in, double *psi_in,
 				    bool *prob ) {
 
   // return bool indicating whether a solution was found.
@@ -571,10 +573,12 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      return true;
 	    }
 	    else { // psi_out_max < psi < psi_in_max
-	      OblDeflectionTOA_object = this;
-	      OblDeflectionTOA_costheta_value = cos_theta;
-	      OblDeflectionTOA_psi_value = psi;
-	      OblDeflectionTOA_rspot = rspot;
+	      // OblDeflectionTOA_object = this;
+	      //OblDeflectionTOA_costheta_value = cos_theta;
+	      //OblDeflectionTOA_psi_value = psi;
+	      //OblDeflectionTOA_rspot = rspot;
+
+	      double bcand_R(0.0);
 
 	      /*
 	      bcand = MATPACK::FindZero(bmin, bmax_out,
@@ -583,15 +587,40 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      */
 	      //	std::cout << "b_from_psi: calculating b/R for ingoing photon " << std::endl;
 
-	      double bcand_R = MATPACK::FindZero(bmin/rspot, bmax_out/rspot,
-					OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
-					FINDZERO_EPS);
+	      // double bcand_R = MATPACK::FindZero(bmin/rspot, bmax_out/rspot,
+	      //			OblDeflectionTOA_b_from_psi_ingoing_zero_func_wrapper,
+	      //			FINDZERO_EPS);
 
+	      //std::cout << "b_from_psi: bcan_R = " << bcand_R << std::endl;
+	     
+	      // Beginning of new stuff
 
-	      /*std::cout << "b_from_psi: bmin_R = " << bmin/rspot
-			<< " bmax_R = " << bmax_out/rspot
-			<< " bcand_R = " << bcand_R 
-			<< std::endl;*/
+	      int j(0),k(0);
+ 	     
+	      if (psi > psi_in[j] )
+		while ( psi > psi_in[j] ) {
+		  j++;      
+		}
+	      else {
+		while ( psi < psi_in[j] ) {
+		  j--;
+		}
+		j++;
+	      }
+
+	      // std::cout << " After: j= " << j << std::endl;
+      	   
+            k = j - 2;      
+            if ( j == 1 ) k = 0;
+            
+  
+            // 4-pt interpolation to find the correct value of b given psi.
+	    double err(0.0);
+	    bcand_R =  polint(&psi_in[k], &b_R_in[k], 4, psi, &err);
+	    //std::cout << "b = " << bcand_R << " err = " << err << std::endl;
+
+	    //End of new stuff
+
 
  
 	      if( fabs(bmin/rspot - bcand_R) <= EPSILON || fabs(bmax_out/rspot - bcand_R) <= EPSILON ) { // this indicates no soln
