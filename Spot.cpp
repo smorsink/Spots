@@ -143,7 +143,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 background_file_is_set(false);
 		
   // Create LightCurve data structure
-  class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
+  class LightCurve curve, normcurve, tempcurve;  // variables curve and normalized curve, of type LightCurve
   class DataStruct obsdata;           // observational data as read in from a file
 
 
@@ -638,16 +638,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
     		obsdata.t[j] = temp;
-		//	std::cout << "data t["<<j <<"] = " << obsdata.t[j] << std::endl;
+			//std::cout << "data t["<<j <<"] = " << obsdata.t[j] << std::endl;
     		for (unsigned int k = 0; k < numbands; k++){
     			data >> temp;
     			obsdata.f[k][j] = temp;
-			//	std::cout << " f[k][j] = " << temp ;
+				//std::cout << " f[k][j] = " << temp ;
     			data >> temp;
     			obsdata.err[k][j] = temp;
     			//std::cout << " err[k][j] = " << temp << std::endl;
     		}
-    		//data >> temp;
+    		data >> temp;
     	}
     	data.close();
     }
@@ -1026,28 +1026,42 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
 
+	/***************************************/
+	/* START OF INSTRUMENT EFFECT ROUTINES */
+	/***************************************/
+
+	tempcurve.numbins = numbins;
+	tempcurve.numbands = numbands;
+
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	tempcurve.f[p][i] = Flux[p][i];
+        }
+	}
 
 	/**********************************/
 	/*       APPLYING ATTENUATION     */
 	/**********************************/
 
-	std::cout << "Applying attenuation" << std::endl;
-
 	if (curve.flags.attenuation != 0){
+		/*
     	for (unsigned int p = 0; p < numbands; p++){
         	for (unsigned int i = 0; i < numbins; i++){
         		Flux[p][i] = Attenuate(p,Flux[p][i],curve.flags.attenuation);
         	}
 		}
+		*/
+
+		tempcurve = Attenuate(&tempcurve,curve.flags.attenuation);
+
 	}
-     
+    
     /******************************************/
     /*         ADDING BACKGROUND              */
     /******************************************/
 
-	std::cout << "Applying background" << std::endl;
-
 	if (background_file_is_set){
+		/*
 		for (unsigned int p = 0; p < numbands; p++){
         	//std::cout << "band " << p << std::endl; 
         	for (unsigned int i = 0; i < numbins; i++){
@@ -1055,6 +1069,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				Flux[p][i] = Background_list(p,Flux[p][i],background_file);
 			}
 		}
+		*/
+
+		tempcurve = Background_list(&tempcurve, background_file);
+
 	} 
 
 	else {
@@ -1063,7 +1081,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	//std::cout << "band " << p << std::endl; 
         	for (unsigned int i = 0; i < numbins; i++){
             	//std::cout << Flux[p][i] << std::endl;
-            	Flux[p][i] += background;
+            	tempcurve.f[p][i] += background;
         	}
     	}
 	}
@@ -1072,22 +1090,30 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
-	std::cout << "Applying instrument response curve" << std::endl;
-
     if (curve.flags.inst_curve >= 1){
+    	/*
     	for (unsigned int p = 0; p < numbands; p++){
         	for (unsigned int i = 0; i < numbins; i++){
         		Flux[p][i] = Inst_Res(p,Flux[p][i],curve.flags.inst_curve);
         	}
 		}
+		*/
+		tempcurve = Inst_Res(&tempcurve, curve.flags.inst_curve);
 	}
 
+	/*************************************/
+	/* POURING TEMPCURVE BACK TO FLUX    */
+	/*************************************/
+
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	Flux[p][i] = tempcurve.f[p][i];
+        }
+	} 
 
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
-
-	std::cout << "Applying observation time" << std::endl;
 
     for (unsigned int p = 0; p < numbands; p++){
         //std::cout << "band " << p << std::endl; 
@@ -1096,7 +1122,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
             Flux[p][i] *= obstime;  
         }
     }
-
     
     /*******************************/
     /* NORMALIZING THE FLUXES TO 1 */
@@ -1138,11 +1163,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
     //std::cout << " Rebin the data? " << std::endl;
 
-    if (databins < numbins) {
-      obsdata.numbins = databins;
-      std::cout << " Rebin the data! " << std::endl;
-      curve = ReBinCurve(&obsdata,&curve);
-      numbins = databins;
+	if (databins < numbins) {
+        obsdata.numbins = databins;
+        std::cout << " Rebin the data! " << std::endl;
+        curve = ReBinCurve(&obsdata,&curve);
+        numbins = databins;
     }
 
 

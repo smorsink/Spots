@@ -26,12 +26,22 @@
 #include <stdio.h>
 using namespace std;
 
-double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
 
-	double flux_after(0), temp;
+class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation){
+
+	class LightCurve curve, newcurve;
+	double temp;
 	char cwd[1024], ismdir[1024];
 	std::vector<double> atten_ener, atten_width, atten_factors;
-	unsigned int atten_size(0);
+	unsigned int atten_size(0), numbands, numbins;
+
+	//Pour numbands and numbins into newcurve
+
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
 
     //Read in ism attenuation factors
     getcwd(cwd, sizeof(cwd));
@@ -72,25 +82,39 @@ double Attenuate (unsigned int p, double flux_before, unsigned int attenuation){
     file.close();
 	chdir(cwd);
 
-	if (p >= atten_size){
-		flux_after = flux_before;
-	}else{
-		flux_after = flux_before * atten_factors[p];
-	}
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	if (p >= atten_size){
+        		newcurve.f[p][i] = curve.f[p][i];
+        	} 
+        	else {
+        		newcurve.f[p][i] = curve.f[p][i] * atten_factors[p];
+        	}
 
-	if (flux_before < flux_after){
-		cout << "attenuation factor greater than 1!" << endl;
+        	/*
+        	if (newcurve.f[p][i] > incurve.f[p][i]){
+				cout << "attenuation factor greater than 1!" << endl;
+        	}
+        	*/
+        }
 	}
-
-	return flux_after;
+	return newcurve;
 }
 
-double Inst_Res (unsigned int p, double flux_before, unsigned int inst_curve){
+class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve){
 
-	unsigned int response_size(0);
-	double flux_after(0),temp;
+	class LightCurve newcurve, curve;
+	unsigned int response_size(0), numbands, numbins;
+	double temp;
 	char cwd[1024], resdir[1024];
 	std::vector<double> response_list;
+
+	//Pour numbands and numbins into newcurve
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
 
 	getcwd(cwd, sizeof(cwd));
 	sprintf(resdir,"%s/Area",cwd);
@@ -111,27 +135,33 @@ double Inst_Res (unsigned int p, double flux_before, unsigned int inst_curve){
     file.close();
 	chdir(cwd);
 
-	if (p >= response_size){
-
-		 throw( Exception( "instrument response curve doesn't have this band" ));
-		 return -1;
-
-	}else{
-
-		flux_after = flux_before * response_list[p];
-		return flux_after;
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	if (p >= response_size){
+		 		throw( Exception( "instrument response curve doesn't have this band" ));
+        	} 
+        	else {
+        		newcurve.f[p][i] = curve.f[p][i] * response_list[p];
+        	}
+        }
 	}
-	
+	return newcurve;
 }
 
+class LightCurve Background_list (class LightCurve* incurve, char *background_file){
 
-double Background_list (unsigned int p, double flux_before, char *background_file){
-	
-	unsigned int background_size(0);
-	double flux_after(0),temp;
+	class LightCurve newcurve, curve;
+	unsigned int background_size(0), numbands, numbins;
+	double temp;
 	char cwd[1024], bgddir[1024];
 	std::vector<double> background_list;
 
+	//Pour numbands and numbins into newcurve
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
 
     //Read in background numbers
     getcwd(cwd, sizeof(cwd));
@@ -154,17 +184,16 @@ double Background_list (unsigned int p, double flux_before, char *background_fil
 	file.close();
 	chdir(cwd);
 
-	if (p >= background_size){
 
-		flux_after = flux_before;
-
-	}else{
-
-	  //std::cout << "p = " << p << " back[p] = " << background_list[p] << " flux = " << flux_before << "+"
-	  //	    << background_list[p] << std::endl;
-
-		flux_after = flux_before + background_list[p];
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	if (p >= background_size){
+        		newcurve.f[p][i] = curve.f[p][i];
+        	} 
+        	else {
+        		newcurve.f[p][i] = curve.f[p][i] + background_list[p];
+        	}
+        }
 	}
-
-	return flux_after;
+	return newcurve;
 }

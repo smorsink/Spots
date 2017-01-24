@@ -15,9 +15,9 @@
 
 //
 
-double Attenuate (unsigned int p, double flux_before, unsigned int attenuation);
+class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation);
 
-double Inst_Res (unsigned int p, double flux_before, unsigned int inst_curve);
+class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve);
 
-double Background_list (unsigned int p, double flux_before, char *background_file);
+class LightCurve Background_list (class LightCurve* incurve, char *background_file);
 
