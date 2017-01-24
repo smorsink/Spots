@@ -1135,10 +1135,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
      
     // If databins < numbins then rebin the theoretical curve down 
 
-    // std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
+    //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
     //std::cout << " Rebin the data? " << std::endl;
 
-    if (databins < numbins && datafile_is_set) {
+    if (databins < numbins) {
+      obsdata.numbins = databins;
+      std::cout << " Rebin the data! " << std::endl;
       curve = ReBinCurve(&obsdata,&curve);
       numbins = databins;
     }

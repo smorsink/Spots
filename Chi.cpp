@@ -400,7 +400,7 @@ class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve
     for (unsigned int p(0); p<numbands; p++){
       for (unsigned int i(0); i<obsdata->numbins; i++){
 
-	curve.t[i] = obsdata->t[i];
+	curve.t[i] = incurve->t[i*jj];
 	
 	curve.f[p][i] = incurve->f[p][i*jj];
 
@@ -461,13 +461,16 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
     std::vector< double > phi_em(numbins, 0.0);   // Azimuth as measured from the star's emission frame; one for each phase bin
   
-
     // These are calculated in the second loop.
     //std::vector< double > dcosalpha_dcospsi(numbins, 0.0);    // Used in MLCB30
     std::vector< double > cosdelta(numbins, 0.0);             // 
     std::vector< double > cosxi(numbins, 0.0);                // Used in Doppler boost factor, defined in MLCB35
 
-  
+    int num_in(10);
+    double *b_R_in, *psi_in;
+    b_R_in = dvector(0,num_in);
+    psi_in = dvector(0,num_in);
+    
     /************************************************************************************/
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
     /************************************************************************************/
@@ -530,10 +533,28 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
       b_R_min = defltoa->b_R_min_ingoing(radius, cos(theta_0));
-      //std::cout << "b_R_min = " << b_R_min << std::endl;
       psimin = defltoa->psi_ingoing(b_R_min,curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
-      //std::cout << "psi_max = " << curve.defl.psi_max << std::endl;
-      //std::cout << "psi_min = " << psimin << std::endl;
+
+      b_R_in[0] = b_R_min;
+      psi_in[0] = psimin;
+
+      //	std::cout << "b[" <<0 << "]=" << b_R_in[0] 
+      //	  << "psi = " << psi_in[0] << std::endl;
+      
+      for (unsigned int j(1); j<= num_in; j++){
+	b_R_in[j] = b_R_min + (curve.defl.b_R_max-b_R_min)/(1.0*num_in) * j;
+	psi_in[j] = defltoa->psi_ingoing(b_R_in[j],curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
+	//std::cout << "b[" <<j << "]=" << b_R_in[j] 
+	//	  << "psi = " << psi_in[j] << std::endl;
+
+      }
+
+      b_R_in[num_in] = curve.defl.b_R_max;
+      psi_in[num_in] = curve.defl.psi_max;
+
+      //std::cout << "b[" <<num_in << "]=" << b_R_in[num_in] 
+      //<< "psi = " << psi_in[num_in] << std::endl;
+
     }
     
 
@@ -601,6 +622,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
         result = defltoa->b_from_psi( curve.psi[i], radius, mu, b_R_val, sign, curve.defl.b_max, 
 				      curve.defl.psi_max, b_R_min*radius,psimin, b_guess,
+				      b_R_in,psi_in,
 				      &curve.problem );
 
         if ( result == false && i == 0) { 
@@ -779,6 +801,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     }  // closing For-Loop-2
 
     //  std::cout << "End of ComputeAngles" << std::endl; 
+
+    free_dvector(b_R_in,0,num_in);
+    free_dvector(psi_in,0,num_in);
+
 
     return curve;
 
