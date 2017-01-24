@@ -117,7 +117,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
        T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
        data_file[256],                // Name of input file for reading in data
        //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
-       filenameheader[256]="Run";
+       filenameheader[256]="Run",
+       background_file[256];
 
          
   // flags!
@@ -140,7 +141,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
          background_file_is_set(false);
 		
   // Create LightCurve data structure
-  class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
+  class LightCurve curve, normcurve, tempcurve;  // variables curve and normalized curve, of type LightCurve
   class DataStruct obsdata;           // observational data as read in from a file
 
 
@@ -319,9 +320,11 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     curve.flags.spectral_model = spectral_model;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
-    curve.flags.spotshape = spotshape;
     curve.flags.attenuation = attenuation;
     curve.flags.inst_curve = inst_curve;
+    curve.flags.spotshape = spotshape;
+
+
 
 
 
@@ -342,6 +345,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     obsdata.shift = ts;
     obsdata.numbins = databins;
 
+
     // Force energy band settings into NICER specified bands
 
     if (curve.flags.attenuation >= 1){
@@ -356,6 +360,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         curve.numbands = numbands;
     }
 
+    obsdata.numbands = numbands;
 
    
     /***************************/
@@ -729,54 +734,77 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     // It took almost a month to figure out that that was the reason it was messing up.
 
 
+    /***************************************/
+    /* START OF INSTRUMENT EFFECT ROUTINES */
+    /***************************************/
+
+    tempcurve.numbins = numbins;
+    tempcurve.numbands = numbands;
+
+    for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+            tempcurve.f[p][i] = Flux[p][i];
+        }
+    }
+
     /**********************************/
     /*       APPLYING ATTENUATION     */
     /**********************************/
 
-    std::cout << "Applying attenuation" << std::endl;
-
     if (curve.flags.attenuation != 0){
+        /*
         for (unsigned int p = 0; p < numbands; p++){
             for (unsigned int i = 0; i < numbins; i++){
                 Flux[p][i] = Attenuate(p,Flux[p][i],curve.flags.attenuation);
             }
         }
-    }
+        */
 
-     
-    /*******************************/
-    /* ADDING BACKGROUND TO CURVE  */
-    /*******************************/
+        tempcurve = Attenuate(&tempcurve,curve.flags.attenuation);
+
+    }
+    
+    /******************************************/
+    /*         ADDING BACKGROUND              */
+    /******************************************/
 
     for (unsigned int p = 0; p < numbands; p++){
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
             //std::cout << Flux[p][i] << std::endl;
-            Flux[p][i] += background[p]; 
+            tempcurve.f[p][i] += background[p];
         }
     }
-
+    
 
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
-    std::cout << "Applying instrument response curve" << std::endl;
-
     if (curve.flags.inst_curve >= 1){
+        /*
         for (unsigned int p = 0; p < numbands; p++){
             for (unsigned int i = 0; i < numbins; i++){
                 Flux[p][i] = Inst_Res(p,Flux[p][i],curve.flags.inst_curve);
             }
         }
+        */
+        tempcurve = Inst_Res(&tempcurve, curve.flags.inst_curve);
     }
 
+    /*************************************/
+    /* POURING TEMPCURVE BACK TO FLUX    */
+    /*************************************/
+
+    for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+            Flux[p][i] = tempcurve.f[p][i];
+        }
+    } 
 
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
-
-    std::cout << "Applying observation time" << std::endl;
 
     for (unsigned int p = 0; p < numbands; p++){
         //std::cout << "band " << p << std::endl; 
@@ -785,8 +813,6 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
             Flux[p][i] *= obstime;  
         }
     }
-
-
 
     /*******************************/
     /* NORMALIZING THE FLUXES TO 1 */
@@ -826,8 +852,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       }  
     }
 
-    if (databins < numbins)
-      curve = ReBinCurve(&obsdata,&curve);
+    if (databins < numbins) {
+        obsdata.numbins = databins;
+        std::cout << " Rebin the data! " << std::endl;
+        curve = ReBinCurve(&obsdata,&curve);
+        numbins = databins;
+    }
      
     /***************************************************/
     /* Data file should already be available           */

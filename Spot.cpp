@@ -534,6 +534,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E_band_upper_2 = E_band_upper_2;
     curve.para.distance = distance;
     curve.numbins = numbins;
+    curve.numbands = numbands;
     //curve.para.rsc = r_sc;
     //curve.para.Isc = I_sc;
 
@@ -546,7 +547,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.bend_file = bend_file_is_set;
     curve.flags.attenuation = attenuation;
     curve.flags.inst_curve = inst_curve;
-    curve.numbands = numbands;
     curve.flags.spotshape = spotshape;
 
 
@@ -587,7 +587,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( datafile_is_set ) {
       std::cout << "setting data file" << std::endl;	
       std::ifstream data; //(data_file);      // the data input stream
-      std::cout << "opening data file" << std::endl;
+      std::cout << "opening data file " << data_file << std::endl;
       data.open( data_file );  // opening the file with observational data
       //char line[265]; // line of the data file being read in
       //unsigned int numLines(0), i(0);
