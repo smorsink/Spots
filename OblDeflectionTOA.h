@@ -102,6 +102,7 @@ class OblDeflectionTOA {
   		                  int& rdot, const double& bmax_out, const double& psi_out_max, 
 				  const double& bmin, const double& psimin,
 				  const double& b_guess,
+				  double *b_R_in, double *psi_in,
 				  bool *prob );
 
 
