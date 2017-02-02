@@ -534,7 +534,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E_band_upper_2 = E_band_upper_2;
     curve.para.distance = distance;
     curve.numbins = numbins;
-    curve.numbands = numbands;
     //curve.para.rsc = r_sc;
     //curve.para.Isc = I_sc;
 
@@ -547,13 +546,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.bend_file = bend_file_is_set;
     curve.flags.attenuation = attenuation;
     curve.flags.inst_curve = inst_curve;
+    curve.numbands = numbands;
     curve.flags.spotshape = spotshape;
 
 
    // Define the Observer's Spectral Model
 
     if (curve.flags.spectral_model == 0){ // NICER: Monochromatic Obs at E0=1keV
-      curve.para.E0 = 1.0;
+      curve.para.E0 = 0.3; //0.3 keV
       curve.numbands = 1;
     }
     if (curve.flags.spectral_model == 1){ // NICER Line
@@ -587,7 +587,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( datafile_is_set ) {
       std::cout << "setting data file" << std::endl;	
       std::ifstream data; //(data_file);      // the data input stream
-      std::cout << "opening data file " << data_file << std::endl;
+      std::cout << "opening data file" << std::endl;
       data.open( data_file );  // opening the file with observational data
       //char line[265]; // line of the data file being read in
       //unsigned int numLines(0), i(0);
@@ -632,8 +632,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	*/
 
     if (data.is_open()){
-      //std::cout << "reading data" << std::endl;
-      //std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
+      std::cout << "reading data" << std::endl;
+      std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
     	double temp;
     	for (unsigned int j = 0; j < databins; j++){
     		data >> temp;
@@ -647,7 +647,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     			obsdata.err[k][j] = temp;
     			//std::cout << " err[k][j] = " << temp << std::endl;
     		}
-    		data >> temp;
+    		//data >> temp;
     	}
     	data.close();
     }
@@ -690,7 +690,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
 
-      // std::cout << " Oblate Neutron Star" << std::endl;
+      std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
@@ -711,7 +711,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //req = rspot;
       rspot = req;
         model = new SphericalOblModel( rspot );
-        //printf("Spherical Model. ");
+        printf("Spherical Model. ");
     }
     else {
         throw(Exception("\nInvalid NS_model parameter. Exiting.\n"));
@@ -1076,14 +1076,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	} 
 
 	else {
-
-    	for (unsigned int p = 0; p < numbands; p++){
-        	//std::cout << "band " << p << std::endl; 
-        	for (unsigned int i = 0; i < numbins; i++){
-            	//std::cout << Flux[p][i] << std::endl;
-            	tempcurve.f[p][i] += background;
-        	}
-    	}
+	  // Add a constant background in all bands
+	  for (unsigned int p = 0; p < numbands; p++){
+	   
+	    for (unsigned int i = 0; i < numbins; i++){
+	     
+	      tempcurve.f[p][i] += background;
+	      //if (p==0)
+	      //std::cout << "Added background: i="<<i << " flux = " << tempcurve.f[p][i] << std::endl;
+	    }
+	  }
 	}
 
     /******************************************/
@@ -1118,8 +1120,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for (unsigned int p = 0; p < numbands; p++){
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
-            //std::cout << Flux[p][i] << std::endl;
+          
             Flux[p][i] *= obstime;  
+	    //if(p==0)
+	    //std::cout <<"Mult by time: i=" <<i << " flux=" << Flux[p][i] << std::endl;
+
         }
     }
     

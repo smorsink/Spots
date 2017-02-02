@@ -45,18 +45,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	
     class LightCurve curve;
 
-    std::ifstream input;
-    std::ofstream output;
+
     std::ofstream ttt;
 
-
-    bool infile_is_set;   // If the user has specified an input file
     double 
-           mass,               // Mass of the star, in M_sun
-           radius,             // Radius of the star at the spot, in km
       mass_over_r,
            temperature,        // Temperature of the spot, in keV
-      //           E_mono,             // Energy observed, in keV, for each monochromatic energy
            E_band_lower_1,     // Lower bound of energy band for flux integration, in keV
            E_band_upper_1,     // Upper bound of energy band for flux integration, in keV
            E_band_lower_2,     // Lower bound of energy band for flux integration, in keV
@@ -70,14 +64,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     unsigned int numbins(MAX_NUMBINS);  // Time bins of light curve (usually 128)
     unsigned int numbands(NCURVES);  // Number of Energy Bands
         
-    std::vector< double > totflux(MAX_NUMBINS, 0.0); // integrated flux
-
-    std::vector< bool > nullcurve(NCURVES,true); // true means that the curve is zero everywhere
-
-    //std::vector< double > softbb(MAX_NUMBINS, 0.0);  // blackbody soft flux
-    //std::vector< double > softcm(MAX_NUMBINS, 0.0);  // compton soft flux
-
-    // double softbbave(0.0), softcmave(0.0), hardave(0.0);  // average value of softbb and softcm and high energy band
+    //  std::vector< double > totflux(MAX_NUMBINS, 0.0); // integrated flux
 
     /*********************/
     /* SETTING THINGS UP */
@@ -87,11 +74,9 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     //    E_mono = 1.0;
 
     curve = (*angles);
-    mass = curve.para.mass;                     // unitless
-    radius = curve.para.radius;                 // unitless
     mass_over_r = curve.para.mass_over_r;
     temperature = curve.para.temperature;       // T in keV 
-    infile_is_set = curve.flags.infile_is_set;
+
     numbins = curve.numbins;
     numbands = curve.numbands;
     E_band_lower_1 = curve.para.E_band_lower_1;     // in keV
@@ -122,28 +107,20 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
       if ( curve.dOmega_s[i] != 0.0 ) {
 
-	if (std::isnan(gray) || gray == 0) std::cout << "gray = " << gray << std::endl;
-	if (std::isnan(curve.eta[i]) || curve.eta[i] == 0) std::cout << "eta[i="<<i<<"] = " << curve.eta[i] << std::endl;
-	if (std::isnan(redshift) || redshift == 0) std::cout << "redshift = " << redshift << std::endl;
+	// Default value is gray = 1
+	gray = 1.0; // beaming_model == 0
 
 	// Calculate Beaming for Modified Blackbodies
-	if (curve.flags.beaming_model == 1 || curve.flags.beaming_model == 5 || 
-	    curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){ // Blackbody, graybody factor
 
-	  // Default value is gray = 1
-	  gray = 1.0; // beaming_model == 0
-
-	  if (curve.flags.beaming_model == 1)
-	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // Chandrasekhar limb-darkening
-	  if (curve.flags.beaming_model == 5)
+	if (curve.flags.beaming_model == 1)
+	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // Chandrasekhar limb-darkening	  
+	if (curve.flags.beaming_model == 5)
 	    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
-	  if (curve.flags.beaming_model == 6)
+	if (curve.flags.beaming_model == 6)
 	    gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
-	  if (curve.flags.beaming_model == 7) // Hopf Function
+	if (curve.flags.beaming_model == 7) // Hopf Function
 	    gray = 0.42822+0.92236*curve.cosbeta[i]*curve.eta[i]-0.085751*pow(curve.cosbeta[i]*curve.eta[i],2);
 	     
-	}
-
 	/*******************************************************************/
 	/* COMPUTING LIGHT CURVE FOR MONOCHROMATIC ENERGY, p = 0           */
 	/*      First computes in [erg/(s cm^2 Hz), converts to            */
@@ -158,7 +135,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 	    curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
 	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-            if (curve.f[0][i] != 0.0) nullcurve[0] = false;
+           
 	  }
 
 	  if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
@@ -173,6 +150,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
 	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
 	  }
+	 
 	} // Spectral_model == 0 
 
 	/***********************/
@@ -185,7 +163,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    E_obs = E0 + p*DeltaE;
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * LineBandFlux(temperature, (E_obs-0.5*DeltaE)*redshift/curve.eta[i], (E_obs+0.5*DeltaE)*redshift/curve.eta[i], E1, E2); // Units: photon/(s cm^2)
 
-	    if (curve.f[p][i] != 0.0) nullcurve[0] = false;
+
 	  }
 	}
 
@@ -197,15 +175,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
 	  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
-	 /* std::cout << "Atmos: gray = " << gray
-		   << " p=0: E_lo=" << E_band_lower_1
-		   << " E_hi = " << E_band_lower_1+E_diff
-		   << std::endl;*/
-
 	  for (unsigned int p = 0; p<numbands; p++){
            
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) 
-	      * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
+	    	 * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
 
             }          
         }
@@ -220,8 +193,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
             if (curve.flags.beaming_model == 4){ //helium
 	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
             }
+	    //if (curve.f[0][i] != 0.0) nullcurve[p] = false;
 	  }
 	}
+	
       }
       else { // if curve.dOmega_s[i] == 0.0
 	for ( unsigned int p(0); p < numbands; p++) {
@@ -245,15 +220,66 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       // but time delays mean that j isn't always i-1
       // used in the linear interpolation
         
+      //std::cout << "Taking care of time delays!" << std::endl;
+
+
+      int ecl1(0), ecl2(0), j1, j2, k1, k2;
+      double tt1,tt2, ttt1, ttt2;
+
+      if (curve.eclipse){
+
+	// If curve has an eclipse, find out where 
+	// Find the first eclipsed bin; set ec1=i;
+	for (unsigned int i(0);i<numbins;i++){
+	  if (curve.dOmega_s[i]==0.0){
+	    ecl1=i;
+	    break;
+	  }
+	}
+	j1 = ecl1-2;
+	j2 = ecl1-1;
+	
+	if (ecl1==0){
+	  j1+=numbins;
+	  j2+=numbins;
+	}
+	if (ecl1==1){
+	  j1+=numbins;
+	}
+	tt1 = curve.t_o[j1];
+	if (ecl1<2)
+	  tt1 +=-1.0;
+	tt2 = curve.t_o[j2];
+	if (ecl1==0)
+	  tt2+=-1.0;
+
+	// After the eclipse, find the first bin with non-zero flux
+	for (unsigned int i(ecl1);i<numbins;i++){
+	  if (curve.dOmega_s[i]>0.0){
+	    ecl2=i;
+	    break;
+	  }
+	}
+	//std::cout << "eclipse ends at bin" << ecl2 << std::endl;
+	k1=ecl2;
+	k2=ecl2+1;
+	if (ecl2==numbins-1){
+	  k2+=-numbins;
+	}
+	ttt1=curve.t_o[k1];
+	ttt2=curve.t_o[k2];
+	if (ecl2==numbins-1)
+	  ttt2+=1.0;
+
+
+      } // End of Eclipse finder
+
       /********************************/
       /* LOOP THROUGH THE LIGHTCURVES */
       /********************************/
-    	
+       
       for (unsigned int p(0); p < numbands; p++) {
       // for (unsigned int p(1); p < 2; p++) {
-
-	if (!nullcurve[p]) {
-	
 
 	/*********************/
 	/* MORE DECLARATIONS */
@@ -268,9 +294,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  double temporary1(0.0), temporary2(0.0);                          // makes math easier
 	  double maximum(0.0), minimum(100000.0);                           // true (continuous) maximum and minimum flux values
 	  double tmin(0.0);                                                 // value of t at the true minimum
-
-	  int ec1(0), ec2(0),j1,j2;
-	  double te1, te2, tt1, tt2, slope1, slope2;
+	  
+	  double te1, te2, slope1, slope2;
 
 	  /**********************************************************/
 	  /* START WITH FINDING THE MAXIMUM FLUX OF THE LIGHT CURVE */
@@ -333,6 +358,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  maximum = fb - temporary1*pow(tb-tx,2);
 	  // maximum is the maximum flux for the specific "p" light curve
 	  // tx is the time of maximum 
+
+	  //std::cout << "maximum takes place at time=" << tx << std::endl;
 
 	  /************************************************/
 	  /* NOW FIND THE MINIMUM FLUX OF THE LIGHT CURVE */
@@ -420,35 +447,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  else if ( curve.eclipse ) {
 	    minimum = 0.0;
 
-	    // Find the first eclipsed bin; set ec1=i;
-	    for (unsigned int i(0);i<numbins;i++){
-	      if (curve.f[p][i]==0.0){
-		ec1=i;
-		break;
-	      }
-	    }
-	    
-	    //	    std::cout << "eclipse begins at bin" << ec1 << std::endl;
-	    // Extrapolate to find beginning of eclipse (linear extrapolation)
-	    j1 = ec1-2;
-	    j2 = ec1-1;
-
-	    if (ec1==0){
-	      j1+=numbins;
-	      j2+=numbins;
-	    }
-	    if (ec1==1){
-	      j1+=numbins;
-	    }
-	    tt1 = curve.t_o[j1];
-	    if (ec1<2)
-	      tt1 +=-1.0;
-	    tt2 = curve.t_o[j2];
-	    if (ec1==0)
-	      tt2+=-1.0;
-	    
-
-
 	    slope1 = (curve.f[p][j1]-curve.f[p][j2])/(tt1-tt2);
 	
 	    if (slope1 != 0.0)
@@ -456,29 +454,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    else
 	      te1 = tt1;
 
-
-	    // After the eclipse, find the first bin with non-zero flux
-	    for (unsigned int i(ec1);i<numbins;i++){
-	      if (curve.f[p][i]>0.0){
-		ec2=i;
-		break;
-	      }
-	    }
-	    //std::cout << "eclipse ends at bin" << ec2 << std::endl;
-	    j1=ec2;
-	    j2=ec2+1;
-	    if (ec2==numbins-1){
-	      j2+=-numbins;
-	    }
-	    tt1=curve.t_o[j1];
-	    tt2=curve.t_o[j2];
-	    if (ec2==numbins-1)
-	      tt2+=1.0;
-
-	    slope2 = (curve.f[p][j1]-curve.f[p][j2])/(tt1-tt2);
-	    te2 = tt1 - curve.f[p][j1]/slope2;
-	    //std::cout << "Eclipse ends at time = " << te2 << std::endl;
-
+	    slope2 = (curve.f[p][k1]-curve.f[p][k2])/(ttt1-ttt2);
+	    te2 = ttt1 - curve.f[p][k1]/slope2;
 
 	  } // ending "yes eclipsed
             
@@ -506,8 +483,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 
 	  // Initializing totflux
-	  for ( unsigned int i(0); i < numbins; i++ )
-	    totflux.at(i) = 0.0;
+	  //for ( unsigned int i(0); i < numbins; i++ )
+	  //totflux.at(i) = 0.0;
 			
 		           		
 	  /**************************************************************/
@@ -521,24 +498,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    if ( k == static_cast<int>(numbins) ) 
 	      k = 0;
 	 		
-	    /* if (curve.eclipse) {  // begin eclipse section
-	      if (curve.f[p][k] == 0.0) {
-		if (curve.f[p][j] != 0.0) {
-		  k = i;
-		  j = i-1;
-		}
-		else if (curve.f[p][j-1] != 0.0) {
-		  k = j - 1;
-		  j = j - 2;
-		}
-	      }
-	      else {
-		if ( curve.f[p][j] == 0.0 ){
-		  j = k;
-		  k = k + 1;
-		}
-	      } 
-	      } // finished eclipse section*/
+	   
 
 	      // Check to see if we're near the maximum
 	    if ( (i <= imax + 1 && i >= imax -1) || 
@@ -611,13 +571,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 		  t2 = curve.t_o[k]; // time to the right of the point we're interested in
 		  if (k==0) t2 += 1.0;
 
-		}
-
-		/*if (i==0){
-		  std::cout << "bin 0 " << std::endl;
-		  std::cout << "j=" << j << " t_o[j}=" << curve.t_o[j] << " t1 = " << t1 << std::endl;
-		  std::cout << "k=" << k << " t_o[k}=" << curve.t_o[k] << " t2 = " << t2 << std::endl;
-		  }*/
+		}	
 
 		newflux.at(i) = curve.f[p][j] + (curve.f[p][k]-curve.f[p][j])/(t2-t1) * (curve.t[i]-t1); // linear interpolation!
 
@@ -647,19 +601,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 		    else {
 		      newflux.at(i) = minimum - temporary2 * pow(curve.t[i] - tmin,2);
 		    }
-		    //std::cout << "MIN i = " << i << " time = " << curve.t[i] << " flux  = " << newflux.at(i) << std::endl;
-
-
-
+		    
 		  }
-
-		//std::cout << "i = " << i << " j = " << j << " k = " << k 
-		//	  << "t=" << curve.t[i] << " f=" << newflux.at(i) 
-		//	  <<std::endl;
-		//else
-		//newflux.at(i) = curve.f[p][i];
-
-		// }// end else-not-near the minimum
 	    }
 	
 	    /* newflux vs t_e corresponds to the new re-binned light curve.
@@ -674,22 +617,24 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  /* SUMMING THE FLUXES AT EACH PHASE BIN ACROSS ALL LIGHT CURVES */
 	  /****************************************************************/
     	
-	  for ( unsigned int i(0); i < numbins; i++ ) {
-            totflux.at(i) += newflux.at(i);   // setting totflux = newflux
-	  }
+	  // for ( unsigned int i(0); i < numbins; i++ ) {
+	  //totflux.at(i) += newflux.at(i);   // setting totflux = newflux
+	  //}
 	  //if (p==0)
-	  //ttt.open("time.txt", std::ios_base::trunc);
+	  //ttt.open("newtime.txt", std::ios_base::trunc);
 
 	  for ( unsigned int i(0); i < numbins; i++ ) {
-	    /*if ( p==0 ) 
-	      ttt << curve.t_o[i] << " " << curve.f[p][i] << " " << curve.t[i] << " " << totflux.at(i) 
-	    	  << " " << i
-	    	  << std::endl;*/
+	    //if ( p==0 ) 
+	    //ttt << curve.t_o[i] << " " 
+	    //	  << curve.f[p][i] << " " << curve.t[i] << " " << totflux.at(i) 
+	    //	  << " " << i
+	    //	  << std::endl;
 	    
-            curve.f[p][i] = totflux.at(i);
+	    //            curve.f[p][i] = totflux.at(i);
+            curve.f[p][i] = newflux.at(i);
 	  }
 	  // only plotting versus evenly spaced time -- not using t_o
-	}
+	
       }// end for-p-loop
     } // end time delay section
     
@@ -1565,7 +1510,7 @@ double EnergyBandFlux( double T, double E1, double E2 ) {
 	double b = E2 / T;          // upper bound of integration
 	double current_x(0.0);      // current value of x, at which we are evaluating the integrand; x = E / T; unitless
 	unsigned int current_n(0);  // current step
-	unsigned int n_steps(100); // total number of steps
+	unsigned int n_steps(900); // total number of steps
 	// This number of steps (100) is optimized for Delta(E) = 0.3 keV
 	double h = (b - a) / n_steps;     // step amount for numerical integration; the size of each step
 	double integral_constants = 2.0 * pow(T*Units::EV,3) / pow(Units::C,2) / pow(Units::H_PLANCK,3); // what comes before the integral when calculating flux using Bradt eqn 6.6 (in units of photons/cm^2/s)

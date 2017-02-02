@@ -113,6 +113,16 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 	  for ( unsigned int i(0); i < numbins; i++ ) {
 	    obsdata->chi[j] += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
             //chisquare += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
+	    
+	    /*if (j==0){
+	      std::cout <<"Chi: i=" << i
+				  << " Obs Flux = " << obsdata->f[j][i] 
+				  << " Err = " << obsdata->err[j][i]
+				  << " Cal Flux = " << curve->f[j][i]
+				  << " SQdiff = " << pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2)
+				  << std::endl;
+				  }*/
+
 	  }
 	  std::cout << " chi^2[" << j << "] = " << obsdata->chi[j] ;
 	  chisquare += obsdata->chi[j]; 
