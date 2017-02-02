@@ -11,7 +11,7 @@ spotDir=fileparts(which('init.m'));
 % look in there and you will see about four places where "-ansi" is specified as a flag.
 % Simply remove the "-ansi" and it should compile.
 %
-cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.c'];
+cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.c'];
 cd(spotDir);
 disp('------ Init ------');
 disp(cmd);
