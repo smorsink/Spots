@@ -43,6 +43,8 @@ extPar.fixed.E_band_upper_1=12.5;      % upper bound of first energy band, in ke
 extPar.fixed.beaming_model=7;         % 0 for bb, 1 for bb+chandra gray, 2 for bb+hopf gray, 3 for hydrogen, 4 for helium
 extPar.fixed.spots_2=1;				% 1 for 1 spot, 2 for 2 spots
 extPar.fixed.bend_file_is=1;          % 1 means bend file is read
+extPar.fixed.inst_curve=0;
+extPar.fixed.attenuation=0;
 if extPar.fixed.bend_file_is == 1
     bendfile = load('angles1000-1.txt');
     bendfile1 = reshape(bendfile(:,6),301,1001);
