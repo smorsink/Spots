@@ -245,9 +245,14 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	      << " Hz, i = " << incl_1 
 	      << ", e = " << theta_1  
 	      << ", ts = " << ts
+                << ", rho = " << rho
+                << ", T = " << spot_temperature
                << ", ObsTime = " << obstime << "s" 
 	      << std::endl;   
 
+      // printf("m=%lf  r=%lf i=%lf e=%lf rho=%lf  T=%lf\n",
+        //       mass, req, incl_1, theta_1, rho, spot_temperature);
+       
     inst_curve = mxGetScalar(theInput[27]);
     attenuation = mxGetScalar(theInput[28]);
 
@@ -854,7 +859,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     if (databins < numbins) {
         obsdata.numbins = databins;
-        std::cout << " Rebin the data! " << std::endl;
+        //std::cout << " Rebin the data! " << std::endl;
         curve = ReBinCurve(&obsdata,&curve);
         numbins = databins;
     }
@@ -866,11 +871,11 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     chisquared = ChiSquare ( &obsdata, &curve );
     
-    chisquared = 0.0;
+    //chisquared = 0.0;
     
-    for (unsigned int i(0);i<30;i++){
-     chisquared += obsdata.chi[i];   
-    }
+    //for (unsigned int i(0);i<30;i++){
+     //chisquared += obsdata.chi[i];   
+    //}
     
     
     //std::cout << "Warning chi^2 is only for band 0+1+2 " << std::endl;
@@ -883,6 +888,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	      << " km, f = " << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) 
 	      << " Hz, i = " << incl_1 * 180.0 / Units::PI 
 	      << ", e = " << theta_1 * 180.0 / Units::PI 
+          << ", rho = " << rho
 	      << ", X^2 = " << chisquared 
 	      << std::endl;   
     
@@ -890,7 +896,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
  
 
 	if (std::isnan(chisquared)||std::isinf(chisquared)) {
-		mexPrintf("Chisquared is nan! Setting it to 1,000,000.\n");
+		mexPrintf("Chisquared is nan! Setting it to 10^11.\n");
 		chisquared = 100000000000.0;
 	}
 	else {

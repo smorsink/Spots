@@ -15,7 +15,8 @@
 function par=FerretSetup(par)
 %
 % -----------------------------------
-%
+% This version is for setting up comparisons with Slavko's synthetic data
+% Observed time and distance are known.
 %
 % Sets reasonable defaults for parameters where possible.
 % Values are over-ridden by FerretSetup.m
@@ -40,10 +41,10 @@ par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction
 par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation.
 %par.general.NPop=2;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
-par.general.popSize=300;
+par.general.popSize=200;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-par.general.NGen=125;
+par.general.NGen=100;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -62,27 +63,26 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 %par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
 
 % Fixed spot size with new background
-par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'ObsTime', 'rho', 'temperature'};
-par.general.min=[        6.0,           1.0,                 70.0,                 70.0,               0.00,      1.03,       0.1,   1.9];
-par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,      1.1,      1.0,   2.1];
+par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature'};
+par.general.min=[        6.0,           1.0,                 80.0,                 80.0,               0.00,       0.02,   0.3];
+par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,       0.40,   0.4];
 
-% For ML2015 data require 30 energy bands
-for i = 1:30
+% For Slavko's data require 15 energy bands
+for i = 1:15
     name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0.000001;
-    % for ML2015 allow a larger background of 1.0%
-    par.general.max(i+8) = 0.1;
+    par.general.XLabels{i+7} = name1;
+    par.general.min(i+7) = 0.002;
+    par.general.max(i+7) = 0.008;
 end
 
 % par.general.XLabels(7) = 'background1';
 %par.general.min(7) = 0.02;
 
 %background 1
-par.general.max(9) = 0.08;
+%par.general.max(9) = 0.08;
 
 %background 2
-par.general.max(10) = 0.08;
+%par.general.max(10) = 0.08;
 
 
 

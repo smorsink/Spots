@@ -1,6 +1,6 @@
 function [Fspot, auxOutput] = fitness(X,extPar)
 auxOutput = cell(1,size(X,2));
-%auxOutput = cell(1,size(X,5));
+% This version is for comparison with Slavko's synthetic data
 for i=size(X,2):-1:1  % we want to count backwards here
     % Apply constraints
     isPhysical=applyConstraints(X(:,i),extPar);
@@ -13,10 +13,11 @@ for i=size(X,2):-1:1  % we want to count backwards here
         inclination=X(3,i);
         emission=X(4,i);
         timeShift=X(5,i);
-        ObsTime=X(6,i);
-        rho=X(7,i);
+        %        ObsTime=X(6,i);
+        ObsTime=extPar.fixed.obstime;
+        rho=X(6,i);
         %rho = extPar.fixed.rho;
-        temperature=X(8,i);
+        temperature=X(7,i);
         %temperature=extPar.fixed.spot_temperature;
         
         % Initialize background to zero
@@ -35,53 +36,25 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background13=extPar.fixed.background(13);
         background14=extPar.fixed.background(14);
         background15=extPar.fixed.background(15);
-        background16=extPar.fixed.background(16);
-        background17=extPar.fixed.background(17);
-        background18=extPar.fixed.background(18);
-        background19=extPar.fixed.background(19);
-        background20=extPar.fixed.background(20);
-        background21=extPar.fixed.background(21);
-        background22=extPar.fixed.background(22);
-        background23=extPar.fixed.background(23);
-        background24=extPar.fixed.background(24);
-        background25=extPar.fixed.background(25);
-        background26=extPar.fixed.background(26);
-        background27=extPar.fixed.background(27);
-        background28=extPar.fixed.background(28);
-        background29=extPar.fixed.background(29);
-        background30=extPar.fixed.background(30);
+      
         
-        background1=X(9,i);
-        background2=X(10,i);
-        background3=X(11,i);
-        background4=X(12,i);
-        background5=X(13,i);
-        background6=X(14,i);
-       	background7=X(15,i);
-        background8=X(16,i);
-        background9=X(17,i);
-        background10=X(18,i);
-        background11=X(19,i);
-        background12=X(20,i);
-        background13=X(21,i);
-        background14=X(22,i);
-        background15=X(23,i);
-        background16=X(24,i);
-        
-        background17=X(25,i);
-        background18=X(26,i);
-        background19=X(27,i);
-        background20=X(28,i);
-        background21=X(29,i);
-        background22=X(30,i);
-        background23=X(31,i);
-        background24=X(32,i);
-        background25=X(33,i);
-        background26=X(34,i);
-        background27=X(35,i);
-        background28=X(36,i);
-        background29=X(37,i);
-        background30=X(38,i);
+        background1=X(8,i);
+        background2=X(9,i);
+        background3=X(10,i);
+        background4=X(11,i);
+        background5=X(12,i);
+        background6=X(13,i);
+       	background7=X(14,i);
+        background8=X(15,i);
+        background9=X(16,i);
+        background10=X(17,i);
+        background11=X(18,i);
+        background12=X(19,i);
+        background13=X(20,i);
+        background14=X(21,i);
+        background15=X(22,i);
+       
+     
 
 	%ObsTime=X(36,i);
 
@@ -116,7 +89,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         end
         cmd = [cmd,');'];
         disp(cmd)
-        disp(background1);
+        disp(timeShift);
         eval(cmd);
     
     
