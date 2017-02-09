@@ -43,6 +43,8 @@ double polint(double *xp, double *yp, int order, double xb, double *err){
   double tmp, diff, den, dnum, cnum, yb;
   double *c, *d;
 
+  // printf("POLINT: xb = %lf \n", xb);
+
   c = (double *) malloc((order+1)*sizeof(double));
   d = (double *) malloc((order+1)*sizeof(double));
   diff = fabs(xb-xp[1]);
@@ -63,6 +65,8 @@ double polint(double *xp, double *yp, int order, double xb, double *err){
       if ( (den=cnum-dnum) == 0.0 ){
         /*Two values of xp are equal:no polynomial passes through the points.*/
         printf("error in polint: xp[%d]==xp[%d]\n", i, i+m);
+	printf("xb=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf \n",
+	       xb, 1, xp[1], 2, xp[2], 3, xp[3], 4, xp[4]);
         exit(1);
       }
       tmp = (c[i+1]-d[i])/den;

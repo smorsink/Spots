@@ -86,8 +86,8 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             if (k < 0) k += numbins;
             
 	    for (unsigned int p(0);p<numbands;p++){
-          //if (std::isnan(curve->f[p][k]))
-            //  std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+          if (std::isinf(curve->f[p][k]))
+              std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 	      tempflux[p][i] = curve->f[p][k]; // putting things from curve->f's k bin into tempflux's i bin           
 	    }
         }
@@ -548,12 +548,11 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
       b_R_in[0] = b_R_min;
       psi_in[0] = psimin;
 
-	if ( curve.defl.b_R_max-b_R_min < 1e-5 )
-		num_in = 1;
-	else
-		num_in = 3;
+      //std::cout << "db = " << (curve.defl.b_R_max-b_R_min) << std::endl;
+      if (  (curve.defl.b_R_max-b_R_min) < 1e-5) num_in=1;
+      else num_in=3;
 
-      //	std::cout << "b[" <<0 << "]=" << b_R_in[0] 
+      //std::cout << "b[" <<0 << "]=" << b_R_in[0] 
       //	  << "psi = " << psi_in[0] << std::endl;
       
       for (unsigned int j(1); j< num_in; j++){
@@ -568,7 +567,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
       psi_in[num_in] = curve.defl.psi_max;
 
       //std::cout << "b[" <<num_in << "]=" << b_R_in[num_in] 
-      //<< "psi = " << psi_in[num_in] << std::endl;
+      //	<< "psi = " << psi_in[num_in] << std::endl;
 
     }
     
@@ -607,26 +606,24 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 	    //std::cout << " After: j= " << j << std::endl;
       	   
-           	k = j - 2;  
-	    //k = j-3;    
+            k = j - 2;      
             if ( j == 1 ) k = 0;
             if ( j == 3 * NN ) k = 3 * NN - 3;
-
-		//if ( (curve.defl.psi_b[k+2] == curve.defl.psi_b[k+3]) ||(curve.defl.psi_b[k+3] == curve.defl.psi_b[k+4])  )	
-		//std::cout << "ComputeAngles!!!!" 
-	//<< "psi = " << psi
-	//<< "psi_max " << curve.defl.psi_max
-	//<< " psi["<<k+0<<"]=" << curve.defl.psi_b[k+0]
-	//<< " psi["<<k+1<<"]=" << curve.defl.psi_b[k+1]
-	//<< " psi["<<k+2<<"]=" << curve.defl.psi_b[k+2] 
-	//<< " psi["<<k+3<<"]=" << curve.defl.psi_b[k+3] 
-	//<< " psi["<<k+4<<"]=" << curve.defl.psi_b[k+4] 
-	//<< std::endl;
   
             // 4-pt interpolation to find the correct value of b given psi.
 	   
+	    /* std::cout << "k=" << k << std::endl;
+
+	    std::cout << "psi = " << psi
+		      << "psi[" << k << "]=" << curve.defl.psi_b[k] 
+		      << "psi[" << k+1 << "]=" << curve.defl.psi_b[k+1] 
+		      << "psi[" << k+2 << "]=" << curve.defl.psi_b[k+2] 
+		      << "psi[" << k+3 << "]=" << curve.defl.psi_b[k+3] 
+		      << std::endl;*/
+
+
 	    b_guess =  polint(&curve.defl.psi_b[k], &curve.defl.b_psi[k], 4, psi, &err);
-	    //  std::cout << "b = " << b_guess << " err = " << err << std::endl;
+	    //std::cout << "b = " << b_guess << " err = " << err << std::endl;
 
 	    curve.dcosalpha_dcospsi[i] = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
 	    //std::cout << "dcosa = " << curve.dcosalpha_dcospsi[i] << " err = " << err << std::endl;
@@ -634,27 +631,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    toa_val =  polint(&curve.defl.psi_b[k], &curve.defl.toa_b[k], 4, psi, &err);
 	    //std::cout << "toa = " << toa_val << " err = " << err << std::endl;
 
-	   /* if (std::isnan(b_guess)){
-                    std::cout << "ComputeAngles: b = infinity!!!! psi="<< psi << std::endl;
-	std::cout << "ComputeAngles!!!!" 
-	<< "psi = " << psi
-	<< "psi_max " << curve.defl.psi_max
-	<< " psi["<<k+0<<"]=" << curve.defl.psi_b[k+0]
-	<< " psi["<<k+1<<"]=" << curve.defl.psi_b[k+1]
-	<< " psi["<<k+2<<"]=" << curve.defl.psi_b[k+2] 
-	<< " psi["<<k+3<<"]=" << curve.defl.psi_b[k+3] 
-	//<< " psi["<<k+4<<"]=" << curve.defl.psi_b[k+4] 
-	<< std::endl;
-	std::cout << "ComputeAngles!!!!" 
-	<< "b_guess = " << b_guess
-	<< "b_max = " << curve.defl.b_R_max
-	<< " b["<<k+0<<"]=" << curve.defl.b_psi[k+0]
-	<< " b["<<k+1<<"]=" << curve.defl.b_psi[k+1]
-	<< " b["<<k+2<<"]=" << curve.defl.b_psi[k+2] 
-	<< " b["<<k+3<<"]=" << curve.defl.b_psi[k+3] 
-	//<< " b["<<k+4<<"]=" << curve.defl.b_psi[k+4] 
-	<< std::endl;
-            }*/
+	
+
 	   
         } // ending psi.at(i) < curve.defl.psi_max
 
@@ -717,8 +695,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
             sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
-	    //if (sinalpha > 1.0)
-	      //std::cout << "sinalpha = " << sinalpha << std::endl;
+	    if (sinalpha > 1.0)
+	      std::cout << "sinalpha = " << sinalpha << std::endl;
 
             cosalpha = sqrt(fabs( 1.0 - sinalpha * sinalpha )); 
 	    //   alpha    = asin( sinalpha );
@@ -824,12 +802,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 		    //std::cout << "dOmega < 0 " << std::endl;
 
 	        
-               /* if (std::isnan(curve.dOmega_s[i]))
+                if (std::isinf(curve.dOmega_s[i]))
                     std::cout << "ComputeAngles: dOmega = infinity!!!! i="<< i << std::endl;
-               if (std::isnan(curve.cosbeta[i]))
-                    std::cout << "ComputeAngles: cosbeta = infinity!!!! i="<< i << std::endl;
-               if (std::isnan(curve.dcosalpha_dcospsi[i]))
-                    std::cout << "ComputeAngles: dcosalpha/dcospsi = infinity!!!! i="<< i << std::endl;*/
+                
 
             } // end visible
             

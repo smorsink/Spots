@@ -139,9 +139,9 @@ double OblDeflectionTOA_dpsi_db_ingoing_integrand_wrapper_u ( double u, bool *pr
 double OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u ( double u, bool *prob ) {
   	double integrand( OblDeflectionTOA_object->toa_integrand_minus_b0_u( OblDeflectionTOA_b_over_r, u ) );
   	if ( std::isnan(integrand) ) {
-//    	std::cout << "toa_minus_b0_u integrand is nan!" << std::endl;
-//    	std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
-//    	std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
+    	std::cout << "toa_minus_b0_u integrand is nan!" << std::endl;
+    	std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
+    	std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
     	*prob = true;
     	integrand = -7888.0;
     	return integrand;
@@ -152,9 +152,9 @@ double OblDeflectionTOA_toa_integrand_minus_b0_wrapper_u ( double u, bool *prob 
 double OblDeflectionTOA_toa_ingoing_integrand_minus_b0_wrapper_u ( double u, bool *prob ) {
   	double integrand( OblDeflectionTOA_object->toa_ingoing_integrand_minus_b0_u( OblDeflectionTOA_b_over_r, u ) );
   	if ( std::isnan(integrand) ) {
-//	  std::cout << "toa_minus_b0_u ingoing integrand is nan!" << std::endl;
-//	  std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
-//	  std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
+	  std::cout << "toa_minus_b0_u ingoing integrand is nan!" << std::endl;
+	  std::cout << "r (km) = " << Units::nounits_to_cgs(u, Units::LENGTH)/1.0e5 << std::endl;
+	  std::cerr << "ERROR in OblDeflectionTOA_toa_integrand_minus_b0_wrapper(): returned NaN." << std::endl;
     	*prob = true;
     	integrand = -7888.0;
     	return integrand;
@@ -517,7 +517,6 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): psi_out_max = infinity" << std::endl;
 	  *prob = true;
 	  dummyb = -7888.0;
-	rdot=-1;
 	  return dummyb;
   	}
 
@@ -525,7 +524,6 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  std::cerr << "ERROR in OblDeflectionTOA::b_from_psi: need psi >= 0" << std::endl;
 	  *prob = true;
 	  dummypsi = -7888.0;
-	rdot = -1;
 	  return dummypsi;
   	}
   	else if ( psi == 0.0 ) {
@@ -533,7 +531,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  rdot = 1;
 	  return true;
   	}
-  	else if ( psi == psi_out_max ) {
+  	else if ( fabs(psi-psi_out_max) < 1e-5   ) {
 	  b_R = bmax_out/rspot;
 	  rdot = 1;
 	  return true;
@@ -543,10 +541,9 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  bcand = b_guess;
 
 	  if ( fabs(bcand) <= EPSILON || fabs(bmax_out - bcand) <= EPSILON ) { // this indicates no soln
-	    std::cout << "ERROR in OblDeflectionTOA::b_from_psi(): outgoing returned no solution?" << std::endl;
+	    std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): outgoing returned no solution?" << std::endl;
 	    *prob = true;
 	    b_R = -7888.0;
-	    rdot=-1;
 	    return b_R;
 	  }
 	  else {
@@ -568,7 +565,6 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 
 	    if ( psi > psimin ) {
 	      //std::cout << "b_from_psi: psi > psimin" << std::endl;
-	      rdot=-1;
 	      return false;
 	    }
 	    else if ( psi == psimin ) {
@@ -602,25 +598,36 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	      int j(0),k(0);
  	     
 	      if (psi > psi_in[j] )
-		while ( psi > psi_in[j] && (j>=0 && j<=10) ) {
+		while ( psi > psi_in[j] ) {
 		  j++;      
 		}
 	      else {
-		while ( psi < psi_in[j] && (j>=0 && j<=10)) {
+		while ( psi < psi_in[j] ) {
 		  j--;
 		}
 		j++;
 	      }
 
-	      // std::cout << " After: j= " << j << std::endl;
+	      //std::cout << " After: j= " << j << std::endl;
       	   
             k = j - 2;      
             if ( j < 2 ) k = 0;
-	    if (j>10) k=0;
+	      //k = 0;
             
   
             // 4-pt interpolation to find the correct value of b given psi.
 	    double err(0.0);
+
+	    //std::cout << "k=" << k << std::endl;
+
+	    //std::cout << "psi = " << psi
+	    //	      << " psi[" << k << "]=" << psi_in[k] 
+	    //	      << " psi[" << k+1 << "]=" << psi_in[k+1] 
+	      //<< " psi[" << k+2 << "]=" << psi_in[k+2] 
+	      //      << " psi[" << k+3 << "]=" << psi_in[k+3] 
+	    //	      << std::endl;
+
+
 	    bcand_R =  polint(&psi_in[k], &b_R_in[k], 2, psi, &err);
 	    //std::cout << "b = " << bcand_R << " err = " << err << std::endl;
 
@@ -630,7 +637,7 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
  
 	      if( fabs(bmin/rspot - bcand_R) <= EPSILON || fabs(bmax_out/rspot - bcand_R) <= EPSILON ) { // this indicates no soln
 		std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): ingoing returned no solution?" << std::endl;
-	        rdot=-1;
+		rdot = -1;
 		*prob = true;
 		b_R = -7888.0;
 		return b_R;
@@ -648,8 +655,8 @@ bool OblDeflectionTOA::b_from_psi ( const double& psi, const double& rspot, cons
 	  }
   	}
   	std::cerr << "ERROR in OblDeflectionTOA::b_from_psi(): reached end of function?" << std::endl;
+	rdot = -1;
   	*prob = true;
-	rdot=-1;
   	return false;
 }
 
