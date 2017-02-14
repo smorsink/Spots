@@ -7,7 +7,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
     disp('------ Fitness ------');
     if isPhysical
         % Parameters from vector X.
-        
+        tic;
         radius=X(1,i);
         mass=X(2,i);
         inclination=X(3,i);
@@ -21,21 +21,21 @@ for i=size(X,2):-1:1  % we want to count backwards here
         %temperature=extPar.fixed.spot_temperature;
         
         % Initialize background to zero
-        background1=extPar.fixed.background(1);
-        background2=extPar.fixed.background(2);
-        background3=extPar.fixed.background(3);
-        background4=extPar.fixed.background(4);
-        background5=extPar.fixed.background(5);
-        background6=extPar.fixed.background(6);
-        background7=extPar.fixed.background(7);
-        background8=extPar.fixed.background(8);
-        background9=extPar.fixed.background(9);
-        background10=extPar.fixed.background(10);
-        background11=extPar.fixed.background(11);
-        background12=extPar.fixed.background(12);
-        background13=extPar.fixed.background(13);
-        background14=extPar.fixed.background(14);
-        background15=extPar.fixed.background(15);
+        %background1=extPar.fixed.background(1);
+        %background2=extPar.fixed.background(2);
+        %background3=extPar.fixed.background(3);
+        %background4=extPar.fixed.background(4);
+        %background5=extPar.fixed.background(5);
+        %background6=extPar.fixed.background(6);
+        %background7=extPar.fixed.background(7);
+        %background8=extPar.fixed.background(8);
+        %background9=extPar.fixed.background(9);
+        %background10=extPar.fixed.background(10);
+        %background11=extPar.fixed.background(11);
+        %background12=extPar.fixed.background(12);
+        %background13=extPar.fixed.background(13);
+        %background14=extPar.fixed.background(14);
+        %background15=extPar.fixed.background(15);
       
         
         background1=X(8,i);
@@ -89,9 +89,11 @@ for i=size(X,2):-1:1  % we want to count backwards here
         end
         cmd = [cmd,');'];
         disp(cmd)
-        disp(timeShift);
+        disp(i);
+        %disp(timeShift);
         eval(cmd);
-    
+        disp(Fspot(i));
+        time=toc
     
     else
         Fspot(i)=Inf;

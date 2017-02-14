@@ -72,7 +72,7 @@ for i = 1:15
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+7} = name1;
     par.general.min(i+7) = 0.002;
-    par.general.max(i+7) = 0.008;
+    par.general.max(i+7) = 0.006;
 end
 
 % par.general.XLabels(7) = 'background1';

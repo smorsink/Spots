@@ -14,7 +14,7 @@ spotDir=fileparts(which('init.m'));
 % look in there and you will see about four places where "-ansi" is specified as a flag.
 % Simply remove the "-ansi" and it should compile.
 %
-cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.c'];
+cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.cpp'];
 cd(spotDir);
 disp('------ Init ------');
 disp(cmd);
@@ -38,7 +38,7 @@ extPar.fixed.modelchoice=1;           % 1 (oblate 2014 A&M), 2 (oblate 2007 MLCB
 extPar.fixed.rho=0.17453;                   % angular radius of the emitting hot spot, in radians
 extPar.fixed.spot_temperature=0.35;      % temperature of the hot spot in frame of the NS, in keV
 extPar.fixed.distance=0.3;              % distance from us to the NS, in kpc
-extPar.fixed.numtheta=20;              % number of theta bins.
+extPar.fixed.numtheta=10;              % number of theta bins.
 extPar.fixed.spectral_model=2;		% 2 is for integrated bb and variation, 3 is for atmosphere flux integrated within energy bands
 extPar.fixed.numbands=15;              % 
 extPar.fixed.E_band_lower_1=0.1;      % lower bound of first energy band, in keV

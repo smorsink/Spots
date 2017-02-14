@@ -1,29 +1,38 @@
 clear, close all
 
+tic;
+disp('Compiling!')
+
 %cd /Users/kitung/Desktop/thesis_material/Spot
 cd /home/kitung/Spot
-%mex spotMex_trial.cpp -L/home/kitung/Spot -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.c
+mex spotMex_trial.cpp -L/home/kitung/Spot -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.cpp
 cd /home/kitung/Spot/input/
+
 obsdata = load('sbpoisson3.txt');
 %cd /Users/kitung/Desktop/thesis_material/Spot
 cd /home/kitung/Spot
+
+time=toc
+
+tic;
+disp('Setting Things up!')
 
 %setting up
 auxOutput = cell(1,5);
 %parameters
 
-mass = 1.6;
-radius = 11.8;
+mass = 2.5;
+radius = 15.6672;
 freq = 300;
-inclination = 90;
-emission = 90;
-timeShift = 0;
+inclination = 82.8465;
+emission = 80;
+timeShift = 0.5;
 numbins = 32;
 modelchoice = 1;
-rho = 0.17453;
+rho = 0.4;
 spot_temperature = 0.35;
 distance = 0.3;
-numtheta = 10;
+numtheta = 40;
 spectral_model = 2;
 numbands = 15;
 E_band_lower_1 = 0.1;
@@ -47,6 +56,7 @@ attenuation = 0;
 %background = zeros(1,numbands);
 background = 0.005*ones(1,numbands);
 
+time=toc
 
 cmd = '[Fspot,auxOutput{1}] = spotMex_trial(mass, radius, freq, inclination, emission, timeShift, numbins, modelchoice, rho, spot_temperature, distance, numtheta, spectral_model, numbands, E_band_lower_1, E_band_upper_1, beaming_model, spots_2, obsdata(:,1), bend_file_is, mr, b, psi, dcosa, toa, spotshape, obstime, inst_curve, attenuation';
 for i = 1:numbands
@@ -55,8 +65,9 @@ for i = 1:numbands
 end
 cmd = [cmd,');'];
 disp(cmd)
+tic;
 eval(cmd);
-                   
+time=toc                   
 
 disp(Fspot)
 
