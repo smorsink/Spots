@@ -124,12 +124,12 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 				  }*/
 
 	  }
-	  std::cout << " chi^2[" << j << "] = " << obsdata->chi[j] ;
+	  //std::cout << " chi^2[" << j << "] = " << obsdata->chi[j] ;
 	  chisquare += obsdata->chi[j]; 
 	}   
 
-	std::cout << std::endl;
-	std::cout << "Total Chi^2 = " << chisquare << std::endl;
+	//std::cout << std::endl;
+	//std::cout << "Total Chi^2 = " << chisquare << std::endl;
 
     } // End epoch loop
     
@@ -608,7 +608,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
       	   
             k = j - 2;      
             if ( j == 1 ) k = 0;
-            if ( j == 3 * NN ) k = 3 * NN - 3;
+            if ( j >= 3 * NN -1 ) k = 3 * NN - 4;
   
             // 4-pt interpolation to find the correct value of b given psi.
 	   
@@ -695,8 +695,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
             sinalpha =  b_R * sqrt( 1.0 - 2.0 * mass_over_r );  // PG4, reconfigured
-	    if (sinalpha > 1.0)
-	      std::cout << "sinalpha = " << sinalpha << std::endl;
+	    //if (sinalpha > 1.0)
+	      //std::cout << "sinalpha = " << sinalpha << std::endl;
 
             cosalpha = sqrt(fabs( 1.0 - sinalpha * sinalpha )); 
 	    //   alpha    = asin( sinalpha );
@@ -780,6 +780,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            	std::cout << "speed = " << speed << " at i = " << i << std::endl;
 
 	            if ( ingoing ) {
+		      //std::cout << "Chi: b/r = " << b_R <<std::endl;
+		      //std::cout << "radius = " << radius << std::endl;
 		      b = b_R * radius;
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
 	            }
