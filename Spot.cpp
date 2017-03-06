@@ -193,8 +193,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                // 0 = BB, no beaming
 	                // 1 = BB + graybody
 	                // 2 = Fake Spectral Line
-	                // 3 = Hydrogen
-	                // 4 = Helium
+	                // 3 = NSATMOS Hydrogen
+	                // 4 = NSX Helium
+	                // 5 = NSX Hydrogen
 			// 7 = Hopf Function
 	                break;
 	                
@@ -565,6 +566,22 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       std::cout << " Starting L1 = " << L1 << std::endl;
 
     }
+
+    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
+        Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using hydrogen atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 4){ // Hydrogen Atmosphere
+        Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using helium atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
+        Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using helium atmosphere" << endl;
+    }
+
 
    // Force energy band settings into NICER specified bands
 
@@ -1355,7 +1372,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	out << curve.t[i]<< "\t" ;
 			for ( unsigned int p(0); p < numbands; p++ ) { 
             	out << curve.f[p][i] << "\t" ;
-            	out << 1e-6 << "\t" ; // Fake errors.  
+            	//out << 1e-6 << "\t" ; // Fake errors.  
         	}
 			//out << i;
         	out << std::endl;

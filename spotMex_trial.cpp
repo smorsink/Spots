@@ -350,6 +350,22 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     obsdata.shift = ts;
     obsdata.numbins = databins;
 
+    if (curve.flags.beaming_model == 3){ // NSATMOS Hydrogen Atmosphere
+        Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using hydrogen atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 4){ // NSX Helium Atmosphere
+        Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // 
+        //cout << "Using helium atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
+        Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // 
+        //cout << "Using helium atmosphere" << endl;
+    }
+
+
 
     // Force energy band settings into NICER specified bands
 

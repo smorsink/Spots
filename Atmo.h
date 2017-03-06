@@ -60,6 +60,15 @@ double Helium(double E, double cos_theta);
 // Helium
 double Helium2(int E_dex, double cos_theta);
 
+// Reading NSX Hydrogen table
+void Read_NSXH(double T, double M, double R);
+
+// NSX Hydrogen
+double NSXH(double E, double cos_theta);
+
+// NSX Hydrogen
+double NSXH2(int E_dex, double cos_theta);
+
 // flux from a blackbody (bolometric, p = 0)
 double BlackBody( double T, double E );
 
