@@ -15,6 +15,9 @@
 function par=FerretSetup(par)
 %
 % -----------------------------------
+        % This version will have the 7 spot parameters fixed at their theoretical
+        % values and only allow the backgrounds to vary. 
+
 % This version is for setting up comparisons with Slavko's synthetic data
 % Observed time and distance are known.
 %
@@ -32,19 +35,20 @@ par.user.XMod=''; % [string]: Name of optional user-defined XMod function.
 %data_dir_name=strcat('FerretData/',date); % the desired name of the history directory
 %disp(data_dir_name); % displaying the history directory name to double check that it says what I want it to
 % need to change data_dir_name in outputFerret too
-par.history.NGenPerHistoryFile=25; % [integer >= 1]: How many generations per History file?
+par.history.NGenPerHistoryFile=10; % [integer >= 1]: How many generations per History file?
 par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction [0 - 1].  See also par.analysis.keepFrac.
 %
 % ====================================
 % General
 % multiple smaller populations is better than one very large population
-par.general.NPop=1; % p [integer >= 1]: Number of populations for one generation.
+par.general.NPop=2; % p [integer >= 1]: Number of populations for one generation.
+par.general.NAggressive=1; % Number of populations that aggressively look for the minimum.
 %par.general.NPop=2;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
-par.general.popSize=200;
+par.general.popSize=100;
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-par.general.NGen=100;
+par.general.NGen=250;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -57,22 +61,20 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 % -p rho = angular spot radius in degrees
 %
 
-% Fixed spot size
-%par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift'};
-%par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00];
-%par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00];
 
-% Fixed spot size with new background
+
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature'};
-par.general.min=[        6.0,           1.0,                 80.0,                 80.0,               0.00,       0.02,   0.3];
-par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,       0.40,   0.4];
+par.general.min=[       8.0,           1.0,                 70.0,               70.0,               0.00,       0.16,   0.3];
+par.general.max=[       16.0,          2.5,                 110.0,             100.0,               1.00,       0.20,   0.4];
+
+par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
 
 % For Slavko's data require 15 energy bands
 for i = 1:15
-    name1 = strcat('background',num2str(i));
+    name1 = strcat('background',num2str(i+7));
     par.general.XLabels{i+7} = name1;
-    par.general.min(i+7) = 0.002;
-    par.general.max(i+7) = 0.006;
+    par.general.min(i+7) = 0.0045;
+    par.general.max(i+7) = 0.0055;
 end
 
 % par.general.XLabels(7) = 'background1';
@@ -109,7 +111,7 @@ end
 %par.general.min=[        6.0,           1.0,                 0.01,                 0.01,               0.00,       1     ];
 %par.general.max=[       16.0,           2.5,                 90.0,                 90.0,               1.00,       3];
 %
-par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
+%par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
 %
 % ====================================
 % Strategy Parameters
@@ -128,7 +130,8 @@ par.strategy.adapt.niching.acceleration=true; % [logical]
 par.parallel.NWorkers=0; % [integer >= 0]: Number of worker nodes to launch initially.
 par.parallel.nodeDistributionFactor=2; % [integer >= 1]: average number of chunks each node evaluates.
 par.parallel.minChunkSize=10; % [integer]: Minimum number of evaluations in each work chunk.
-par.parallel.timeout=60; % [integer >= 0]: Maximum time in seconds before an unresponsive node disconnects.
+% I had to change the timeout time to a larger value!
+par.parallel.timeout=360; % [integer >= 0]: Maximum time in seconds before an unresponsive node disconnects.
 par.parallel.latency=0; % [real > 0]: Time to pause in seconds after writing to the scratch directory.
 par.parallel.useJava=true; % [logical]: Is Java required for worker nodes?
 par.parallel.writeLogFiles=true; % [logical]: Are log files required?
@@ -138,7 +141,7 @@ par.parallel.writeLogFiles=true; % [logical]: Are log files required?
 par.selection.PTournament=1; % [0 - 1]: Probability that each individual will compete.
 par.selection.pressure=0.8; % [0 - 1]: Selection pressure on overall fitness.
 par.selection.BBPressure=1; % [0 - 1]: Selection pressure on BBs.
-par.selection.FAbsTol=100; % <-- ***JDF: Much better to use FAbsTol for mapping.  Set to the appropriate value for desired confidence interval.
+par.selection.FAbsTol=50; % <-- ***JDF: Much better to use FAbsTol for mapping.  Set to the appropriate value for desired confidence interval.
 par.selection.FRelTol=0; % [0 - 1]: Fraction of fitness range to use as a fuzzy fitness band.
 par.selection.FRankTol=0; % [0 - 1]: Fraction of rank range to use as a fuzzy fitness band.
 % par.selection.exploitFrac=0.10; % [0 - 1]: Population fraction devoted to exploiting the optimal region rather than exploring.

@@ -189,7 +189,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	int spots_2 = mxGetScalar(theInput[17]); // int
 	if (spots_2 == 1){
 		two_spots = false;
-        std::cout << "one spot" << std::endl;
+        //std::cout << "one spot" << std::endl;
 	}
     if (spots_2 == 2){ 
 		two_spots = true;
@@ -381,7 +381,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
         
-      std::cout << " Oblate Neutron Star" << std::endl;
+      //std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
@@ -477,23 +477,13 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       deltatheta = curve.para.dtheta[k];
 
       double thetak = curve.para.theta_k[k];
-      // std::cout << "k = " << k 
-      //        << "theta = " << thetak
-      //        << std::endl;
-
+      
       double phi_edge = curve.para.phi_k[k];
 
       dphi = 2.0*Units::PI/(numbins*1.0);
 
       mu_1 = cos(thetak);
-      if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
-
-      //if ( mu_1 < 0.0){
-        //std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
-              //mu_1 = fabs(mu_1);
-              //thetak = Units::PI - thetak;
-              //curve.para.incl = Units::PI - incl_1;
-      //}
+      if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0; 
 
       if (NS_model != 3)
         rspot = model->R_at_costheta(mu_1);
@@ -518,6 +508,13 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
       phishift = 2.0*phi_edge - numphi*dphi;
 
       curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+      
+      if (numphi==0){
+          numphi = 1;
+          phishift = 0.0;
+          curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
+      }
+      
       if (spotshape!=2)
         curve.para.dS *= curve.para.gamma_k[k];
 
@@ -815,7 +812,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
             //std::cout << Flux[p][i] << std::endl;
-            Flux[p][i] *= obstime;  
+            Flux[p][i] *= obstime/databins;  
         }
     }
 
@@ -867,7 +864,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /***************************************************/
     /* Data file should already be available           */
     /***************************************************/
-	std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
+	//std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
 
     chisquared = ChiSquare ( &obsdata, &curve );
     
@@ -925,74 +922,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     //curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
 	
-
-    /*********************************/
-    /* Writing lightcurve output     */
-    /*********************************/
-
-/*        
-    out.open("output_spotMex.txt");
-
-    out << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
-	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
-	      << " km, f = " << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) 
-	      << " Hz, i = " << incl_1 * 180.0 / Units::PI 
-	      << ", e = " << theta_1 * 180.0 / Units::PI 
-                << ", ts = " << ts
-                << ", ObsTime = " << ObsTime 
-	      << ", X^2 = " << chisquared 
-	      << std::endl;    
- 
-    if (curve.flags.spectral_model==2){
-        double E_diff;
-        E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-        for (unsigned int k(0); k < numbands; k++){
-            out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";          
-        }
-        out << "%" << std::endl;
-        for ( unsigned int i(0); i < numbins; i++ ) {
-            out << curve.t[i]<< "\t" ;
-            for ( unsigned int p(0); p < numbands; p++ ) { 
-                out << curve.f[p][i] << "\t" ;
-                //out << 1e-3 << "\t" ; // Fake errors. 
-            }
-            out << i;
-            out << std::endl;
-        }
-    }
-
-
-    if (curve.flags.spectral_model==3){
-        double E_diff;
-        E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-        for (unsigned int k(0); k < numbands; k++){
-            out << "% Column " << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";         
-        }
-        out << "%" << std::endl;
-        for ( unsigned int i(0); i < numbins; i++ ) {
-            out << curve.t[i]<< "\t" ;
-            for ( unsigned int p(0); p < numbands; p++ ) { 
-                out << curve.f[p][i] << "\t" ;
-                //out << 1e-6 << "\t" ; // Fake errors.  
-            }
-            //out << i;
-            out << std::endl;
-        }
-    }
-
-
-
-      //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
-      //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
-
-    
-  
-
-
-    out.close();
-
-*/
-     free_dmatrix(curve.defl.psi,0,1001,0,301);
+        free_dmatrix(curve.defl.psi,0,1001,0,301);
         free_dmatrix(curve.defl.b,0,1001,0,301);
         free_dmatrix(curve.defl.dcosa,0,1001,0,301);
         free_dmatrix(curve.defl.toa,0,1001,0,301);

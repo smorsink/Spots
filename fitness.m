@@ -8,17 +8,26 @@ for i=size(X,2):-1:1  % we want to count backwards here
     if isPhysical
         % Parameters from vector X.
         tic;
+        
+        % Fixed Parameters
+       
+        ObsTime=extPar.fixed.obstime;
+        %mass=extPar.fixed.mass;
+        %radius=extPar.fixed.radius;
+        %inclination=extPar.fixed.inclination;
+        %emission=extPar.fixed.emission;
+        %timeShift=extPar.fixed.phaseshift;
+        %rho=extPar.fixed.rho;
+        %temperature=extPar.fixed.spot_temperature;
+        
         radius=X(1,i);
         mass=X(2,i);
         inclination=X(3,i);
         emission=X(4,i);
-        timeShift=X(5,i);
-        %        ObsTime=X(6,i);
-        ObsTime=extPar.fixed.obstime;
+        timeShift=X(5,i);        
         rho=X(6,i);
-        %rho = extPar.fixed.rho;
         temperature=X(7,i);
-        %temperature=extPar.fixed.spot_temperature;
+       
         
         % Initialize background to zero
         %background1=extPar.fixed.background(1);
@@ -56,32 +65,6 @@ for i=size(X,2):-1:1  % we want to count backwards here
        
      
 
-	%ObsTime=X(36,i);
-
-        %radius=extPar.fixed.radius;
-        %mass=extPar.fixed.mass;
-        %inclination=extPar.fixed.inclination;
-        %emission=extPar.fixed.emission;
-        %timeShift=extPar.fixed.phaseshift;
-        
-        %{
-        background1=extPar.fixed.background(1);
-        background2=extPar.fixed.background(2);
-        background3=extPar.fixed.background(3);
-        background4=extPar.fixed.background(4);
-        background5=extPar.fixed.background(5);
-        %}
-        
-% Call Mex function in order of fixed quantities
-        %{
-        cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.obsdata2.numbins, extPar.modelchoice, rho, extPar.fixed.spot_temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.spots_2, extPar.obsdata2.t';
-        for j = 1:extPar.fixed.numbands
-            cmd = [cmd,', extPar.obsdata2.f(',num2str(j),',:), extPar.obsdata2.err(',num2str(j),',:)'];
-        end
-        cmd = [cmd,');'];
-        disp(cmd);
-        eval(cmd);
-        %}
         
         cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, rho, temperature, extPar.fixed.distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime, extPar.fixed.inst_curve, extPar.fixed.attenuation';
         for j = 1:extPar.fixed.numbands
@@ -110,13 +93,15 @@ function isPhysical=applyConstraints(X, extPar)
 parameterNames=extPar.QubistPar.general.XLabels;
 m=X(strcmpi(parameterNames,'mass (M_{sun})'));  % the label here needs to match the one in FerretSetup
 r=X(strcmpi(parameterNames,'radius (km)'));     % the label here needs to match the one in FerretSetup
-t=X(strcmpi(parameterNames,'temperature'));
+%t=X(strcmpi(parameterNames,'temperature'));
+%m=1.6;
+%r=11.8;
 %mr_ratio=extPar.fixed.mass/extPar.fixed.radius;
 %mr_ratio=m/r;
 mr_ratio=1.477*m/r;
-tsquare=t*t;
+%tsquare=t*t;
 %tsquare constraint comes from ML2015
-thing=12.0/(5.0*(1.0-2.0*mr_ratio));
+%thing=12.0/(5.0*(1.0-2.0*mr_ratio));
 %isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.203;
 %isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284 && tsquare<thing+0.1 && tsquare > thing-0.1;
 isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284;

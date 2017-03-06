@@ -8,7 +8,7 @@ cd /home/kitung/Spot
 mex spotMex_trial.cpp -L/home/kitung/Spot -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.cpp
 cd /home/kitung/Spot/input/
 
-obsdata = load('sbpoisson3.txt');
+obsdata = load('smmpoisson1.txt');
 %cd /Users/kitung/Desktop/thesis_material/Spot
 cd /home/kitung/Spot
 
@@ -21,18 +21,18 @@ disp('Setting Things up!')
 auxOutput = cell(1,5);
 %parameters
 
-mass = 2.5;
-radius = 15.6672;
+mass = 1.6;
+radius = 11.8;
 freq = 300;
-inclination = 82.8465;
-emission = 80;
-timeShift = 0.5;
+inclination = 90;
+emission = 90;
+timeShift = 0;
 numbins = 32;
 modelchoice = 1;
-rho = 0.4;
+rho = 0.17453;
 spot_temperature = 0.35;
 distance = 0.3;
-numtheta = 40;
+numtheta = 18;
 spectral_model = 2;
 numbands = 15;
 E_band_lower_1 = 0.1;
@@ -48,7 +48,7 @@ psi = bendfile(:,3);
 dcosa = bendfile(:,4);
 toa = bendfile(:,5);
 spotshape = 0;
-obstime = 0.2;
+obstime = 6.4;
 inst_curve = 0;
 attenuation = 0;
 
