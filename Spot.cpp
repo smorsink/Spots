@@ -202,8 +202,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%lf", &incl_1);
 	                incl_is_set = true;
 	                break;
-
-	    // Offset inclination angle set as case L
 	            
 	    case 'I': // Name of input file
 	            	sscanf(argv[i+1], "%s", data_file);
@@ -406,6 +404,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       // ReadBend allocates memory for the look up tables
       // Reads in tables for b, psi, d(cosalpha)/d(cospsi), toa
       // All depend on M/R
+      // Memory must be freed at the end of the program!!!!
 
       curve = ReadBend(&curve,bend_file); 
       //std::cout << "Spot: test psi = " << curve.defl.psi[10][10] << std::endl;
@@ -508,7 +507,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
 	
-    //std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
+    std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
+    std::cout << "v/c = " << omega*req << std::endl;
 
     /**********************************/
     /* PASS VALUES INTO THE STRUCTURE */
@@ -761,7 +761,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       double deltatheta(0.0);
 
     // Looping through the mesh of the spot
-      	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+      for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+	//		for (unsigned int k(16); k < 18; k++) { // Loop through the circles
 	 
 	  deltatheta = curve.para.dtheta[k];
 
@@ -805,8 +806,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
-
 	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+
+	  if (numphi==0){
+	    std::cout << "numphi=0!" << std::endl;
+	    numphi = 1;
+	    phishift = 0.0;
+	    curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
+	  }
+
 	  if (spotshape!=2)
 	    curve.para.dS *= curve.para.gamma_k[k];
 
@@ -824,8 +832,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
 	  }
        
-      //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
-       
+	  //std::cout << " numphi=" << numphi << " " 
+	  //	    << " phi_edge=" << phi_edge << " " 
+	  //	    << " dphi=" << dphi << " " 
+	  //	    << " phishift=" << phishift << " " << curve.para.dS << std::endl;
+     
 	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
 	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
@@ -1121,7 +1132,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){
           
-            Flux[p][i] *= obstime;  
+	  Flux[p][i] *= obstime/(databins);  
 	    //if(p==0)
 	    //std::cout <<"Mult by time: i=" <<i << " flux=" << Flux[p][i] << std::endl;
 
@@ -1196,27 +1207,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     std::cout << "Chi^2[0] = " << obsdata.chi[0] << std::endl;
 
-    /*******************************/
-    /* CALCULATING PULSE FRACTIONS */
-    /*******************************/
-    
-    double avgPulseFraction(0.0); // average of pulse fractions across all energy bands
-    double sumMaxFlux(0.0), sumMinFlux(0.0);
-    double overallPulseFraction(0.0);
-    for ( unsigned int j(0); j < numbands; j++ ) {
-      sumMaxFlux += curve.maxFlux[j];
-      sumMinFlux += curve.minFlux[j];
-      avgPulseFraction += curve.pulseFraction[j];
-    }
-    overallPulseFraction = (sumMaxFlux - sumMinFlux) / (sumMaxFlux + sumMinFlux);
-    avgPulseFraction /= (NCURVES);
-	
-    double U(0.0), Q(0.0), A(0.0);   // as defined in PG19 and PG20
-    U = (1 - 2 * mass / rspot) * sin(incl_1) * sin(theta_1); // PG20
-    Q = 2 * mass / rspot + (1 - 2 * mass / rspot) * cos(incl_1) * cos(theta_1); // PG20
-    A = U / Q; // PG19
-    B = rspot * sin(incl_1) * sin(theta_1) * omega / ( sqrt( 1 - ((2*mass) / rspot) ) ); // param_degen/equations.pdf 2    
-
+ 
     /********************************************/
     /* WRITING THE SIMULATION TO AN OUTPUT FILE */
     /********************************************/ 
@@ -1230,7 +1221,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //numbins = obsdata.numbins;
 
     if ( rho == 0.0 ) rho = Units::PI/180.0;
-
+    /*
     out << "% Photon Flux for hotspot on a NS. \n"
         << "% R_sp = " << Units::nounits_to_cgs(rspot, Units::LENGTH )*1.0e-5 << " km; "
         << "% R_eq = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 << " km; "
@@ -1255,7 +1246,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //<< "# %(Amp-Bolo) = " << (A - curve.pulseFraction[0])/A * 100.0 << " \n"
       //<< "# %(Bolo-low) = " << (curve.pulseFraction[0]-curve.pulseFraction[2])/curve.pulseFraction[0] * 100.0 << " \n"
         << std::endl;
-        
+    */
+    /* 
     if (datafile_is_set)
     	out << "% Data file " << data_file << ", chisquared = " << chisquared << std::endl;
 
@@ -1275,14 +1267,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	out << "% Flux normalized to 1 " << std::endl;
     else
     	out << "% Flux not normalized " << std::endl;
-    
+    */
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
   
-    out << "%\n"
-    	<< "% Column 1: phase bins (0 to 1)\n";
-
+    //out << "%\n"
+    //	<< "% Column 1: phase bins (0 to 1)\n";
     if (curve.flags.spectral_model==0){
       out << "% Column 2: Monochromatic Number flux (photons/(cm^2 s keV) measured at energy (at infinity) of " << curve.para.E0 << " keV\n";
       out << "%"
@@ -1298,9 +1289,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
     if (curve.flags.spectral_model==1){
-      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
-      out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
-      out << "% " << std::endl;
+      //      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
+      //out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
+      //out << "% " << std::endl;
 
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) { 
@@ -1317,23 +1308,38 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     if (curve.flags.spectral_model==2){
       double E_diff;
+      double counts(0.0);
       E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
       //std::cout << "numbins = " << numbins << ", numbands = " << numbands << std::endl;
-      for (unsigned int k(0); k < numbands; k++){
-	out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " 
-	    << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-      }
-      out << "%" << std::endl;
+      //  for (unsigned int k(0); k < numbands; k++){
+      //out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " 
+      //    << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+      //}
+      //  out << "%" << std::endl;
       for ( unsigned int i(0); i < numbins; i++ ) {
-	//	std::cout << "i = " << i << " time[i] = " << curve.t[i] << std::endl;
 	out << curve.t[i]<< "\t" ;
 	for ( unsigned int p(0); p < numbands; p++ ) { 
 	  out << curve.f[p][i] << "\t" ;
-	  //out << sqrt(curve.f[p][i]) << "\t" ; // semi-Fake errors. 
+	  //counts += curve.f[p][i];
 	}
 	out << i;
 	out << std::endl;
       }
+      //std::cout << "Total Counts = " << counts << std::endl;
+
+
+      // for ( unsigned int p(0); p < numbands; p++ ) { 
+      //	for ( unsigned int i(0); i < numbins; i++ ) {
+      //  out << curve.t[i]<< "\t" ;
+      //  out << E_band_lower_1 + (p+0.5)*E_diff << "\t";
+      //  out << curve.f[p][i] << "\t" << std::endl;
+	  //out << i;
+	  //out << std::endl;
+      //}
+      //}
+    
+
+
     }
 
 
@@ -1356,41 +1362,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	}
     }
 
-
-
-      //<< "# Column 4: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_1 << " keV to " << E_band_upper_1 << " keV \n"
-      //<< "# Column 5: Number flux (photons/(cm^2 s)) in the energy band " << E_band_lower_2 << " keV to " << E_band_upper_2 << " keV \n"
-
-    
+  
   
 
 
     out.close();
 
-    /*    std::cout << "Flux[0] = " << curve.f[0][0] << std::endl;
-   
-    //std::ofstream allflux;      // output stream; printing information to the output file    
-    allflux.open("allflux",std::fstream::app);
-    // allflux<< "testing 2" << std::endl;
-
  
-    if ( NS_model == 1)
-    	allflux << "% Oblate NS model " << std::endl;
-    else if (NS_model == 3)
-    	allflux << "% Spherical NS model " << std::endl;
-	     
-    allflux << "#spin \t Flux(1keV) \t Area (km^2) " << std::endl;
-    allflux << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) 
-	    << " \t "
-	    << curve.f[0][0]
-	    << " \t "
-	    << SurfaceArea * pow(Units::nounits_to_cgs(1.0, Units::LENGTH )*1.0e-5,2)
-	    << std::endl;
+    // Free previously allocated memory
 
-	    allflux.close();*/
+    free_dvector(curve.defl.psi_b,0,3*NN+1);   
+    free_dvector(curve.defl.b_psi,0,3*NN+1);
+    free_dvector(curve.defl.dcosa_dcosp_b,0,3*NN+1);
+    free_dvector(curve.defl.toa_b,0,3*NN+1);
 
-    
-    //delete defltoa;
+
     delete model;
     return 0;
 } 

@@ -550,12 +550,12 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
       //std::cout << "db = " << (curve.defl.b_R_max-b_R_min) << std::endl;
       if (  (curve.defl.b_R_max-b_R_min) < 1e-5) num_in=1;
-      else num_in=3;
+      else num_in=1;
 
       //std::cout << "b[" <<0 << "]=" << b_R_in[0] 
-      //	  << "psi = " << psi_in[0] << std::endl;
+      //	<< "psi = " << psi_in[0] << std::endl;
       
-      for (unsigned int j(1); j< num_in; j++){
+      for (unsigned int j(1); j<= num_in; j++){
 	b_R_in[j] = b_R_min + (curve.defl.b_R_max-b_R_min)/(1.0*num_in) * j;
 	psi_in[j] = defltoa->psi_ingoing(b_R_in[j],curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
 	//std::cout << "b[" <<j << "]=" << b_R_in[j] 
@@ -563,8 +563,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
       }
 
-      b_R_in[num_in] = curve.defl.b_R_max;
-      psi_in[num_in] = curve.defl.psi_max;
+      //b_R_in[num_in] = curve.defl.b_R_max;
+      //psi_in[num_in] = curve.defl.psi_max;
 
       //std::cout << "b[" <<num_in << "]=" << b_R_in[num_in] 
       //	<< "psi = " << psi_in[num_in] << std::endl;

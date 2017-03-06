@@ -20,8 +20,8 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 256  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 256   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define MAX_NUMBINS 1024  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MIN_NUMBINS 512   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
 #define NCURVES 50        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define MR 1000             // Maximum number of m/r values
 
@@ -123,11 +123,11 @@ class LightCurve {                     // Stores all the data about the light cu
 	bool eclipse;                          // True if an eclipse occurs
 	bool ingoing;                          // True if one or more photons are ingoing
 	bool problem;                          // True if a problem occurs
-	double maxFlux[NCURVES];               // true (continuous) maximum flux values for each light curve
-	double minFlux[NCURVES];               // true (continuous) minimum flux values for each light curve
-	double pulseFraction[NCURVES];         // Pulse fraction of the light curve
-	double norm[NCURVES];                  // The average flux value of a light curve, used to normalize a light curve to 1
-	double asym[NCURVES];                  // Asymmetry between the rise and fall times for the light curve. =0 is rise=fall
+	//	double maxFlux[NCURVES];               // true (continuous) maximum flux values for each light curve
+	//double minFlux[NCURVES];               // true (continuous) minimum flux values for each light curve
+	//double pulseFraction[NCURVES];         // Pulse fraction of the light curve
+	//double norm[NCURVES];                  // The average flux value of a light curve, used to normalize a light curve to 1
+	//double asym[NCURVES];                  // Asymmetry between the rise and fall times for the light curve. =0 is rise=fall
 	unsigned int count;                    // for outputting command line args in Chisquare, chi.cpp
 };
 

@@ -474,12 +474,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  /* COMPUTING THE PULSE FRACTION FOR THE LIGHT CURVE */
 	  /****************************************************/
    			
-	  curve.minFlux[p] = minimum;
-	  curve.maxFlux[p] = maximum;
-	  curve.pulseFraction[p] = (curve.maxFlux[p] - curve.minFlux[p]) / (curve.maxFlux[p] + curve.minFlux[p]);
+	  //curve.minFlux[p] = minimum;
+	  //curve.maxFlux[p] = maximum;
+	  //curve.pulseFraction[p] = (curve.maxFlux[p] - curve.minFlux[p]) / (curve.maxFlux[p] + curve.minFlux[p]);
 
-	  curve.asym[p] = (tmin - tx) - 0.5;
-	  if (curve.asym[p] < 0.0) curve.asym[p]+=1.0;
+	  //curve.asym[p] = (tmin - tx) - 0.5;
+	  //if (curve.asym[p] < 0.0) curve.asym[p]+=1.0;
 
 
 	  // Initializing totflux
@@ -1510,7 +1510,8 @@ double EnergyBandFlux( double T, double E1, double E2 ) {
 	double b = E2 / T;          // upper bound of integration
 	double current_x(0.0);      // current value of x, at which we are evaluating the integrand; x = E / T; unitless
 	unsigned int current_n(0);  // current step
-	unsigned int n_steps(900); // total number of steps
+	//unsigned int n_steps(900); // total number of steps
+	unsigned int n_steps(800);
 	// This number of steps (100) is optimized for Delta(E) = 0.3 keV
 	double h = (b - a) / n_steps;     // step amount for numerical integration; the size of each step
 	double integral_constants = 2.0 * pow(T*Units::EV,3) / pow(Units::C,2) / pow(Units::H_PLANCK,3); // what comes before the integral when calculating flux using Bradt eqn 6.6 (in units of photons/cm^2/s)
