@@ -213,7 +213,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  curve.f[p][i] = 0.0;
 	}
       }
-
+    //cout << "phase " << i << " done." << endl;
     } // ending the for(i) loop
     
 
@@ -732,7 +732,7 @@ int Round(int n, double z, std::vector<double> v){
 }
 
 // Set up hydrogen/helium arrays and dummy variables
-std::vector<double> Es,F,FF,FFF,FFFF,I,II,III,IIII;
+std::vector<double> mu_2, Es,F,FF,FFF,FFFF,I,II,III,IIII;
 double X, Y, X1, Y1, X2, Y2;
 
 // Read the four hydrogen intensity files to peform the four point interpolation
@@ -765,7 +765,8 @@ void Read_NSATMOS(double T, double M, double R){
 
         //discarding mu choices
         for (int i = 1; i <= size_mu; i++){
-            H_atmo_para >> dump;
+            H_atmo_para >> temp;
+            mu_2.push_back(temp);
         }
     H_atmo_para.close();
     }
@@ -875,6 +876,7 @@ double Hydrogen(double E, double cos_theta){
     ifstream H_atmo_para;
     H_atmo_para.open("nsatmos-info.txt");
 
+/*
     if(H_atmo_para.is_open()){
         //discard logt and lgrav values
         for (int i = 1; i <= size_logt+size_lsgrav; i++){
@@ -888,6 +890,8 @@ double Hydrogen(double E, double cos_theta){
         }
     H_atmo_para.close();
     }
+*/
+    mu = mu_2;
     
     //Find proper mu choice
     for (int m = 0; m < size_mu; ++m) {
@@ -966,10 +970,10 @@ double Hydrogen(double E, double cos_theta){
 
 double Hydrogen2(int E_dex, double cos_theta){
     double P, size_logt(10), size_lsgrav(11), size_mu(12), temp, dump;
-    double Q[4],R[2],mu[12];
+    double Q[4],R[2];
     int i_mu(0), down, mid, up;
     char atmodir[1024], cwd[1024];
-    std::vector<double> I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
+    std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
     // Read in helium atmosphere parameter choices
     getcwd(cwd, sizeof(cwd));
@@ -978,6 +982,7 @@ double Hydrogen2(int E_dex, double cos_theta){
     ifstream H_atmo_para;
     H_atmo_para.open("nsatmos-info.txt");
 
+/*
     if(H_atmo_para.is_open()){
         //discard logt and lsgrav choices
         for (int i = 1; i <= size_logt+size_lsgrav; i++){
@@ -991,6 +996,8 @@ double Hydrogen2(int E_dex, double cos_theta){
         }
     H_atmo_para.close();
     }
+*/
+    mu = mu_2;
 
     //finding mu value 
     for (int m = 0; m < size_mu; ++m) {
@@ -1099,7 +1106,8 @@ void Read_NSX(double T, double M, double R){
 
         //discarding mu choices
         for (int i = 1; i <= size_mu; i++){
-            He_atmo_para >> dump;
+            He_atmo_para >> temp;
+            mu_2.push_back(temp);
         }
     He_atmo_para.close();
     }
@@ -1211,10 +1219,10 @@ void Read_NSX(double T, double M, double R){
 // Calculate the final interpolated intensity
 double Helium(double E, double cos_theta){
     double freq, P, size_logt(13), size_lsgrav(8), size_mu(23), temp, dump;
-    double I_int[8],Q[4],R[2],mu[23];
+    double I_int[8],Q[4],R[2];
     int i_mu(0), down, mid, up;
     char atmodir[1024], cwd[1024];
-    std::vector<double> F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
+    std::vector<double> mu, F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
 
     // Convert energy to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
@@ -1226,6 +1234,7 @@ double Helium(double E, double cos_theta){
     ifstream He_atmo_para;
     He_atmo_para.open("nsx-info.txt");
 
+/*
     if(He_atmo_para.is_open()){
         //discard logt and lsgrav choices
         for (int i = 1; i <= size_logt+size_lsgrav; i++){
@@ -1239,7 +1248,8 @@ double Helium(double E, double cos_theta){
         }
     He_atmo_para.close();
     }
-
+*/
+    mu = mu_2;
     //finding mu value 
     for (int m = 0; m < size_mu; ++m) {
         if (cos_theta <= mu[m]) {
@@ -1319,10 +1329,10 @@ double Helium(double E, double cos_theta){
 // Interpolates to angle, local gravity, and temperature
 double Helium2(int E_dex, double cos_theta){
     double P, size_logt(13), size_lsgrav(8), size_mu(23), temp, dump;
-    double Q[4],R[2],mu[23];
+    double Q[4],R[2];
     int i_mu(0), down, mid, up;
     char atmodir[1024], cwd[1024];
-    std::vector<double> I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
+    std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
     // Read in helium atmosphere parameter choices
     getcwd(cwd, sizeof(cwd));
@@ -1331,6 +1341,7 @@ double Helium2(int E_dex, double cos_theta){
     ifstream He_atmo_para;
     He_atmo_para.open("nsx-info.txt");
 
+/*
     if(He_atmo_para.is_open()){
         //discard logt and lsgrav choices
         for (int i = 1; i <= size_logt+size_lsgrav; i++){
@@ -1344,6 +1355,8 @@ double Helium2(int E_dex, double cos_theta){
         }
     He_atmo_para.close();
     }
+*/
+    mu = mu_2;
 
     //finding mu value 
     for (int m = 0; m < size_mu; ++m) {
@@ -1426,8 +1439,8 @@ void Read_NSXH(double T, double M, double R){
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
     lgrav = log10(delta * Units::G * M / (R * R));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
-    cout << "temperature in log(K) is " << lt << endl;
-    cout << "gravity in log(cgs units) is " << lgrav << endl;
+    //cout << "temperature in log(K) is " << lt << endl;
+    //cout << "gravity in log(cgs units) is " << lgrav << endl;
 
     //Load hydrogen atmosphere files
     ifstream H_table1;
@@ -1454,22 +1467,36 @@ void Read_NSXH(double T, double M, double R){
         cout << "NSXH file is not found  " << s1 << endl;
     }
     H_table1.close();
-    //cout << F[0] << " " << Es[0] << " " << I[0] << endl;
-    cout << "finished reading NSXH" << endl;
 
+    ifstream H_table2;
+    H_table2.open("nsx_spint0_605g1425_nrp11.out");
+    
+    if(H_table2.is_open()){
+        for (int i = 1; i <= 256; i++) {
+            H_table2 >> dump;
+            H_table2 >> temp;
+            mu_2.push_back(temp);
+            H_table2 >> dump;
+        }
+    }else{
+        cout << "NSXH file is not found (while in second reading stage) " << endl;
+    }
+    H_table2.close();
+    chdir(cwd);
 }
 
 // Calculate the final interpolated intensity
 double NSXH(double E, double cos_theta){
-    double freq, P, temp, dump, mu_spacing, theta, mu_index;
+    double freq, P, temp, dump, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
     double I_int[8],Q[4],R[2];
-    int i_mu(0), n_mu, down, up, size_mu(256);
+    int i_mu(0), n_mu, i_f(0), n_f, down, up, size_mu(256);
     char atmodir[1024], cwd[1024];
     std::vector<double> mu, I_temp,Iv_temp;
 
     //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
+/*
     //Read in atmosphere parameters
     getcwd(cwd, sizeof(cwd));
     sprintf(atmodir,"%s/atmosphere",cwd);
@@ -1488,22 +1515,16 @@ double NSXH(double E, double cos_theta){
         cout << "NSXH file is not found (while in interpolating stage) " << endl;
     }
     H_table1.close();
+*/
+    mu = mu_2;
     
     //Find proper mu choice
     mu_spacing = ((Units::PI/2) - 0.0047) / 255;
     theta = acos (cos_theta);
     mu_index = ((Units::PI/2) - theta) / mu_spacing;
-
-    /*
-    for (int m = 0; m < size_mu; ++m) {
-        if (cos_theta >= mu[m]) {
-            i_mu = m;
-        }
-    }
-    */
     i_mu = (int) mu_index;
     n_mu = i_mu + 1;
-    //cout << mu_index << " " << i_mu << " " << n_mu << endl;
+
     
     //Read and interpolate to proper frequency
     for (int i = 0; i <= 99; i++){
@@ -1512,9 +1533,23 @@ double NSXH(double E, double cos_theta){
      	Iv_temp.push_back(I[i*256+n_mu]);   	
     }
 
+    
+    //Find proper freqency choice
+    freq_spacing = 1.0809;
+    first_freq = 1.168900e+15;
+    freq_index = log(freq / first_freq) / log(freq_spacing);
+    i_f = (int) freq_index;
+    n_f = i_f + 1;
+
+    I_int[0] = LogLinear(freq, F[i_f], I_temp[i_f], F[n_f], I_temp[n_f]);
+    I_int[1] = LogLinear(freq, F[i_f], Iv_temp[i_f], F[n_f], Iv_temp[n_f]);
+    
+
+    /*
     I_int[0] = LogInterpolate(freq,F,I_temp);
     I_int[1] = LogInterpolate(freq,F,Iv_temp);
-                       
+    */
+
     chdir(cwd);
 
     // Perform interpolation to correct mu (cos_theta)
@@ -1535,6 +1570,7 @@ double NSXH2(int E_dex, double cos_theta){
     char atmodir[1024], cwd[1024];
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
+/*
     //Read in atmosphere parameters
     getcwd(cwd, sizeof(cwd));
     sprintf(atmodir,"%s/atmosphere",cwd);
@@ -1553,7 +1589,8 @@ double NSXH2(int E_dex, double cos_theta){
         cout << "NSXH file is not found (while in interpolating stage) " << endl;
     }
     H_table1.close();
-    
+*/
+    mu = mu_2;
     //Find proper mu choice
     mu_spacing = ((Units::PI/2) - 0.0047) / 255;
     theta = acos (cos_theta);
@@ -1588,6 +1625,7 @@ double NSXH2(int E_dex, double cos_theta){
 
     return P;
 }
+
 
 
 
