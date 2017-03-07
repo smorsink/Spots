@@ -2,7 +2,8 @@
 
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
-base="/Users/kitung/Desktop/thesis_material"
+#base="/Users/kitung/Desktop/thesis_material"
+base="/home/kitung"
 exe_dir="$base/Spot"
 #pwd
 make spot
