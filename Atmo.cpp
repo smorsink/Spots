@@ -738,7 +738,7 @@ double X, Y, X1, Y1, X2, Y2;
 // Read the four hydrogen intensity files to peform the four point interpolation
 void Read_NSATMOS(double T, double M, double R){
     
-    double delta, lgrav, lt, temp, dump;
+    double delta, lgrav, lt, temp;
     int i_lgrav, i_lt(0), n_lgrav, n_lt, size_logt(10), size_lsgrav(11), size_mu(12);
     char s1[40],s2[40],s3[40],s4[40], atmodir[1024], cwd[1024];
     std::vector<double> logt, lsgrav; 
@@ -860,37 +860,16 @@ void Read_NSATMOS(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double Hydrogen(double E, double cos_theta){
-    double freq, P, temp, dump;
+    double freq(0), P, ener_spacing, first_ener, freq_index; 
     double I_int[8],Q[4],R[2];
-    int i_mu(0), n_mu, down, up,  size_logt(10), size_lsgrav(11), size_mu(12);
-    char atmodir[1024], cwd[1024];
-    std::vector<double> mu, F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp;
+    int i_mu(0), n_mu, i_f(0), n_f, down, up, size_mu(12);
+    //char atmodir[1024], cwd[1024];
+    std::vector<double> mu,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
 
     //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
     //Read in atmosphere parameters
-    getcwd(cwd, sizeof(cwd));
-    sprintf(atmodir,"%s/atmosphere",cwd);
-    chdir(atmodir);
-    ifstream H_atmo_para;
-    H_atmo_para.open("nsatmos-info.txt");
-
-/*
-    if(H_atmo_para.is_open()){
-        //discard logt and lgrav values
-        for (int i = 1; i <= size_logt+size_lsgrav; i++){
-            H_atmo_para >> dump;
-        }
-
-        //mu
-        for (int i = 1; i <= size_mu; i++){
-            H_atmo_para >> temp;
-            mu.push_back(temp);
-        }
-    H_atmo_para.close();
-    }
-*/
     mu = mu_2;
     
     //Find proper mu choice
@@ -900,53 +879,71 @@ double Hydrogen(double E, double cos_theta){
         }
     }
     n_mu = i_mu + 1;
-    
-    //Read and interpolate to proper frequency 
-   for (int i = 0; i < 2; ++i) {
-       down = (i_mu + i) * 125;
-       up = down + 125;
-       //cout << down << endl;
-       
-        for (int j = down; j < up; ++j) {
-            F_temp.push_back(F[j]);
-            I_temp.push_back(I[j]);
-        }
-        I_int[i] = LogInterpolate(freq,F_temp,I_temp);
+
+    //Find proper freqency choice
+    ener_spacing = 1.0471;
+    first_ener = 0.050119;
+    freq_index = log(E / first_ener) / log(ener_spacing);
+    i_f = (int) freq_index;
+    n_f = i_f + 1;
+
+    down = i_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        I_temp.push_back(I[j]);
     }
+    I_int[0] = LogLinear(E, Es[i_f], I_temp[i_f], Es[n_f], I_temp[n_f]);
+
+    down = n_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        Iv_temp.push_back(I[j]);
+    }
+    I_int[1] = LogLinear(E, Es[i_f], Iv_temp[i_f], Es[n_f], Iv_temp[n_f]);
+
+    down = i_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        II_temp.push_back(II[j]);
+    }
+    I_int[2] = LogLinear(E, Es[i_f], II_temp[i_f], Es[n_f], II_temp[n_f]);
+
+    down = n_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        IIv_temp.push_back(II[j]);
+    }
+    I_int[3] = LogLinear(E, Es[i_f], IIv_temp[i_f], Es[n_f], IIv_temp[n_f]);
                     
-    for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 125;
-        up = down + 125;
-        
-        for (int j = down; j < up; ++j) {
-            FF_temp.push_back(FF[j]);
-            II_temp.push_back(II[j]);
-        }
-        I_int[i+2] = LogInterpolate(freq,FF_temp,II_temp);
+    down = i_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        III_temp.push_back(III[j]);
     }
-    
-    for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 125;
-        up = down + 125;
+    I_int[4] = LogLinear(E, Es[i_f], III_temp[i_f], Es[n_f], III_temp[n_f]);
 
-        for (int j = down; j < up; ++j) {
-            FFF_temp.push_back(FFF[j]);
-            III_temp.push_back(III[j]);
-        }
-        I_int[i+4] = LogInterpolate(freq,FFF_temp,III_temp);
+    down = n_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        IIIv_temp.push_back(III[j]);
     }
+    I_int[5] = LogLinear(E, Es[i_f], III_temp[i_f], Es[n_f], IIIv_temp[n_f]);
     
-    for (int i = 0; i < 2; ++i) {
-        down = (i_mu + i) * 125;
-        up = down + 125;
-
-        for (int j = down; j < up; ++j) {
-            FFFF_temp.push_back(FFFF[j]);
-            IIII_temp.push_back(IIII[j]);
-        }
-        I_int[i+6] = LogInterpolate(freq,FFFF_temp,IIII_temp);
+    down = i_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        IIII_temp.push_back(IIII[j]);
     }
-    chdir(cwd);
+    I_int[6] = LogLinear(E, Es[i_f], IIII_temp[i_f], Es[n_f], IIII_temp[n_f]);
+
+    down = n_mu * 125;
+    up = down + 125;
+    for (int j = down; j < up; ++j) {
+        IIIIv_temp.push_back(IIII[j]);
+    }
+    I_int[7] = LogLinear(E, Es[i_f], IIIIv_temp[i_f], Es[n_f], IIIIv_temp[n_f]);
+
+    //chdir(cwd);
 
 
     // Perform interpolation to correct mu (cos_theta)
@@ -969,34 +966,13 @@ double Hydrogen(double E, double cos_theta){
 }
 
 double Hydrogen2(int E_dex, double cos_theta){
-    double P, size_logt(10), size_lsgrav(11), size_mu(12), temp, dump;
+    double P, size_mu(12);
     double Q[4],R[2];
     int i_mu(0), down, mid, up;
-    char atmodir[1024], cwd[1024];
+    //char atmodir[1024], cwd[1024];
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
     // Read in helium atmosphere parameter choices
-    getcwd(cwd, sizeof(cwd));
-    sprintf(atmodir,"%s/atmosphere",cwd);
-    chdir(atmodir);
-    ifstream H_atmo_para;
-    H_atmo_para.open("nsatmos-info.txt");
-
-/*
-    if(H_atmo_para.is_open()){
-        //discard logt and lsgrav choices
-        for (int i = 1; i <= size_logt+size_lsgrav; i++){
-            H_atmo_para >> dump;
-        }
-
-        //mu
-        for (int i = 1; i <= size_mu; i++){
-            H_atmo_para >> temp;
-            mu[i-1] = temp;
-        }
-    H_atmo_para.close();
-    }
-*/
     mu = mu_2;
 
     //finding mu value 
@@ -1035,7 +1011,7 @@ double Hydrogen2(int E_dex, double cos_theta){
     for (int j = mid; j < up; ++j) {
         IIIIv_temp.push_back(IIII[j]);
     }
-    chdir(cwd);
+    //chdir(cwd);
 
     // Interpolate to chosen mu
     Q[0] = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
@@ -1218,9 +1194,9 @@ void Read_NSX(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double Helium(double E, double cos_theta){
-    double freq, P, size_logt(13), size_lsgrav(8), size_mu(23), temp, dump;
+    double freq, P, size_mu(23), ener_spacing, first_ener, freq_index;
     double I_int[8],Q[4],R[2];
-    int i_mu(0), down, mid, up;
+    int i_mu(0), down, mid, up, i_f, n_f;
     char atmodir[1024], cwd[1024];
     std::vector<double> mu, F_temp,FF_temp,FFF_temp,FFFF_temp,I_temp,II_temp,III_temp,IIII_temp,Iv_temp,IIv_temp,IIIv_temp,IIIIv_temp;
 
@@ -1234,21 +1210,6 @@ double Helium(double E, double cos_theta){
     ifstream He_atmo_para;
     He_atmo_para.open("nsx-info.txt");
 
-/*
-    if(He_atmo_para.is_open()){
-        //discard logt and lsgrav choices
-        for (int i = 1; i <= size_logt+size_lsgrav; i++){
-            He_atmo_para >> dump;
-        }
-
-        //mu
-        for (int i = 1; i <= size_mu; i++){
-            He_atmo_para >> temp;
-            mu[i-1] = temp;
-        }
-    He_atmo_para.close();
-    }
-*/
     mu = mu_2;
     //finding mu value 
     for (int m = 0; m < size_mu; ++m) {
@@ -1256,10 +1217,17 @@ double Helium(double E, double cos_theta){
             i_mu = m;
         }
     }
+
+    //Find proper freqency choice
+    ener_spacing = 1.0471;
+    first_ener = 0.050119;
+    freq_index = log(E / first_ener) / log(ener_spacing);
+    i_f = (int) freq_index;
+    n_f = i_f + 1;
  
     down = i_mu * 125;
     mid = down + 125;
-    up = mid + 125;       
+    up = mid + 125;    
 
     //Read and interpolate to correct frequency
     for (int j = down; j < mid; ++j) {
@@ -1268,9 +1236,8 @@ double Helium(double E, double cos_theta){
     for (int j = mid; j < up; ++j){
         Iv_temp.push_back(I[j]);
     }
-    F_temp = F;
-    I_int[0] = LogInterpolate(freq,F_temp,I_temp);
-    I_int[1] = LogInterpolate(freq,F_temp,Iv_temp);
+    I_int[0] = LogLinear(E, Es[i_f], I_temp[i_f], Es[n_f], I_temp[n_f]);
+    I_int[1] = LogLinear(E, Es[i_f], Iv_temp[i_f], Es[n_f], Iv_temp[n_f]);
 
     for (int j = down; j < mid; ++j) {
         II_temp.push_back(II[j]);
@@ -1278,9 +1245,8 @@ double Helium(double E, double cos_theta){
     for (int j = mid; j < up; ++j){
         IIv_temp.push_back(II[j]);
     }
-    FF_temp = F;
-    I_int[2] = LogInterpolate(freq,FF_temp,II_temp);
-    I_int[3] = LogInterpolate(freq,FF_temp,IIv_temp);   
+    I_int[2] = LogLinear(E, Es[i_f], II_temp[i_f], Es[n_f], II_temp[n_f]);
+    I_int[3] = LogLinear(E, Es[i_f], IIv_temp[i_f], Es[n_f], IIv_temp[n_f]);
 
 
     for (int j = down; j < mid; ++j) {
@@ -1289,9 +1255,8 @@ double Helium(double E, double cos_theta){
     for (int j = mid; j < up; ++j) {
         IIIv_temp.push_back(III[j]);
     }
-    FFF_temp = F;
-    I_int[4] = LogInterpolate(freq,FFF_temp,III_temp);
-    I_int[5] = LogInterpolate(freq,FFF_temp,IIIv_temp);
+    I_int[4] = LogLinear(E, Es[i_f], III_temp[i_f], Es[n_f], III_temp[n_f]);
+    I_int[5] = LogLinear(E, Es[i_f], IIIv_temp[i_f], Es[n_f], IIIv_temp[n_f]);
     
 
     for (int j = down; j < mid; ++j) {
@@ -1300,9 +1265,8 @@ double Helium(double E, double cos_theta){
     for (int j = mid; j < up; ++j) {
         IIIIv_temp.push_back(IIII[j]);
     }
-    FFFF_temp = F;
-    I_int[6] = LogInterpolate(freq,FFFF_temp,IIII_temp);
-    I_int[7] = LogInterpolate(freq,FFFF_temp,IIIIv_temp);
+    I_int[6] = LogLinear(E, Es[i_f], IIII_temp[i_f], Es[n_f], IIII_temp[n_f]);
+    I_int[7] = LogLinear(E, Es[i_f], IIIIv_temp[i_f], Es[n_f], IIIIv_temp[n_f]);
     chdir(cwd);
 
     // Interpolate to chosen mu
@@ -1328,7 +1292,7 @@ double Helium(double E, double cos_theta){
 // Given which energy point to call (0-124) at arbitrary angle, interpolates intensity
 // Interpolates to angle, local gravity, and temperature
 double Helium2(int E_dex, double cos_theta){
-    double P, size_logt(13), size_lsgrav(8), size_mu(23), temp, dump;
+    double P, size_mu(23);
     double Q[4],R[2];
     int i_mu(0), down, mid, up;
     char atmodir[1024], cwd[1024];
@@ -1341,21 +1305,6 @@ double Helium2(int E_dex, double cos_theta){
     ifstream He_atmo_para;
     He_atmo_para.open("nsx-info.txt");
 
-/*
-    if(He_atmo_para.is_open()){
-        //discard logt and lsgrav choices
-        for (int i = 1; i <= size_logt+size_lsgrav; i++){
-            He_atmo_para >> dump;
-        }
-
-        //mu
-        for (int i = 1; i <= size_mu; i++){
-            He_atmo_para >> temp;
-            mu[i-1] = temp;
-        }
-    He_atmo_para.close();
-    }
-*/
     mu = mu_2;
 
     //finding mu value 
@@ -1424,8 +1373,7 @@ double Helium2(int E_dex, double cos_theta){
 void Read_NSXH(double T, double M, double R){
     
     double delta, lgrav, lt, temp, dump;
-    int i_lgrav, i_lt(0), n_lgrav, n_lt, size_logt(10), size_lsgrav(11), size_mu(12);
-    char s1[40],s2[40],s3[40],s4[40], atmodir[1024], cwd[1024];
+    char s1[40], atmodir[1024], cwd[1024];
     std::vector<double> logt, lsgrav; 
 
     //Read in hydrogen atmosphere parameters
@@ -1487,35 +1435,14 @@ void Read_NSXH(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double NSXH(double E, double cos_theta){
-    double freq, P, temp, dump, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
-    double I_int[8],Q[4],R[2];
-    int i_mu(0), n_mu, i_f(0), n_f, down, up, size_mu(256);
-    char atmodir[1024], cwd[1024];
+    double freq, P, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
+    double I_int[2];
+    int i_mu(0), n_mu, i_f(0), n_f;
     std::vector<double> mu, I_temp,Iv_temp;
 
     //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
-/*
-    //Read in atmosphere parameters
-    getcwd(cwd, sizeof(cwd));
-    sprintf(atmodir,"%s/atmosphere",cwd);
-    chdir(atmodir);
-    ifstream H_table1;
-    H_table1.open("nsx_spint0_605g1425_nrp11.out");
-    
-    if(H_table1.is_open()){
-        for (int i = 1; i <= 256; i++) {
-            H_table1 >> dump;
-            H_table1 >> temp;
-            mu.push_back(temp);
-            H_table1 >> dump;
-        }
-    }else{
-        cout << "NSXH file is not found (while in interpolating stage) " << endl;
-    }
-    H_table1.close();
-*/
     mu = mu_2;
     
     //Find proper mu choice
@@ -1545,64 +1472,27 @@ double NSXH(double E, double cos_theta){
     I_int[1] = LogLinear(freq, F[i_f], Iv_temp[i_f], F[n_f], Iv_temp[n_f]);
     
 
-    /*
-    I_int[0] = LogInterpolate(freq,F,I_temp);
-    I_int[1] = LogInterpolate(freq,F,Iv_temp);
-    */
-
-    chdir(cwd);
-
     // Perform interpolation to correct mu (cos_theta)
     P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
     //cout << freq << endl;
-
-    // Set to zero at small angle
-    if (cos_theta <= 0.000001) P = 0;
 
     return P;
 }
 
 
 double NSXH2(int E_dex, double cos_theta){
-    double P, size_logt(10), size_lsgrav(11), size_mu(12), temp, dump, mu_spacing, theta, mu_index;
-    double Q[4],R[2];
-    int i_mu(0), n_mu(0), down, mid, up;
-    char atmodir[1024], cwd[1024];
+    double P, mu_spacing, theta, mu_index;
+    int i_mu(0), n_mu(0);
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
-/*
     //Read in atmosphere parameters
-    getcwd(cwd, sizeof(cwd));
-    sprintf(atmodir,"%s/atmosphere",cwd);
-    chdir(atmodir);
-    ifstream H_table1;
-    H_table1.open("nsx_spint0_605g1425_nrp11.out");
-    
-    if(H_table1.is_open()){
-        for (int i = 1; i <= 256; i++) {
-            H_table1 >> dump;
-            H_table1 >> temp;
-            mu.push_back(temp);
-            H_table1 >> dump;
-        }
-    }else{
-        cout << "NSXH file is not found (while in interpolating stage) " << endl;
-    }
-    H_table1.close();
-*/
+
     mu = mu_2;
     //Find proper mu choice
     mu_spacing = ((Units::PI/2) - 0.0047) / 255;
     theta = acos (cos_theta);
     mu_index = ((Units::PI/2) - theta) / mu_spacing;
 
-    /*
-    for (int m = 0; m < size_mu; ++m) {
-        if (cos_theta >= mu[m]) {
-            i_mu = m;
-        }
-    }
-    */
     i_mu = (int) mu_index;
     n_mu = i_mu + 1;
     //cout << mu_index << " " << i_mu << " " << n_mu << endl;
@@ -1614,14 +1504,9 @@ double NSXH2(int E_dex, double cos_theta){
      	Iv_temp.push_back(I[i*256+n_mu]);   	
     }
                        
-    chdir(cwd);
 
     // Interpolate to chosen mu
     P = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
-
-
-    // Set to zero at small angle
-    if (cos_theta <= 0.000001) P = 0;
 
     return P;
 }
@@ -1870,11 +1755,18 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
     int e1_dex(0);              // largest energy index that's smaller than E1
     int e2_dex(0);              // largest energy index that's smaller than E2
     int n_steps(0);             // number of energy points within band
-    int ener_size(125);         // number of energy choices
+    int ener_size(0);         // number of energy choices
     //int e_dex;                  // energy index of current step
     //double current_e;           // central energy of current step
     //double current_n;           // integrated flux in current step
     double flux(0.0);           // total integrated flux
+
+    if (model == 5){
+    	ener_size = 100;
+    }
+    if (model == 3 || model == 4){
+    	ener_size = 125;
+    }
 
     for (int m = 0; m < ener_size; m++) {
         if (E1 >= Es[m]) {
