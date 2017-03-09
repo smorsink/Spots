@@ -130,33 +130,52 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	/*******************************************************************/
 
 	if (curve.flags.spectral_model == 0){ // Monochromatic Observation of a modified blackbody
+	  	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
-	  if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 1 ||
-	       curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
+	    if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 1 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
 
-	    curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+	    	curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+	    	curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
            
-	  }
+	  	}
 
-	  if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
-	  }
+	  	if (curve.flags.beaming_model == 2){ // Funny Line Emission, not calculated
+	  	}
 
-	  if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-	  }
+	  	if (curve.flags.beaming_model == 3){ // NSATMOS Hydrogen Atmosphere
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+p*E_diff) * Units::H_PLANCK ));
+	  		}
+	  	}
 
-	  if (curve.flags.beaming_model == 4){ // Helium Atmosphere
-	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-	  }
+	  	if (curve.flags.beaming_model == 4){ // NSX Helium Atmosphere
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+p*E_diff) * Units::H_PLANCK ));
+	    	}
+	  	}
 
+	  	if (curve.flags.beaming_model == 5){ // NSXH Atmosphere
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXH((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+p*E_diff) * Units::H_PLANCK ));
+	    	}
+	  	}
 
-	  if (curve.flags.beaming_model == 5){ // NSXH Atmosphere
-	    curve.f[0][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXH(E0 * redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK ));
-	  }
+	  	if (curve.flags.beaming_model == 8){ // *new* NSX Helium Atmosphere
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHAC((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+p*E_diff) * Units::H_PLANCK ));
+	    	}
+	  	}
+
+	  	if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHe((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+p*E_diff) * Units::H_PLANCK ));
+	    	}
+	  	}
 	 
 	} // Spectral_model == 0 
 
@@ -192,27 +211,21 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       
 
 	if (curve.flags.spectral_model == 3){ // *exactly* Integrated Flux of Energy Bands
-	  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-	  for (unsigned int p = 0; p<numbands; p++){
-            if (curve.flags.beaming_model == 3){ //hydrogen
-	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
-            }
-            if (curve.flags.beaming_model == 4){ //helium
-	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
-            }
-            if (curve.flags.beaming_model == 5){ //NSX hydrogen
-	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
-            }
+	  	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+	  	for (unsigned int p = 0; p<numbands; p++){
+            if (curve.flags.beaming_model == 3 || curve.flags.beaming_model == 4 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 8 || curve.flags.beaming_model == 9){ //hydrogen
+	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        
+	      	}
 	    //if (curve.f[0][i] != 0.0) nullcurve[p] = false;
-	  }
+	  	}
 	}
 	
-      }
-      else { // if curve.dOmega_s[i] == 0.0
-	for ( unsigned int p(0); p < numbands; p++) {
-	  curve.f[p][i] = 0.0;
-	}
-      }
+      	}
+      	else { // if curve.dOmega_s[i] == 0.0
+			for ( unsigned int p(0); p < numbands; p++) {
+	  			curve.f[p][i] = 0.0;
+			}
+      	}
     //cout << "phase " << i << " done." << endl;
     } // ending the for(i) loop
     
@@ -1367,13 +1380,13 @@ double Helium2(int E_dex, double cos_theta){
 
 /**************************************************************************************/
 /* NSX Hydrogen:                                                                      */
-/*    This version works for the first NSXH file from Wynn, specifically log(T) = 6.05*/
+/*    This version works for the first NSXH files from Wynn.                          */
 /*                                                                                    */
 /**************************************************************************************/
 void Read_NSXH(double T, double M, double R){
     
     double delta, lgrav, lt, temp, dump;
-    char s1[40], atmodir[1024], cwd[1024];
+    char atmodir[1024], cwd[1024];
     std::vector<double> logt, lsgrav; 
 
     //Read in hydrogen atmosphere parameters
@@ -1387,12 +1400,25 @@ void Read_NSXH(double T, double M, double R){
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
     lgrav = log10(delta * Units::G * M / (R * R));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
-    //cout << "temperature in log(K) is " << lt << endl;
-    //cout << "gravity in log(cgs units) is " << lgrav << endl;
+    cout << "temperature in log(K) is " << lt << endl;
+    cout << "gravity in log(cgs units) is " << lgrav << endl;
 
     //Load hydrogen atmosphere files
     ifstream H_table1;
-    H_table1.open("nsx_spint0_605g1425_nrp11.out");
+    if(lt <= 6.1 && lt >= 6){
+    	H_table1.open("nsx_spint0_6.05g1425_nrp11.out");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table1.open("nsx_spint0_5.69g1425_nrp1.out");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table1.open("nsx_spint0_6.3g1425_nrp1.out");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
     
     if(H_table1.is_open()){
     	for (int j = 1; j <= 100; j++) {
@@ -1412,12 +1438,25 @@ void Read_NSXH(double T, double M, double R){
         	}
     	}
     }else{
-        cout << "NSXH file is not found  " << s1 << endl;
+        cout << "NSXH file is not found" << endl;
     }
     H_table1.close();
 
     ifstream H_table2;
-    H_table2.open("nsx_spint0_605g1425_nrp11.out");
+    if(lt <= 6.1 && lt >= 6){
+    	H_table2.open("nsx_spint0_6.05g1425_nrp11.out");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table2.open("nsx_spint0_5.69g1425_nrp1.out");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table2.open("nsx_spint0_6.3g1425_nrp1.out");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
     
     if(H_table2.is_open()){
         for (int i = 1; i <= 256; i++) {
@@ -1429,6 +1468,7 @@ void Read_NSXH(double T, double M, double R){
     }else{
         cout << "NSXH file is not found (while in second reading stage) " << endl;
     }
+    //cout << I[0] << " " << F[0] << " " << Es[0] << " " << mu_2[0] << endl;
     H_table2.close();
     chdir(cwd);
 }
@@ -1437,9 +1477,10 @@ void Read_NSXH(double T, double M, double R){
 double NSXH(double E, double cos_theta){
     double freq, P, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
     double I_int[2];
-    int i_mu(0), n_mu, i_f(0), n_f;
+    int i_mu(0), n_mu, i_f(0), n_f, e_size(100);
     std::vector<double> mu, I_temp,Iv_temp;
 
+    //cout << "starting NSXH" << endl;
     //Convert energy point to frequency
     freq = 1E3 * E * Units::EV / Units::H_PLANCK;
 
@@ -1459,14 +1500,15 @@ double NSXH(double E, double cos_theta){
     	//cout << I[i*100+i_mu] << endl;
      	Iv_temp.push_back(I[i*256+n_mu]);   	
     }
-
     
     //Find proper freqency choice
-    freq_spacing = 1.0809;
-    first_freq = 1.168900e+15;
+    freq_spacing = exp(log(F[e_size-1]/F[0])/(e_size-1));
+    first_freq = F[0];
     freq_index = log(freq / first_freq) / log(freq_spacing);
     i_f = (int) freq_index;
     n_f = i_f + 1;
+    //cout << F[e_size-1] << " " << F[0] << endl;
+    //cout << freq_spacing << " " << first_freq << " " << freq_index << " " << i_f << " " << n_f << endl;
 
     I_int[0] = LogLinear(freq, F[i_f], I_temp[i_f], F[n_f], I_temp[n_f]);
     I_int[1] = LogLinear(freq, F[i_f], Iv_temp[i_f], F[n_f], Iv_temp[n_f]);
@@ -1474,13 +1516,368 @@ double NSXH(double E, double cos_theta){
 
     // Perform interpolation to correct mu (cos_theta)
     P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
-    //cout << freq << endl;
+    //cout << P << endl;
 
     return P;
 }
 
 
 double NSXH2(int E_dex, double cos_theta){
+    double P, mu_spacing, theta, mu_index;
+    int i_mu(0), n_mu(0);
+    std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
+
+    //Read in atmosphere parameters
+
+    mu = mu_2;
+    //Find proper mu choice
+    mu_spacing = ((Units::PI/2) - 0.0047) / 255;
+    theta = acos (cos_theta);
+    mu_index = ((Units::PI/2) - theta) / mu_spacing;
+
+    i_mu = (int) mu_index;
+    n_mu = i_mu + 1;
+    //cout << mu_index << " " << i_mu << " " << n_mu << endl;
+
+    //Read in the two sets intensities for two angles
+    for (int i = 0; i <= 99; i++){
+    	I_temp.push_back(I[i*256+i_mu]);
+    	//cout << I[i*100+i_mu] << endl;
+     	Iv_temp.push_back(I[i*256+n_mu]);   	
+    }
+                       
+
+    // Interpolate to chosen mu
+    P = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
+
+    return P;
+}
+
+
+/**************************************************************************************/
+/* McPHAC Hydrogen:                                                                   */
+/*    This version works for the McPHAC files from Slavko (probably Cole)             */
+/*                                                                                    */
+/**************************************************************************************/
+void Read_McPHAC(double T, double M, double R){
+    
+    double delta, lgrav, lt, temp, dump;
+    char atmodir[1024], cwd[1024];
+    std::vector<double> logt, lsgrav; 
+
+    //Read in hydrogen atmosphere parameters
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+
+    //Find correct logt and lgrav paramter choice
+    M = Units::nounits_to_cgs(M, Units::MASS);
+    R = Units::nounits_to_cgs(R, Units::LENGTH);
+    delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
+    lgrav = log10(delta * Units::G * M / (R * R));
+    lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+    cout << "temperature in log(K) is " << lt << endl;
+    cout << "gravity in log(cgs units) is " << lgrav << endl;
+
+    //Load hydrogen atmosphere files
+    ifstream H_table1;
+    if(lt <= 6.1 && lt >= 6){
+    	H_table1.open("McPHAC_logT6.05_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table1.open("McPHAC_logT5.69_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table1.open("McPHAC_logT6.3_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
+    
+    if(H_table1.is_open()){
+    	for (int j = 1; j <= 100; j++) {
+    		H_table1 >> temp;
+            F.push_back(temp);
+            temp = temp / 1E3 / Units::EV * Units::H_PLANCK;
+            Es.push_back(temp);
+            H_table1 >> dump;
+            H_table1 >> temp;
+            I.push_back(temp);
+
+            for (int i = 1; i <= 255; i++) {
+            	H_table1 >> dump;
+            	H_table1 >> dump;
+            	H_table1 >> temp;
+            	I.push_back(temp);
+        	}
+    	}
+    }else{
+        cout << "McPHAC file is not found" << endl;
+    }
+    H_table1.close();
+
+    ifstream H_table2;
+    if(lt <= 6.1 && lt >= 6){
+    	H_table2.open("McPHAC_logT6.05_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table2.open("McPHAC_logT5.69_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table2.open("McPHAC_logT6.3_EmergentSpectrum.4401.7.dat");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
+    
+    if(H_table2.is_open()){
+        for (int i = 1; i <= 256; i++) {
+            H_table2 >> dump;
+            H_table2 >> temp;
+            mu_2.push_back(temp);
+            H_table2 >> dump;
+        }
+    }else{
+        cout << "McPHAC file is not found (while in second reading stage) " << endl;
+    }
+    //cout << I[0] << " " << F[0] << " " << Es[0] << " " << mu_2[0] << endl;
+    H_table2.close();
+    chdir(cwd);
+}
+
+// Calculate the final interpolated intensity
+double McPHAC(double E, double cos_theta){
+    double freq, P, P1, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
+    double I_int[2];
+    int i_mu(0), n_mu, i_f(0), n_f, e_size(100);
+    std::vector<double> mu, I_temp,Iv_temp;
+
+    //cout << "starting NSXH" << endl;
+    //Convert energy point to frequency
+    freq = 1E3 * E * Units::EV / Units::H_PLANCK;
+
+    mu = mu_2;
+    
+    //Find proper mu choice
+    mu_spacing = ((Units::PI/2) - 0.0047) / 255;
+    theta = acos (cos_theta);
+    mu_index = ((Units::PI/2) - theta) / mu_spacing;
+    i_mu = (int) mu_index;
+    n_mu = i_mu + 1;
+    //cout << i_mu << " " << n_mu << endl;
+
+    
+    //Read and interpolate to proper frequency
+    for (int i = 0; i <= 99; i++){
+    	I_temp.push_back(I[i*256+i_mu]);
+    	//cout << I[i*100+i_mu] << endl;
+     	Iv_temp.push_back(I[i*256+n_mu]);   	
+    }
+    
+    //Find proper freqency choice
+    freq_spacing = exp(log(F[e_size-1]/F[0])/(e_size-1));
+    first_freq = F[0];
+    freq_index = log(freq / first_freq) / log(freq_spacing);
+    i_f = (int) freq_index;
+    n_f = i_f + 1;
+    //cout << F[e_size-1] << " " << F[0] << endl;
+    //cout << freq_spacing << " " << first_freq << " " << freq_index << " " << i_f << " " << n_f << endl;
+
+    I_int[0] = LogLinear(freq, F[i_f], I_temp[i_f], F[n_f], I_temp[n_f]);
+    I_int[1] = LogLinear(freq, F[i_f], Iv_temp[i_f], F[n_f], Iv_temp[n_f]);
+    
+
+    // Perform interpolation to correct mu (cos_theta)
+    //P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
+    P1 = LogLinear(cos_theta,cos((255-i_mu)*mu_spacing),I_int[0],cos((255-n_mu)*mu_spacing),I_int[1]);
+    return P1;
+}
+
+
+double McPHAC2(int E_dex, double cos_theta){
+    double P, P1, mu_spacing, theta, mu_index;
+    int i_mu(0), n_mu(0);
+    std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
+
+    //Read in atmosphere parameters
+
+    mu = mu_2;
+    //Find proper mu choice
+    mu_spacing = ((Units::PI/2) - 0.0047) / 255;
+    theta = acos (cos_theta);
+    mu_index = ((Units::PI/2) - theta) / mu_spacing;
+
+    i_mu = (int) mu_index;
+    n_mu = i_mu + 1;
+    //cout << mu_index << " " << i_mu << " " << n_mu << endl;
+
+    //Read in the two sets intensities for two angles
+    for (int i = 0; i <= 99; i++){
+    	I_temp.push_back(I[i*256+i_mu]);
+    	//cout << I[i*100+i_mu] << endl;
+     	Iv_temp.push_back(I[i*256+n_mu]);   	
+    }
+                       
+
+    // Interpolate to chosen mu
+    //P = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
+    P1 = LogLinear(cos_theta,cos((255-i_mu)*mu_spacing),I_temp[E_dex],cos((255-n_mu)*mu_spacing),Iv_temp[E_dex]);
+    return P1;
+}
+
+
+
+
+
+/**************************************************************************************/
+/* NSX Helium (new):                                                                  */
+/*    This version works for the first NSXHe files from Wynn.                         */
+/*                                                                                    */
+/**************************************************************************************/
+void Read_NSXHe(double T, double M, double R){
+    
+    double delta, lgrav, lt, temp, dump;
+    char atmodir[1024], cwd[1024];
+    std::vector<double> logt, lsgrav; 
+
+    //Read in hydrogen atmosphere parameters
+    getcwd(cwd, sizeof(cwd));
+    sprintf(atmodir,"%s/atmosphere",cwd);
+    chdir(atmodir);
+
+    //Find correct logt and lgrav paramter choice
+    M = Units::nounits_to_cgs(M, Units::MASS);
+    R = Units::nounits_to_cgs(R, Units::LENGTH);
+    delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
+    lgrav = log10(delta * Units::G * M / (R * R));
+    lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+    cout << "temperature in log(K) is " << lt << endl;
+    cout << "gravity in log(cgs units) is " << lgrav << endl;
+
+    //Load hydrogen atmosphere files
+    ifstream H_table1;
+    if(lt <= 6.1 && lt >= 6){
+    	H_table1.open("nsx_spint0_6.05g1425He_nrp1.out");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table1.open("nsx_spint0_5.69g1425He_nrp1.out");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table1.open("nsx_spint0_6.3g1425He_nrp1.out");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
+    
+    if(H_table1.is_open()){
+    	for (int j = 1; j <= 100; j++) {
+    		H_table1 >> temp;
+            F.push_back(temp);
+            temp = temp / 1E3 / Units::EV * Units::H_PLANCK;
+            Es.push_back(temp);
+            H_table1 >> dump;
+            H_table1 >> temp;
+            I.push_back(temp);
+
+            for (int i = 1; i <= 255; i++) {
+            	H_table1 >> dump;
+            	H_table1 >> dump;
+            	H_table1 >> temp;
+            	I.push_back(temp);
+        	}
+    	}
+    }else{
+        cout << "NSXH file is not found" << endl;
+    }
+    H_table1.close();
+
+    ifstream H_table2;
+    if(lt <= 6.1 && lt >= 6){
+    	H_table2.open("nsx_spint0_6.05g1425He_nrp1.out");
+    	cout << "loading log(T) = 6.05 file" << endl;
+	}
+
+	if(lt <= 5.7 && lt >= 5.6){
+    	H_table2.open("nsx_spint0_5.69g1425He_nrp1.out");
+    	cout << "loading log(T) = 5.69 file" << endl;
+	}
+
+	if(lt <= 6.35 && lt >= 6.25){
+    	H_table2.open("nsx_spint0_6.3g1425He_nrp1.out");
+    	cout << "loading log(T) = 6.3 file" << endl;
+	}
+    
+    if(H_table2.is_open()){
+        for (int i = 1; i <= 256; i++) {
+            H_table2 >> dump;
+            H_table2 >> temp;
+            mu_2.push_back(temp);
+            H_table2 >> dump;
+        }
+    }else{
+        cout << "NSXH file is not found (while in second reading stage) " << endl;
+    }
+    //cout << I[0] << " " << F[0] << " " << Es[0] << " " << mu_2[0] << endl;
+    H_table2.close();
+    chdir(cwd);
+}
+
+// Calculate the final interpolated intensity
+double NSXHe(double E, double cos_theta){
+    double freq, P, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
+    double I_int[2];
+    int i_mu(0), n_mu, i_f(0), n_f, e_size(100);
+    std::vector<double> mu, I_temp,Iv_temp;
+
+    //cout << "starting NSXH" << endl;
+    //Convert energy point to frequency
+    freq = 1E3 * E * Units::EV / Units::H_PLANCK;
+
+    mu = mu_2;
+    
+    //Find proper mu choice
+    mu_spacing = ((Units::PI/2) - 0.0047) / 255;
+    theta = acos (cos_theta);
+    mu_index = ((Units::PI/2) - theta) / mu_spacing;
+    i_mu = (int) mu_index;
+    n_mu = i_mu + 1;
+
+    
+    //Read and interpolate to proper frequency
+    for (int i = 0; i <= 99; i++){
+    	I_temp.push_back(I[i*256+i_mu]);
+    	//cout << I[i*100+i_mu] << endl;
+     	Iv_temp.push_back(I[i*256+n_mu]);   	
+    }
+    
+    //Find proper freqency choice
+    freq_spacing = exp(log(F[e_size-1]/F[0])/(e_size-1));
+    first_freq = F[0];
+    freq_index = log(freq / first_freq) / log(freq_spacing);
+    i_f = (int) freq_index;
+    n_f = i_f + 1;
+    //cout << F[e_size-1] << " " << F[0] << endl;
+    //cout << freq_spacing << " " << first_freq << " " << freq_index << " " << i_f << " " << n_f << endl;
+
+    I_int[0] = LogLinear(freq, F[i_f], I_temp[i_f], F[n_f], I_temp[n_f]);
+    I_int[1] = LogLinear(freq, F[i_f], Iv_temp[i_f], F[n_f], Iv_temp[n_f]);
+    
+
+    // Perform interpolation to correct mu (cos_theta)
+    P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
+    //cout << P << endl;
+
+    return P;
+}
+
+
+double NSXHe2(int E_dex, double cos_theta){
     double P, mu_spacing, theta, mu_index;
     int i_mu(0), n_mu(0);
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
@@ -2029,6 +2426,174 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
             flux += h * (NSXH2(eu2_dex,cos_theta) * 23 + NSXH2(eu1_dex,cos_theta) * 28 + NSXH2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
             // end Simpson's cubic
             flux += (E2 - e_u) / 2 * (NSXH2(eu_dex,cos_theta) / e_u + NSXH(E2,cos_theta) / E2); // second trapezoid                
+        }
+    }
+
+
+    if (model == 8){ //McPHAC
+        if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+            //cout << "0 steps" << endl;
+            flux = (E2 - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC(E2,cos_theta) / E2);
+        }
+        if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+            //cout << "1 steps" << endl;
+            int e_dex = e1_dex+1; // index of the energy point
+            double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
+            flux = (e_m - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(e_dex,cos_theta) / e_m);  // first trapezoid
+            flux += (E2 - e_m) / 2 * (McPHAC2(e_dex,cos_theta) / e_m + McPHAC(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+            //cout << "2 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = log(e_u)-log(e_l); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (McPHAC2(el_dex,cos_theta) + McPHAC2(eu_dex,cos_theta)) / 2;                // middle trapezoid, exact
+            flux += (E2 - e_u) / 2 * (McPHAC2(eu_dex,cos_theta) / e_u + McPHAC(E2,cos_theta) / E2); // last trapezoid
+        }
+        if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
+            //cout << "3 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 2; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (McPHAC2(el_dex,cos_theta) + McPHAC2(em_dex,cos_theta) * 4 + McPHAC2(eu_dex,cos_theta)) / 3; // Simpson's, exact
+            flux += (E2 - e_u) / 2 * (McPHAC2(eu_dex,cos_theta) / e_u + McPHAC(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
+            //cout << "4 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 3; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (McPHAC2(el_dex,cos_theta) + McPHAC2(em1_dex,cos_theta) * 3 + McPHAC2(em2_dex,cos_theta) * 3 + McPHAC2(eu_dex,cos_theta)) * 3 / 8; // Simpson's 3/8, exact             
+            flux += (E2 - e_u) / 2 * (McPHAC2(eu_dex,cos_theta) / e_u + McPHAC(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
+            //cout << "5 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int em3_dex = e1_dex+4; // index of the fourth energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 4; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (McPHAC2(el_dex,cos_theta) + McPHAC2(em1_dex,cos_theta) * 4 + McPHAC2(em2_dex,cos_theta) * 2 + McPHAC2(em3_dex,cos_theta) * 4 + McPHAC2(eu_dex,cos_theta)) / 3; // Simpson's "4,2", exact             
+            flux += (E2 - e_u) / 2 * (McPHAC2(eu_dex,cos_theta) / e_u + McPHAC(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
+            //cout << "6 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            int eu1_dex = e2_dex-1; // index of the second last energy point within bandwidth
+            int eu2_dex = e2_dex-2; // index of the third last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / (n_steps-1); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (McPHAC(E1,cos_theta) / E1 + McPHAC2(el_dex,cos_theta) / e_l);  // first trapezoid
+            // Simpson's cubic, exact
+            flux += h * (McPHAC2(el_dex,cos_theta) * 9 + McPHAC2(el1_dex,cos_theta) * 28 + McPHAC2(el2_dex,cos_theta) * 23) / 24; // first three coefficients
+            for (int m = 1; m <= n_steps-6; m++) flux += h * (McPHAC2(el_dex+m+3,cos_theta)); // middle coefficients
+            flux += h * (McPHAC2(eu2_dex,cos_theta) * 23 + McPHAC2(eu1_dex,cos_theta) * 28 + McPHAC2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
+            // end Simpson's cubic
+            flux += (E2 - e_u) / 2 * (McPHAC2(eu_dex,cos_theta) / e_u + McPHAC(E2,cos_theta) / E2); // second trapezoid                
+        }
+    }
+
+
+    if (model == 9){ //new NSX Helium
+        if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+            //cout << "0 steps" << endl;
+            flux = (E2 - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe(E2,cos_theta) / E2);
+        }
+        if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+            //cout << "1 steps" << endl;
+            int e_dex = e1_dex+1; // index of the energy point
+            double e_m = F[e_dex] * Units::H_PLANCK / Units::EV / 1E3; // energy point in keV
+            flux = (e_m - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(e_dex,cos_theta) / e_m);  // first trapezoid
+            flux += (E2 - e_m) / 2 * (NSXHe2(e_dex,cos_theta) / e_m + NSXHe(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+            //cout << "2 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = log(e_u)-log(e_l); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (NSXHe2(el_dex,cos_theta) + NSXHe2(eu_dex,cos_theta)) / 2;                // middle trapezoid, exact
+            flux += (E2 - e_u) / 2 * (NSXHe2(eu_dex,cos_theta) / e_u + NSXHe(E2,cos_theta) / E2); // last trapezoid
+        }
+        if (n_steps == 3){ // three energy points within bandwidth: (4.1.3, 4.1.4) Simpson's + two trapezoids
+            //cout << "3 steps" << endl;
+            int el_dex = e1_dex+1; // index of the first energy point within bandwidth
+            int em_dex = e1_dex+2; // index of the middle energy point within bandwidth
+            int eu_dex = e2_dex;   // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 2; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (NSXHe2(el_dex,cos_theta) + NSXHe2(em_dex,cos_theta) * 4 + NSXHe2(eu_dex,cos_theta)) / 3; // Simpson's, exact
+            flux += (E2 - e_u) / 2 * (NSXHe2(eu_dex,cos_theta) / e_u + NSXHe(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 4){ // four energy points within bandwidth: (4.1.3, 4.1.5) 8/3 Simpson's + two trapezoids
+            //cout << "4 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 3; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (NSXHe2(el_dex,cos_theta) + NSXHe2(em1_dex,cos_theta) * 3 + NSXHe2(em2_dex,cos_theta) * 3 + NSXHe2(eu_dex,cos_theta)) * 3 / 8; // Simpson's 3/8, exact             
+            flux += (E2 - e_u) / 2 * (NSXHe2(eu_dex,cos_theta) / e_u + NSXHe(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps == 5){ // five energy points within bandwidth: (4.1.3, 4.1.13) Simpson's "4,2" + two trapezoids  
+            //cout << "5 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int em1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int em2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int em3_dex = e1_dex+4; // index of the fourth energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / 4; // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(el_dex,cos_theta) / e_l);  // first trapezoid
+            flux += h * (NSXHe2(el_dex,cos_theta) + NSXHe2(em1_dex,cos_theta) * 4 + NSXHe2(em2_dex,cos_theta) * 2 + NSXHe2(em3_dex,cos_theta) * 4 + NSXHe2(eu_dex,cos_theta)) / 3; // Simpson's "4,2", exact             
+            flux += (E2 - e_u) / 2 * (NSXHe2(eu_dex,cos_theta) / e_u + NSXHe(E2,cos_theta) / E2); // second trapezoid
+        }
+        if (n_steps >= 6){ // six or more energy points within bandwidth: (4.1.3, 4.1.14) Simpson's cubic + two trapezoids
+            //cout << "6 steps" << endl;
+            int el_dex = e1_dex+1;  // index of the first energy point within bandwidth
+            int el1_dex = e1_dex+2; // index of the second energy point within bandwidth
+            int el2_dex = e1_dex+3; // index of the third energy point within bandwidth        
+            int eu_dex = e2_dex;    // index of the last energy point within bandwidth
+            int eu1_dex = e2_dex-1; // index of the second last energy point within bandwidth
+            int eu2_dex = e2_dex-2; // index of the third last energy point within bandwidth
+            double e_l = F[el_dex] * Units::H_PLANCK / Units::EV / 1E3; // first energy point in keV
+            double e_u = F[eu_dex] * Units::H_PLANCK / Units::EV / 1E3; // last energy point in keV
+            double h = (log(e_u)-log(e_l)) / (n_steps-1); // difference between log-spaced energy points
+            flux = (e_l - E1) / 2 * (NSXHe(E1,cos_theta) / E1 + NSXHe2(el_dex,cos_theta) / e_l);  // first trapezoid
+            // Simpson's cubic, exact
+            flux += h * (NSXHe2(el_dex,cos_theta) * 9 + NSXHe2(el1_dex,cos_theta) * 28 + NSXHe2(el2_dex,cos_theta) * 23) / 24; // first three coefficients
+            for (int m = 1; m <= n_steps-6; m++) flux += h * (NSXHe2(el_dex+m+3,cos_theta)); // middle coefficients
+            flux += h * (NSXHe2(eu2_dex,cos_theta) * 23 + NSXHe2(eu1_dex,cos_theta) * 28 + NSXHe2(eu_dex,cos_theta) * 9) / 24; // last three coefficients
+            // end Simpson's cubic
+            flux += (E2 - e_u) / 2 * (NSXHe2(eu_dex,cos_theta) / e_u + NSXHe(E2,cos_theta) / E2); // second trapezoid                
         }
     }
 
