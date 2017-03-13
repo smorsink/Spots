@@ -42,7 +42,7 @@ double LogInterpolate(double X_INT, std::vector<double> X, std::vector<double> Y
 // Round value to the nearest value in an array
 int Round(int n, double z, std::vector<double> v);
 
-// Reading NSATMOS tables
+// Reading NSATMOS hydrogen tables
 void Read_NSATMOS(double T, double M, double R);
 
 // Hydrogen
@@ -51,7 +51,7 @@ double Hydrogen(double E, double cos_theta);
 // Hydrogen
 double Hydrogen2(int E_dex, double cos_theta);
 
-// Reading NSX tables
+// Reading old NSX helium tables
 void Read_NSX(double T, double M, double R);
 
 // Helium
@@ -60,7 +60,7 @@ double Helium(double E, double cos_theta);
 // Helium
 double Helium2(int E_dex, double cos_theta);
 
-// Reading NSX Hydrogen table
+// Reading NSX hydrogen table
 void Read_NSXH(double T, double M, double R);
 
 // NSX Hydrogen
@@ -68,6 +68,24 @@ double NSXH(double E, double cos_theta);
 
 // NSX Hydrogen
 double NSXH2(int E_dex, double cos_theta);
+
+// Reading McPHAC Hydrogen table
+void Read_McPHAC(double T, double M, double R);
+
+// NSX Hydrogen
+double McPHAC(double E, double cos_theta);
+
+// NSX Hydrogen
+double McPHAC2(int E_dex, double cos_theta);
+
+// Reading new NSX helium table
+void Read_NSXHe(double T, double M, double R);
+
+// NSX Helium
+double NSXHe(double E, double cos_theta);
+
+// NSX Helium
+double NSXHe2(int E_dex, double cos_theta);
 
 // flux from a blackbody (bolometric, p = 0)
 double BlackBody( double T, double E );
