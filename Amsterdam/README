@@ -1,0 +1,16 @@
+For each 'test...' file:
+	- energy increases down each column
+	- phase increases along each row
+
+For unbinned, the monochromatic fluxes are evaluated at the bin centres in both
+energy and phase. For test 1, light-curves are also shown in the figures at 
+low-resolution using a different integration algorithm (observer-to-star/
+image-plane-to-star, whereby the image plane is discretised into a mesh of 
+pixels, instead of discretising the photosphere into a mesh of 'cells'); this
+is merely an internal check. The units are photons/cm^2/s/keV.
+
+For binned, the fluxes are integrated over both energy and phase, and scaled by 
+the total number of rotations during an exposure time of 1e6 seconds, given a 
+spin of 0.001 Hz --> i.e. x1000. The units are photons/cm^2.
+
+The temperatures: temp1 = logT 5.69; temp2 = logT 6.05; temp3 = logT 6.30
