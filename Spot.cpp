@@ -114,8 +114,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
+       out_file1[256] = "flux2.txt",    // Name of file we send the output to; unused here, done in the shell script
        bend_file[256] = "No File Name Specified!", 
-       out_dir[80],                   // Directory we could send to; unused here, done in the shell script
+       //out_dir[80],                   // Directory we could send to; unused here, done in the shell script
        T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
        data_file[256],                // Name of input file for reading in data
        //testout_file[256] = "test_output.txt", // Name of test output file; currently does time and two energy bands with error bars
@@ -140,7 +141,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
     	 only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
     	 pd_neg_soln(false),
-    	 background_file_is_set(false);
+    	 background_file_is_set(false),
+    	 out_file1_is_set(false);	 // True to produce second output file with alternate format
 		
   // Create LightCurve data structure
   class LightCurve curve, normcurve, tempcurve;  // variables curve and normalized curve, of type LightCurve
@@ -253,8 +255,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%s", out_file);
 	                break;
 
-	    case 'O':  case 'A': // This option controls the name of the output directory
-	                sscanf(argv[i+1], "%s", out_dir);
+	    case 'O':  // Name of *alternate form* output file
+	                sscanf(argv[i+1], "%s", out_file1);
+	                out_file1_is_set = true;
 	                break;
 	          
 	    case 'p':  // Angular Radius of spot (radians)
@@ -364,7 +367,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	  	                  << "-n Number of phase or time bins. [128]" << std::endl
       	  	                  << "-N Flag for normalizing the flux. Using this sets it to true. [false]" << std::endl
 		                      << "-o Output filename." << std::endl
-		                      << "-O Name of the output directory." << std::endl
+		                      << "-O Second output filename" << std::endl
 		                      << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
 		                      << "-q * Model of star: [3]" << std::endl
 		                      << "      1 for Neutron/Hybrid quark star poly model" << std::endl
@@ -553,10 +556,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
    // Define the Observer's Spectral Model
 
-    if (curve.flags.spectral_model == 0){ // NICER: Monochromatic Obs at E0=1keV
+    /*
+    if (curve.flags.spectral_model == 0){ // NICER: Monochromatic Obs at E0=0.3keV
       curve.para.E0 = 0.3; //0.3 keV
       curve.numbands = 1;
     }
+    */
     if (curve.flags.spectral_model == 1){ // NICER Line
       curve.para.E0 = E0; // Observed Energy in keV
       curve.para.L1 = L1; // Lowest Energy in keV in Star's frame
@@ -572,7 +577,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         //cout << "Using hydrogen atmosphere" << endl;
     }
 
-    if (curve.flags.beaming_model == 4){ // Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 4){ // *old* NSX Helium Atmosphere
         Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
         //cout << "Using helium atmosphere" << endl;
     }
@@ -582,6 +587,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         //cout << "Using helium atmosphere" << endl;
     }
 
+    if (curve.flags.beaming_model == 8){ // McPHAC Hydrogen Atmosphere
+        Read_McPHAC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using helium atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
+        Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //cout << "Using helium atmosphere" << endl;
+    }
 
    // Force energy band settings into NICER specified bands
 
@@ -1234,6 +1248,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         std::cerr << "Couldn't open output file. Exiting." << std::endl;
         return -1;
     }
+
     
     //numbins = obsdata.numbins;
 
@@ -1292,17 +1307,20 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //out << "%\n"
     //	<< "% Column 1: phase bins (0 to 1)\n";
     if (curve.flags.spectral_model==0){
-      out << "% Column 2: Monochromatic Number flux (photons/(cm^2 s keV) measured at energy (at infinity) of " << curve.para.E0 << " keV\n";
-      out << "%"
-	  << std::endl;
-      for ( unsigned int i(0); i < numbins; i++ ) {
-        out << curve.t[i]<< "\t" ;
-	for ( unsigned int p(0); p < numbands; p++ ) { 
-            out << curve.f[p][i] << "\t" ;
-        }
-	out << i;
-        out << std::endl;
-      }
+
+        double E_diff;
+		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+    	for (unsigned int k(0); k < numbands; k++){
+      		out << "% Column " << k+2 << ": Monochromatic Number flux (photons/keV) measured at energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+    	}
+      	out << "%" << std::endl;
+      	for ( unsigned int i(0); i < numbins; i++ ) {
+        	out << curve.t[i]<< "\t" ;
+			for ( unsigned int p(0); p < numbands; p++ ) { 
+            	out << curve.f[p][i] << "\t" ;
+        	}
+        	out << std::endl;
+      	}
     }
 
     if (curve.flags.spectral_model==1){
@@ -1379,11 +1397,57 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	}
     }
 
-  
-  
-
 
     out.close();
+
+
+    if (out_file1_is_set){
+   		std::ofstream out1;
+    	out1.open(out_file1, std::ios_base::trunc);
+    	if ( out1.bad() || out1.fail() ) {
+        	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
+        	return -1;
+    	}
+    	if (curve.flags.spectral_model==0){
+
+        	double E_diff;
+			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
+			out1 << "%Column 2: Energy (keV). " << std::endl;	
+			out1 << "%Column 3: Counts/keV. " << std::endl;
+
+      		for ( unsigned int p(0); p < numbands; p++ ) {
+				for ( unsigned int i(0); i < numbins; i++ ) { 
+            		out1 << curve.t[i]<< "\t";
+            		out1 << curve.para.E_band_lower_1+p*E_diff << "\t";
+            		out1 << curve.f[p][i] << std::endl;
+        		}
+      		}
+    	}
+
+    	if (curve.flags.spectral_model==2 || curve.flags.spectral_model==3){
+
+        	double E_diff;
+			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
+			out1 << "%Column 2: Energy (keV). " << std::endl;	
+			out1 << "%Column 3: Counts. " << std::endl;
+
+      		for ( unsigned int p(0); p < numbands; p++ ) {
+				for ( unsigned int i(0); i < numbins; i++ ) { 
+            		out1 << curve.t[i]<< "\t";
+            		out1 << curve.para.E_band_lower_1+p*E_diff << "\t";
+            		out1 << curve.f[p][i] << std::endl;
+        		}
+      		}
+    	}
+
+
+    
+    	out1.close();
+    }
+
+
 
  
     // Free previously allocated memory
