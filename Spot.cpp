@@ -1413,13 +1413,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	double E_diff;
 			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			out1 << "%Column 2: Energy (keV). " << std::endl;	
+			out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
 			out1 << "%Column 3: Counts/keV. " << std::endl;
 
       		for ( unsigned int p(0); p < numbands; p++ ) {
 				for ( unsigned int i(0); i < numbins; i++ ) { 
             		out1 << curve.t[i]<< "\t";
-            		out1 << curve.para.E_band_lower_1+p*E_diff << "\t";
+            		out1 << curve.para.E_band_lower_1+p*E_diff+E_diff/2 << "\t";
             		out1 << curve.f[p][i] << std::endl;
         		}
       		}
@@ -1430,13 +1430,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	double E_diff;
 			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			out1 << "%Column 2: Energy (keV). " << std::endl;	
+			out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
 			out1 << "%Column 3: Counts. " << std::endl;
 
       		for ( unsigned int p(0); p < numbands; p++ ) {
 				for ( unsigned int i(0); i < numbins; i++ ) { 
             		out1 << curve.t[i]<< "\t";
-            		out1 << curve.para.E_band_lower_1+p*E_diff << "\t";
+            		out1 << curve.para.E_band_lower_1+p*E_diff+E_diff/2 << "\t";
             		out1 << curve.f[p][i] << std::endl;
         		}
       		}
