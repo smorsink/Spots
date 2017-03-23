@@ -9,8 +9,29 @@ image-plane-to-star, whereby the image plane is discretised into a mesh of
 pixels, instead of discretising the photosphere into a mesh of 'cells'); this
 is merely an internal check. The units are photons/cm^2/s/keV.
 
-For binned, the fluxes are integrated over both energy and phase, and scaled by 
+For binned, the fluxes are integrated over both energy and phase, and scaled by
 the total number of rotations during an exposure time of 1e6 seconds, given a 
 spin of 0.001 Hz --> i.e. x1000. The units are photons/cm^2.
 
 The temperatures: temp1 = logT 5.69; temp2 = logT 6.05; temp3 = logT 6.30
+
+Update: spurious factor of local comoving photon energy removed. Initially,
+	it was incorrectly assumed that the tabulated intensity was in
+	photons, not ergs.
+
+	Differences...
+
+	- The overall normalisaation of the light curves changes in an
+	  energy-dependent manner.
+
+	- The fractional differences between atmospheres are effectively invariant
+	  for the unbinned light curves (the relativistic boosting is coordinate
+	  dependent, so no perfect cancellation between light curves, but, luckily,
+	  very slow spin so boost factor everywhere ~unity; the gravitational
+	  redshift is effectively constant too, given the spin).
+
+	- The fractional differences change very slightly for the binned light
+	  curves because of the photon energy dependence, but this is negligible.
+
+	--> Conclusions regarding sensitivity to atmosphere code/composition
+		unchanged.
