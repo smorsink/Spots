@@ -217,6 +217,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	          	          
 	    case 'l':  // Time shift, phase shift.
 	                sscanf(argv[i+1], "%lf", &ts);
+	                //ts *= -1;
 	                break;
 
 	    case 'L':  // Offset inclination angle of the observer (degrees)
@@ -540,7 +541,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.numbins = numbins;
     //curve.para.rsc = r_sc;
     //curve.para.Isc = I_sc;
-
     //numphi = numtheta; // code currently only handles a square mesh over the hotspot
   
     curve.flags.ignore_time_delays = ignore_time_delays;
@@ -574,27 +574,28 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
         Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using hydrogen atmosphere" << endl;
     }
 
     if (curve.flags.beaming_model == 4){ // *old* NSX Helium Atmosphere
         Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using helium atmosphere" << endl;
     }
 
     if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
         Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using helium atmosphere" << endl;
     }
 
-    if (curve.flags.beaming_model == 8){ // McPHAC Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 8){ // *slavko* McPHAC Hydrogen Atmosphere
+    	//Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
         Read_McPHAC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using helium atmosphere" << endl;
     }
 
     if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
         Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using helium atmosphere" << endl;
+    }
+
+    if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
+    	//Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
    // Force energy band settings into NICER specified bands
@@ -742,7 +743,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //req = rspot;
       rspot = req;
         model = new SphericalOblModel( rspot );
-        printf("Spherical Model. ");
+        std::cout << "Spherical Model. " << std::endl;
     }
     else {
         throw(Exception("\nInvalid NS_model parameter. Exiting.\n"));
@@ -844,12 +845,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    numphi = 1;
 	    phishift = 0.0;
 	    curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
+	    //std::cout << curve.para.dS << std::endl;
 	  }
 
 	  if (spotshape!=2)
 	    curve.para.dS *= curve.para.gamma_k[k];
 
 	  curve.para.theta = thetak;
+	  //std::cout << curve.para.dS << " " << rspot << " " << sin(thetak) << " " << deltatheta << " " << dphi << std::endl;
 
 	  SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
 
@@ -861,6 +864,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
 	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
 	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
+	    //std::cout << curve.para.dS << std::endl;
 	  }
        
 	  //std::cout << " numphi=" << numphi << " " 
@@ -1382,7 +1386,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	double E_diff;
 		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
     	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column " << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+      		out << "% Column " << k+2 << ": Integrated Number flux (photons) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
     	}
       	out << "%" << std::endl;
       	for ( unsigned int i(0); i < numbins; i++ ) {
