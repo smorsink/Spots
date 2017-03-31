@@ -2161,12 +2161,12 @@ void Read_McPHACC(double T, double M, double R){
     //cout << I[0] << " " << F[0] << " " << Es[0] << " " << mu_2[0] << endl;
     H_table5.close();   
 
-    X = lt;
-    Y = lgrav;
-    X1 = 5.1+0.05*i_lt;
-    X2 = 5.1+0.05*n_lt;
-    Y1 = 13.7+0.1*i_lgrav;
-    Y2 = 13.7+0.1*n_lgrav;
+    X = pow(10.0,lt);
+    Y = pow(10.0,lgrav);
+    X1 = pow(10.0,5.1+0.05*i_lt);
+    X2 = pow(10.0,5.1+0.05*n_lt);
+    Y1 = pow(10.0,13.7+0.1*i_lgrav);
+    Y2 = pow(10.0,13.7+0.1*n_lgrav);
     //cout << T << " " << lt << endl;
     chdir(cwd);
 	/*
