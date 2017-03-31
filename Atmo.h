@@ -12,7 +12,7 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 1024 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
 #define NCURVES 50      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
 
 
@@ -86,6 +86,15 @@ double NSXHe(double E, double cos_theta);
 
 // NSX Helium
 double NSXHe2(int E_dex, double cos_theta);
+
+// Reading McPHAC Hydrogen table
+void Read_McPHACC(double T, double M, double R);
+
+// NSX Hydrogen
+double McPHACC(double E, double cos_theta);
+
+// NSX Hydrogen
+double McPHACC2(int E_dex, double cos_theta);
 
 // flux from a blackbody (bolometric, p = 0)
 double BlackBody( double T, double E );
