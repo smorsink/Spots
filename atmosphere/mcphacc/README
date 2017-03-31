@@ -1,0 +1,5 @@
+These are Cole's McPHAC intensity files. Their energy grid have been reduced by 1 in log scale (reduced by factor of 10)
+from the original files, since there might have been a mistake in the original energy grid. 
+Log(temperature) goes from 5.1 to 6.5 in steps of 0.05, and log(gravity) goes from 13.7 to 14.7 in steps of 0.1.
+For 3rd temperature and 4th gravity choice, the name is "mcphacc_T3_g4.txt".
+Column 1 is energy of the photon; column 2 is angle to normal; column 3 is intensity/(T^3) in cgs values. 
