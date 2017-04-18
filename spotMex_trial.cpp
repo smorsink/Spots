@@ -255,12 +255,19 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
        
     inst_curve = mxGetScalar(theInput[27]);
     attenuation = mxGetScalar(theInput[28]);
+    
+    double *atmodata_mccinte = mxGetPr(theInput[29]);
+
+    curve.mccinte = dvector(0,1595001);
+    for (int i = 0; i < 1595001; i++){
+        curve.mccinte[i] = atmodata_mccinte[i];
+    }
 
        
     for (int i = 0; i < numbands; i++){
-    obsdata.f[i] = mxGetPr(theInput[29+3*i]); // array of double
-    obsdata.err[i] = mxGetPr(theInput[30+3*i]); // array of double
-    background[i] = mxGetScalar(theInput[31+3*i]);
+    obsdata.f[i] = mxGetPr(theInput[30+3*i]); // array of double
+    obsdata.err[i] = mxGetPr(theInput[31+3*i]); // array of double
+    background[i] = mxGetScalar(theInput[32+3*i]);
         std::cout << " bg["<<i<<"]=" << background[i] ;
     }
        std::cout << std::endl;
@@ -334,11 +341,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
 
    // Define the Observer's Spectral Model
-
+    /*
     if (curve.flags.spectral_model == 0){ // NICER: Monochromatic Obs at E0=1keV
       curve.para.E0 = 1.0;
       curve.numbands = 1;
     }
+    */
     if (curve.flags.spectral_model == 1){ // NICER Line
       curve.para.E0 = E0; // Observed Energy in keV
       curve.para.L1 = L1; // Lowest Energy in keV in Star's frame
@@ -364,6 +372,21 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // 
         //cout << "Using helium atmosphere" << endl;
     }
+
+    if (curve.flags.beaming_model == 8){ // *slavko* McPHAC Hydrogen Atmosphere
+        //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        Read_McPHAC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+    }
+
+    if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
+        Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+    }
+
+/*
+    if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
+        Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+    }
+*/
 
 
 
@@ -883,6 +906,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 	//std::cout << "numbins =" << numbins << " numbands =" << numbands << std::endl;
 
     chisquared = ChiSquare ( &obsdata, &curve );
+    std::cout << curve.f[0][0] << std::endl;
     
     //chisquared = 0.0;
     

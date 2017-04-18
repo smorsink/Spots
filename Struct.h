@@ -20,8 +20,8 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 1024  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 512   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define MAX_NUMBINS 256  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MIN_NUMBINS 128   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
 #define NCURVES 50        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define MR 1000             // Maximum number of m/r values
 
@@ -77,7 +77,6 @@ struct Flags {
     unsigned int spotshape;
 };
 
-
 class Defl {
 	public:                       // allocates the memory for the lookup table -- not evenly spaced
   //double psi_b[3*NN+1];         // table where given psi, look up b_R
@@ -118,6 +117,7 @@ class LightCurve {                     // Stores all the data about the light cu
 	struct Parameters para;                // parameters from above; para is like i, Parameters is like Integer
 	struct Flags flags;                    // flags from above
 	class Defl defl;                       // deflection from above
+	double *mccinte;  						   // intensity values
 	unsigned int numbins;                  // Number of time or phase bins for one spin period; Also the number of flux data points
 	unsigned int numbands;
 	bool eclipse;                          // True if an eclipse occurs

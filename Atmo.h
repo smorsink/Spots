@@ -90,11 +90,17 @@ double NSXHe2(int E_dex, double cos_theta);
 // Reading McPHAC Hydrogen table
 void Read_McPHACC(double T, double M, double R);
 
-// NSX Hydrogen
+// Cole's McPHAC
 double McPHACC(double E, double cos_theta);
 
-// NSX Hydrogen
+// Cole's McPHAC
 double McPHACC2(int E_dex, double cos_theta);
+
+// Cole's McPHAC in spotMex
+double McPHACC3(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
+
+// Cole's McPHAC in spotMex
+double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
 
 // flux from a blackbody (bolometric, p = 0)
 double BlackBody( double T, double E );
@@ -113,6 +119,9 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 // flux from a specific energy band, for helium model at log-spaced energy points
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
+
+// flux from a specific energy band, for helium model at log-spaced energy points
+double AtmosEBandFlux3( unsigned int model, double cos_theta, double T, double M, double R, double E1, double E2, class LightCurve mexmcc);
 
 
 // Does the integral for the flux from a specific energy band
