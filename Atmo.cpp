@@ -1570,7 +1570,7 @@ double NSXH(double E, double cos_theta){
     
 
     // Perform interpolation to correct mu (cos_theta)
-    P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
+    P = Linear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
     //cout << P << endl;
 
     return P;
@@ -1603,7 +1603,7 @@ double NSXH2(int E_dex, double cos_theta){
                        
 
     // Interpolate to chosen mu
-    P = LogLinear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
+    P = Linear(cos_theta,mu[i_mu],I_temp[E_dex],mu[i_mu+1],Iv_temp[E_dex]);
 
     return P;
 }
@@ -2280,7 +2280,16 @@ double McPHACC(double E, double cos_theta){
     Q[0] = Linear(theta,acos(mu[i_mu]),I_int[0],acos(mu[i_mu+1]),I_int[1]);
     Q[1] = Linear(theta,acos(mu[i_mu]),I_int[2],acos(mu[i_mu+1]),I_int[3]);
     Q[2] = Linear(theta,acos(mu[i_mu]),I_int[4],acos(mu[i_mu+1]),I_int[5]);
-    Q[3] = Linear(theta,acos(mu[i_mu]),I_int[6],acos(mu[i_mu+1]),I_int[7]); 
+    Q[3] = Linear(theta,acos(mu[i_mu]),I_int[6],acos(mu[i_mu+1]),I_int[7]);
+
+    // Set to highest mu values for emission normal to surface
+    if (cos_theta > 0.999710) {
+    	Q[0] = I_int[0];
+    	Q[1] = I_int[2];
+    	Q[2] = I_int[4];
+    	Q[3] = I_int[6]; 
+    	//cout << Q[0] << " " << Q[1] << " " << Q[2] << " " << Q[3] << endl;   	
+    }
 
     // Interpolate to chosen local gravity
     R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
@@ -2291,10 +2300,11 @@ double McPHACC(double E, double cos_theta){
 
     // Set to zero at small angle
     if (cos_theta < 0.015629) P = 0;
+
     //cout << P << endl;
 
-    if (isnan(P)) cout << Q[0] << " " << theta << " " << acos(mu[i_mu]) << " " << I_int[0] << " " << acos(mu[i_mu+1]) << " " << I_int[1] << endl;
-    //if (isnan(P)) cout << I_int[0] << " " << Q[0] << " " << Q[1] << " " << Q[2] << " " << Q[3] << endl;
+    if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
+    //if (isnan(P)) cout << i_mu << " " << mu[i_mu] << " " << i_mu+1 << " " << mu[i_mu] << endl;
     //if (isnan(P)) cout << "P is nan!" << endl;
     //cout << P << endl;
 
@@ -2347,6 +2357,15 @@ double McPHACC2(int E_dex, double cos_theta){
     Q[2] = Linear(theta,acos(mu[i_mu]),III_temp[E_dex],acos(mu[n_mu]),IIIv_temp[E_dex]);
     Q[3] = Linear(theta,acos(mu[i_mu]),IIII_temp[E_dex],acos(mu[n_mu]),IIIIv_temp[E_dex]); 
 
+    // Set to highest mu values for emission normal to surface
+    if (cos_theta > 0.999710) {
+    	Q[0] = I_temp[E_dex];
+    	Q[1] = II_temp[E_dex];
+    	Q[2] = III_temp[E_dex];
+    	Q[3] = IIII_temp[E_dex]; 
+    	//cout << cos_theta << " " << theta << " " << acos(mu[i_mu]) << " " << I_temp[E_dex] << " " << acos(mu[n_mu]) << endl;   	
+    }
+
     // Interpolate to chosen local gravity
     R[0] = LogLinear(Y,Y1,Q[0],Y2,Q[2]);
     R[1] = LogLinear(Y,Y1,Q[1],Y2,Q[3]);
@@ -2357,7 +2376,7 @@ double McPHACC2(int E_dex, double cos_theta){
     // Set to zero at small angle
     if (cos_theta < 0.015629) P = 0;
 
-    if (isnan(P)) cout << "P is nan!" << endl;
+    if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
 
     return P;
 }
