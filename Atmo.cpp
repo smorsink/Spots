@@ -189,7 +189,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  		for (unsigned int p = 0; p<numbands; p++){
 	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
 	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    		if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
+	    		//if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
 	    	}
 	  	}
 	  	
@@ -2303,7 +2303,7 @@ double McPHACC(double E, double cos_theta){
 
     //cout << P << endl;
 
-    if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
+    //if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
     //if (isnan(P)) cout << i_mu << " " << mu[i_mu] << " " << i_mu+1 << " " << mu[i_mu] << endl;
     //if (isnan(P)) cout << "P is nan!" << endl;
     //cout << P << endl;
@@ -2376,7 +2376,7 @@ double McPHACC2(int E_dex, double cos_theta){
     // Set to zero at small angle
     if (cos_theta < 0.015629) P = 0;
 
-    if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
+    //if (isnan(P)) cout << Q[0] << " " << R[0] << endl;
 
     return P;
 }
@@ -2483,7 +2483,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     //cout << P << endl;
 
     //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
-    if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    //if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
     //if (isnan(P)) cout << "P is nan!" << endl;
     //cout << L << endl;
 
@@ -2562,7 +2562,7 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     //cout << P << endl;
 
     //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
-    if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    //if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
     //if (isnan(P)) cout << "P is nan!" << endl;
     //cout << L << endl;
 
