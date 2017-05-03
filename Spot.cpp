@@ -45,6 +45,7 @@
 #include "Struct.h"
 #include "time.h"
 #include "nrutil.h"
+#include <unistd.h>
 #include <string.h>
 
 // MAIN
@@ -594,8 +595,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
     if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
-    	//Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
+        //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
+   		char atmodir[1024], cwd[1024];
+   		getcwd(cwd, sizeof(cwd));
+    	sprintf(atmodir,"%s/atmosphere",cwd);
+    	chdir(atmodir);
+   		FILE *Hspecttable;
+   		Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
+    	curve.mccinte = dvector(0,1595001);
+    	double junk(0.0);
+    	for (int i = 0; i < 1595001; i++){
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk,sizeof(double),1,Hspecttable);    		
+        	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+    	}
+    	fclose(Hspecttable);
+    	chdir(cwd);
     }
 
    // Force energy band settings into NICER specified bands
