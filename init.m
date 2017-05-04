@@ -27,25 +27,25 @@ eval(cmd);
 %
 % Parameters for comparison with smmpoisson1.txt
 %
-extPar.fixed.mass=1.6;                % mass in MSun
+extPar.fixed.mass=1.48;                % mass in MSun
 extPar.fixed.radius=11.8;               % radius in km
 extPar.fixed.freq=300;                % spin frequency of NS, in Hz
 extPar.fixed.inclination=90;          % spot inclination angle in degrees
 extPar.fixed.emission=90;             % spot emission angle in degrees
 extPar.fixed.phaseshift=0;            % spot phaseshift angle in degrees
 extPar.fixed.numbins=32;
-extPar.fixed.modelchoice=1;           % 1 (oblate 2014 A&M), 2 (oblate 2007 MLCB), or 3 (spherical);
-extPar.fixed.rho=0.17453;                   % angular radius of the emitting hot spot, in radians
-extPar.fixed.spot_temperature=0.35;      % temperature of the hot spot in frame of the NS, in keV
+extPar.fixed.modelchoice=3;           % 1 (oblate 2014 A&M), 2 (oblate 2007 MLCB), or 3 (spherical);
+extPar.fixed.rho=0.2;                   % angular radius of the emitting hot spot, in radians
+extPar.fixed.spot_temperature=0.09669;      % temperature of the hot spot in frame of the NS, in keV
 extPar.fixed.distance=0.3;              % distance from us to the NS, in kpc
 extPar.fixed.numtheta=18;              % number of theta bins.
-extPar.fixed.spectral_model=2;		% 2 is for integrated bb and variation, 3 is for atmosphere flux integrated within energy bands
+extPar.fixed.spectral_model=3;		% 2 is for integrated bb and variation, 3 is for atmosphere flux integrated within energy bands
 extPar.fixed.numbands=15;              % 
 extPar.fixed.E_band_lower_1=0.1;      % lower bound of first energy band, in keV
 extPar.fixed.E_band_upper_1=3.1;      % upper bound of first energy band, in keV
-extPar.fixed.beaming_model=7;         % 0 for bb, 1 for bb+chandra gray, 2 for bb+hopf gray, 3 for hydrogen, 4 for helium
+extPar.fixed.beaming_model=10;         % 0 for bb, 1 for bb+chandra gray, 2 for bb+hopf gray, 3 for hydrogen, 4 for helium
 extPar.fixed.spots_2=1;				% 1 for 1 spot, 2 for 2 spots
-extPar.fixed.obstime=6.4;        % Time (in seconds) that source was observed
+extPar.fixed.obstime=10;        % Time (in million seconds) that source was observed
 extPar.fixed.inst_curve=0;
 extPar.fixed.attenuation=0;
 extPar.fixed.bend_file_is=1;          % 1 means bend file is read
@@ -65,14 +65,22 @@ else
     extPar.fixed.toa = 0;
 end
 extPar.fixed.spotshape=0;
+cd /home/kitung/spot-albert/Spot/atmosphere
+atmotable=fopen('Hatm8000dT0.05.bin');
+a = fread(atmotable,'double');   
+fclose(atmotable);
+atmo = a([1:1595000]*5);
+extPar.fixed.inte = atmo;
+
 %
 %
 % ------------
 % Load data.
 % NEED TO CHANGE THIS IN outputFerret.m TOO, ~ line 80
-exe_dir='/home/kitung/Spot';
+exe_dir='/home/kitung/spot-albert/Spot';
 % fileName=strcat(exe_dir,'/input/bb_only_fake_data.txt'); % *** need to change this in outputFerret too
-fileName=strcat(exe_dir,'/input/sbpoisson3.txt'); % *** need to change this in outputFerret too
+% fileName=strcat(exe_dir,'/input/nsxh_may1_withnoise_bgh.txt'); % *** need to change this in outputFerret too
+fileName=strcat(exe_dir,'/input/mcphacc_may3_withnoise_bgh.txt'); % *** need to change this in outputFerret too
 eval('dataFile=load(fileName);');
 % ------------
 % Process data
@@ -82,6 +90,6 @@ for i = 1:extPar.fixed.numbands
     extPar.obsdata2.f(i,:)=dataFile(:,2*i)';
     extPar.obsdata2.err(i,:)=dataFile(:,2*i+1)';
 end
-extPar.fixed.background = zeros(1,extPar.fixed.numbands);
+extPar.fixed.background = 0.001*ones(1,extPar.fixed.numbands);
 %extPar.obsdata2.numbins=size(dataFile,1);
 end
