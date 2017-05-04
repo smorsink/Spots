@@ -971,7 +971,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         free_dvector(curve.defl.b_psi,0,301);
         free_dvector(curve.defl.dcosa_dcosp_b,0,301);
         free_dvector(curve.defl.toa_b,0,301);
-    
+
+	free_dvector(curve.mccinte,0,1595001);
     
     delete model;
 }
