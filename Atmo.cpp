@@ -184,26 +184,26 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    	}
 	  	}
 	 	
-	 	
+	 	/*
 	 	if (curve.flags.beaming_model == 10){ // *cole* McPHACC
 	  		for (unsigned int p = 0; p<numbands; p++){
 	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    		//if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
-	    	}
-	  	}
-	  	
-	  	
-
-	  	/*
-	  	if (curve.flags.beaming_model == 10){ // *cole* McPHACC3
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
 	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
 	    		if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
 	    	}
 	  	}
 	  	*/
+	  	
+
+	  	
+	  	if (curve.flags.beaming_model == 10){ // *cole* McPHACC3
+	  		for (unsigned int p = 0; p<numbands; p++){
+	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
+	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+	    		//if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
+	    	}
+	  	}
+	  	
 	  	
 	  	
 	  	
@@ -249,8 +249,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
 	      	}
 	      	if (curve.flags.beaming_model == 10){
-	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
-	      		//curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
+	      		//curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
+	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
 	      	}
 	    //if (curve.f[0][i] != 0.0) nullcurve[p] = false;
 	  	}
