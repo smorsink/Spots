@@ -36,16 +36,20 @@ par.user.XMod=''; % [string]: Name of optional user-defined XMod function.
 %disp(data_dir_name); % displaying the history directory name to double check that it says what I want it to
 % need to change data_dir_name in outputFerret too
 par.history.NGenPerHistoryFile=10; % [integer >= 1]: How many generations per History file?
-par.history.saveFrac=0; % [0 - 1]: Save only the optimals --> [0], or a fraction [0 - 1].  See also par.analysis.keepFrac.
+par.history.saveFrac=0.1; % [0 - 1]: Save only the optimals --> [0], or a fraction [0 - 1].  See also par.analysis.keepFrac.
+%*************ATTENTION**** MEANS 10% SOLUTIONS ARE SAVED, CAN BE CHANGED TO ZERO.
 %
 % ====================================
 % General
 % multiple smaller populations is better than one very large population
-par.general.NPop=2; % p [integer >= 1]: Number of populations for one generation.
-par.general.NAggressive=1; % Number of populations that aggressively look for the minimum.
+par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
+%*************CAN BE VARIED**************************.
+par.general.NAggressive=1; % Number of populations that aggressively look for the minimum
+%*************CAN BE CHANGED***********************.
 %par.general.NPop=2;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
 par.general.popSize=100;
+%*************SMALL POPULATION FOR TESTING**********
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 %par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
 par.general.NGen=250;
@@ -62,19 +66,20 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 %
 
 
-
-par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature'};
-par.general.min=[       8.0,           1.0,                 70.0,               70.0,               0.00,       0.16,   0.3];
-par.general.max=[       16.0,          2.5,                 110.0,             100.0,               1.00,       0.20,   0.4];
-
+%*************ADD DISTANCE*****************
+par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature', 'distance'};
+par.general.min=[       10,            1.0,                60.0,                   60.0,            0.00,         0.1,        0.05,        0.1];
+par.general.max=[       18,            2.1,               120.0,                  120.0,            1.00,         0.5,        0.15,        0.5];
+ 
 par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
+
 
 % For Slavko's data require 15 energy bands
 for i = 1:15
-    name1 = strcat('background',num2str(i+7));
-    par.general.XLabels{i+7} = name1;
-    par.general.min(i+7) = 0.0045;
-    par.general.max(i+7) = 0.0055;
+    name1 = strcat('background',num2str(i));
+    par.general.XLabels{i+8} = name1;
+    par.general.min(i+8) = 0;
+    par.general.max(i+8) = 0.006;
 end
 
 % par.general.XLabels(7) = 'background1';
@@ -141,17 +146,19 @@ par.parallel.writeLogFiles=true; % [logical]: Are log files required?
 par.selection.PTournament=1; % [0 - 1]: Probability that each individual will compete.
 par.selection.pressure=0.8; % [0 - 1]: Selection pressure on overall fitness.
 par.selection.BBPressure=1; % [0 - 1]: Selection pressure on BBs.
-par.selection.FAbsTol=50; % <-- ***JDF: Much better to use FAbsTol for mapping.  Set to the appropriate value for desired confidence interval.
+par.selection.FAbsTol=100; % <-- ***JDF: Much better to use FAbsTol for mapping.  Set to the appropriate value for desired confidence interval.
+%*********CONSIDERED OPTIMAL, CAN BE CHANGED TO LARGER NUMBER*****
 par.selection.FRelTol=0; % [0 - 1]: Fraction of fitness range to use as a fuzzy fitness band.
 par.selection.FRankTol=0; % [0 - 1]: Fraction of rank range to use as a fuzzy fitness band.
 % par.selection.exploitFrac=0.10; % [0 - 1]: Population fraction devoted to exploiting the optimal region rather than exploring.
 %
 % ====================================
 % Mutation
-par.mutation.PMutate=0.1; % [0 - 1]: Probability of normal mutation.
+par.mutation.PMutate=0.2; % [0 - 1]: Probability of normal mutation.
 % par.mutation.BBRestricted=false; % [logical]: Restrict mutation to building blocks?
 % par.mutation.PRandomizeBBs=0.01; % [0 - 1]: Probability of randomizing whole building blocks.
-par.mutation.PSuperMutate=0.01; % [0 - 1]: Probability of superMutation.
+par.mutation.PSuperMutate=0.01; % [0 - 1]: Probability of superMutation
+% KILLS OFF ANYTHING THAT'S NOT OPTIMAL.
 % par.mutation.scale=0.4; % [0 - 1]: Min & max scale of mutation.
 par.mutation.selectiveMutation=-0.25; % [-1:1]: Negative values mutate highly clustered individuals selectively.
 %
@@ -196,8 +203,8 @@ par.CPD.PDeactivateGenes=0; % [0 - 1]: Probability of gene deactivation.
 %
 % ====================================
 % Immigration
-par.immigration.PImmigrate=0.01; % [0 - 1, usually << 1]: Probability of immigration between populations.
-%
+par.immigration.PImmigrate=0.01; %[0 - 1, usually << 1]: Probability of immigration between populations.
+% *************HELPING NON-OPTIMAL POPULATION, CAN BE CHANGED**********
 % ====================================
 % Elitism
 par.elitism.mode='normal'; % ['normal' or 'boundary']: Elitism mode.
