@@ -213,11 +213,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         curve.defl.b = dmatrix(0,1001,0,301);
         curve.defl.dcosa = dmatrix(0,1001,0,301);
         curve.defl.toa = dmatrix(0,1001,0,301);
+        /*
         curve.defl.psi_b = dvector(0,301);
         curve.defl.b_psi = dvector(0,301);
         curve.defl.dcosa_dcosp_b = dvector(0,301);
         curve.defl.toa_b = dvector(0,301);
-
+        */
        
         
         for (int j = 0; j < 1001; j++){
@@ -619,6 +620,14 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
           for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
       } //end of last bin  
       delete defltoa;
+
+      //insert free memory here
+        free_dvector(curve.defl.psi_b,0,301);
+        free_dvector(curve.defl.b_psi,0,301);
+        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+        free_dvector(curve.defl.toa_b,0,301);
+
+
         } // closing for loop through theta divisions
     } // End Standard Case of first spot
 
@@ -765,6 +774,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
           for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
       } //end of last bin  
       delete defltoa;
+
+      //insert free memory here
+        free_dvector(curve.defl.psi_b,0,301);
+        free_dvector(curve.defl.b_psi,0,301);
+        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+        free_dvector(curve.defl.toa_b,0,301);
         } // closing for loop through theta divisions
     } // End Standard Case of second spot
     
@@ -967,10 +982,6 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         free_dmatrix(curve.defl.dcosa,0,1001,0,301);
         free_dmatrix(curve.defl.toa,0,1001,0,301);
         
-        free_dvector(curve.defl.psi_b,0,301);
-        free_dvector(curve.defl.b_psi,0,301);
-        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
-        free_dvector(curve.defl.toa_b,0,301);
 
 	free_dvector(curve.mccinte,0,1595001);
     

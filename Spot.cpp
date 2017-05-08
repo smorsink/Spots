@@ -400,11 +400,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     // Allocate Memory for Bending Angle table for specific M/R
       // Allocate Memory -- Look up table for specific M/R value
+    /*
     curve.defl.psi_b = dvector(0,3*NN+1);
     curve.defl.b_psi = dvector(0,3*NN+1);
     curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
     curve.defl.toa_b = dvector(0,3*NN+1);
-
+	*/
+	
     if (bend_file_is_set){ // Read in table of bending angles for all M/R
 
       // ReadBend allocates memory for the look up tables
@@ -935,6 +937,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
 	  } //end of last bin  
 	  delete defltoa;
+
+	  //insert free memory here
+        free_dvector(curve.defl.psi_b,0,301);
+        free_dvector(curve.defl.b_psi,0,301);
+        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+        free_dvector(curve.defl.toa_b,0,301);
       	} // closing for loop through theta divisions
     } // End Standard Case of first spot
 
@@ -1080,6 +1088,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
 	  } //end of last bin  
 	  delete defltoa;
+
+	  //insert free memory here
+        free_dvector(curve.defl.psi_b,0,301);
+        free_dvector(curve.defl.b_psi,0,301);
+        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+        free_dvector(curve.defl.toa_b,0,301);
       	} // closing for loop through theta divisions
     } // End Standard Case of second spot
 	
@@ -1473,11 +1487,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
+    /*
     free_dvector(curve.defl.psi_b,0,3*NN+1);   
     free_dvector(curve.defl.b_psi,0,3*NN+1);
     free_dvector(curve.defl.dcosa_dcosp_b,0,3*NN+1);
     free_dvector(curve.defl.toa_b,0,3*NN+1);
-
+	*/
 
     delete model;
     return 0;
