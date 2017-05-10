@@ -2419,8 +2419,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     th_index = ((Units::PI/2) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = (0.024084+th_spacing*i_mu);
-    th1 = (0.024084+th_spacing*n_mu);
+    th0 = (th_spacing*i_mu - 0.024084);
+    th1 = (th_spacing*n_mu - 0.024084);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
     //Find proper freqency choice
@@ -2535,8 +2535,8 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     th_index = ((Units::PI/2) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = (0.024084+th_spacing*i_mu);
-    th1 = (0.024084+th_spacing*n_mu);
+    th0 = (th_spacing*i_mu - 0.024084);
+    th1 = (th_spacing*n_mu - 0.024084);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
 
