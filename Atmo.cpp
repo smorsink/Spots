@@ -2414,13 +2414,13 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     //cout << grav0 << " " << grav1 << endl;
     
     //Find proper mu choice
-    th_spacing = ((Units::PI/2) - 0.024084) / 49;
+    th_spacing = (acos(0.015629)-acos(0.999710)) / 49;
     theta = acos (cos_theta);
-    th_index = ((Units::PI/2) - theta) / th_spacing;
+    th_index = (acos(0.015629) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = Units::PI/2 - (th_spacing*i_mu);
-    th1 = Units::PI/2 - (th_spacing*n_mu);
+    th0 = acos(0.015629) - (th_spacing*i_mu);
+    th1 = acos(0.015629) - (th_spacing*n_mu);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
     //Find proper freqency choice
@@ -2442,8 +2442,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     cout << lt << " " << n_lt << " " << t1 << endl;
     cout << lgrav << " " << i_lgrav << " " << grav0 << endl;
     cout << lgrav << " " << n_lgrav << " " << grav1 << endl;
-    cout << theta << " " << i_mu << " " << th0 << endl;
-    cout << theta << " " << n_mu << " " << th1 << endl;
+    cout << cos_theta << " " << theta << " " << i_mu << " " << th0 << " " << cos(th0) << endl;
+    cout << cos_theta << " " << theta << " " << n_mu << " " << th1 << " " << cos(th1) << endl;
     cout << E << " " << i_f << " " << e0 << endl;
     cout << E << " " << n_f << " " << e1 << endl;
     */
@@ -2532,13 +2532,13 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     //cout << grav0 << " " << grav1 << endl;
     
     //Find proper mu choice
-    th_spacing = ((Units::PI/2) - 0.024084) / 49;
+    th_spacing = (acos(0.015629)-acos(0.999710)) / 49;
     theta = acos (cos_theta);
-    th_index = ((Units::PI/2) - theta) / th_spacing;
+    th_index = (acos(0.015629) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = Units::PI/2 - (th_spacing*i_mu);
-    th1 = Units::PI/2 - (th_spacing*n_mu);
+    th0 = acos(0.015629) - (th_spacing*i_mu);
+    th1 = acos(0.015629) - (th_spacing*n_mu);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
 
