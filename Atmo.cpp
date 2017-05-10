@@ -2419,8 +2419,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     th_index = ((Units::PI/2) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = (th_spacing*i_mu - 0.024084);
-    th1 = (th_spacing*n_mu - 0.024084);
+    th0 = Units::PI/2 - (th_spacing*i_mu);
+    th1 = Units::PI/2 - (th_spacing*n_mu);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
     //Find proper freqency choice
@@ -2437,16 +2437,14 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu;
     //cout << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
-    /*
     cout << lt << " " << i_lt << " " << t0 << endl;
     cout << lt << " " << n_lt << " " << t1 << endl;
     cout << lgrav << " " << i_lgrav << " " << grav0 << endl;
     cout << lgrav << " " << n_lgrav << " " << grav1 << endl;
-    cout << cos_theta << " " << i_mu << " " << th0 << endl;
-    cout << cos_theta << " " << n_mu << " " << th1 << endl;
+    cout << theta << " " << i_mu << " " << th0 << endl;
+    cout << theta << " " << n_mu << " " << th1 << endl;
     cout << E << " " << i_f << " " << e0 << endl;
     cout << E << " " << n_f << " " << e1 << endl;
-    */
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
     I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
@@ -2537,8 +2535,8 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     th_index = ((Units::PI/2) - theta) / th_spacing;
     i_mu = (int) th_index;
     n_mu = i_mu + 1;
-    th0 = (th_spacing*i_mu - 0.024084);
-    th1 = (th_spacing*n_mu - 0.024084);
+    th0 = Units::PI/2 - (th_spacing*i_mu);
+    th1 = Units::PI/2 - (th_spacing*n_mu);
     //cout << th0 << " " << th1 << " " << theta << endl;
 
 
