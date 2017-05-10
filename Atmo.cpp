@@ -2437,6 +2437,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu;
     //cout << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+    /*
     cout << lt << " " << i_lt << " " << t0 << endl;
     cout << lt << " " << n_lt << " " << t1 << endl;
     cout << lgrav << " " << i_lgrav << " " << grav0 << endl;
@@ -2445,6 +2446,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     cout << theta << " " << n_mu << " " << th1 << endl;
     cout << E << " " << i_f << " " << e0 << endl;
     cout << E << " " << n_f << " " << e1 << endl;
+    */
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
     I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
@@ -2542,7 +2544,7 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + E_dex * 50 + i_mu;
     //cout << first_inte << endl;
-    /*
+
     I_int[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0); //t0, grav0, th0
     I_int[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0); //t0, grav0, th1
     I_int[2] = mexmcc.mccinte[first_inte+5000]*pow(10.0,t0*3.0); //t0, grav1, th0
@@ -2551,7 +2553,7 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     I_int[5] = mexmcc.mccinte[first_inte+55001]*pow(10.0,t0*3.0);//t1, grav0, th1
     I_int[6] = mexmcc.mccinte[first_inte+60000]*pow(10.0,t0*3.0);//t1, grav1, th0
     I_int[7] = mexmcc.mccinte[first_inte+60001]*pow(10.0,t0*3.0);//t1, grav1, th1
-    */
+    
     // Interpolate to chosen mu
     J[0] = Linear(theta,th0,I_int[0],th1,I_int[1]); //t0, grav0
     J[1] = Linear(theta,th0,I_int[2],th1,I_int[3]); //t0, grav1
