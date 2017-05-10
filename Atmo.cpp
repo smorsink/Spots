@@ -2437,6 +2437,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu;
     //cout << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+    /*
     cout << lt << " " << i_lt << " " << t0 << endl;
     cout << lt << " " << n_lt << " " << t1 << endl;
     cout << lgrav << " " << i_lgrav << " " << grav0 << endl;
@@ -2445,6 +2446,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     cout << cos_theta << " " << n_mu << " " << th1 << endl;
     cout << E << " " << i_f << " " << e0 << endl;
     cout << E << " " << n_f << " " << e1 << endl;
+    */
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
     I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
