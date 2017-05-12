@@ -604,9 +604,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	chdir(atmodir);
    		FILE *Hspecttable;
    		Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
+   		curve.mccangl = dvector(0,51);
     	curve.mccinte = dvector(0,1595001);
     	double junk(0.0);
-    	for (int i = 0; i < 1595001; i++){
+    	for (int i = 0; i < 51; i++){
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
+        	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+    	}
+    	for (int i = 51; i < 1595001; i++){
         	fread(&junk,sizeof(double),1,Hspecttable);
         	fread(&junk,sizeof(double),1,Hspecttable);
         	fread(&junk,sizeof(double),1,Hspecttable);
@@ -615,6 +623,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	}
     	fclose(Hspecttable);
     	chdir(cwd);
+    	//std::cout << "finished reading Cole's McPHAC" << std::endl;
+    	//std::cout << curve.mccangl[50] << std::endl;
+    	//std::cout << curve.mccinte[51] << std::endl;
     }
 
    // Force energy band settings into NICER specified bands
@@ -898,7 +909,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
-	    if ( j==0){ 
+	    if ( j==0){
+	    	//std::cout << "starting ComputeAngles" << std::endl;
 	      curve = ComputeAngles(&curve, defltoa); 	      
 	      curve = ComputeCurve(&curve);	      
 	    }

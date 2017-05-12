@@ -72,7 +72,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     
     // One monochromatic energy, hardwired value, in keV
     //    E_mono = 1.0;
-
+    //std::cout << "starting computeangles" << std::endl;
     curve = (*angles);
     mass_over_r = curve.para.mass_over_r;
     temperature = curve.para.temperature;       // T in keV 
@@ -87,6 +87,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     E1 = curve.para.L1;
     E2 = curve.para.L2;
     DeltaE = curve.para.DeltaE;
+    //cout << curve.mccinte[0] << endl;
    
     redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
     bolo = 2.0e9 * 2.404 * Units::C * pow(temperature * Units::EV/(Units::H_PLANCK * Units::C) , 3); // use this one! probably!
@@ -198,6 +199,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	
 	  	if (curve.flags.beaming_model == 10){ // *cole* McPHACC3
 	  		for (unsigned int p = 0; p<numbands; p++){
+	  			//cout << p << endl;
 	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
 	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
 	    		//if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
@@ -2414,14 +2416,17 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     //cout << grav0 << " " << grav1 << endl;
     
     //Find proper mu choice
-    th_spacing = (acos(0.015629)-acos(0.999710)) / 49;
-    theta = acos (cos_theta);
-    th_index = (acos(0.015629) - theta) / th_spacing;
-    i_mu = (int) th_index;
-    n_mu = i_mu + 1;
-    th0 = acos(0.015629) - (th_spacing*i_mu);
-    th1 = acos(0.015629) - (th_spacing*n_mu);
-    //cout << th0 << " " << th1 << " " << theta << endl;
+    n_mu = 1;
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 49){
+    	n_mu += 1;
+    }
+
+    i_mu = n_mu - 1;
+    th0 = acos(mexmcc.mccangl[i_mu]);
+    th1 = acos(mexmcc.mccangl[n_mu]);
+    theta = acos(cos_theta);
+    //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
+    //cout << th0 << " " << th1 << " " << acos(cos_theta) << endl;
 
     //Find proper freqency choice
     ener_spacing = pow(10.0,0.0338);
@@ -2437,16 +2442,6 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu;
     //cout << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
-    /*
-    cout << lt << " " << i_lt << " " << t0 << endl;
-    cout << lt << " " << n_lt << " " << t1 << endl;
-    cout << lgrav << " " << i_lgrav << " " << grav0 << endl;
-    cout << lgrav << " " << n_lgrav << " " << grav1 << endl;
-    cout << cos_theta << " " << theta << " " << i_mu << " " << th0 << " " << cos(th0) << endl;
-    cout << cos_theta << " " << theta << " " << n_mu << " " << th1 << " " << cos(th1) << endl;
-    cout << E << " " << i_f << " " << e0 << endl;
-    cout << E << " " << n_f << " " << e1 << endl;
-    */
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
     I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
@@ -2482,19 +2477,24 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     J[3] = Linear(theta,th0,I_int[6],th1,I_int[7]); //t1, grav1
 
     // Interpolate to chosen local gravity
-    K[0] = Linear(lgrav,grav0,J[0],grav1,J[1]); //t0
-    K[1] = Linear(lgrav,grav0,J[2],grav1,J[3]); //t1
+    K[0] = pow(10.0,Linear(lgrav,grav0,log10(J[0]),grav1,log10(J[1]))); //t0
+    K[1] = pow(10.0,Linear(lgrav,grav0,log10(J[2]),grav1,log10(J[3]))); //t1
 
     // Interpolate to chosen temperature
-    L = Linear(lt,t0,K[0],t1,K[1]);
+    L = pow(10.0,Linear(lt,t0,log10(K[0]),t1,log10(K[1])));
 
     // Set to zero at small angle
     if (cos_theta < 0.015629) L = 0;
     //cout << P << endl;
 
     //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
-    //if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
-    //if (isnan(P)) cout << "P is nan!" << endl;
+    /*
+    if (isnan(L)) {
+    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
+    	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
+    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    }
+    */
     //cout << L << endl;
 
     return L;
@@ -2507,7 +2507,7 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
 	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
 	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
 
-
+	//cout << "McPHACC4" << endl;
     //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
@@ -2532,27 +2532,32 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     //cout << grav0 << " " << grav1 << endl;
     
     //Find proper mu choice
-    th_spacing = (acos(0.015629)-acos(0.999710)) / 49;
-    theta = acos (cos_theta);
-    th_index = (acos(0.015629) - theta) / th_spacing;
-    i_mu = (int) th_index;
-    n_mu = i_mu + 1;
-    th0 = acos(0.015629) - (th_spacing*i_mu);
-    th1 = acos(0.015629) - (th_spacing*n_mu);
-    //cout << th0 << " " << th1 << " " << theta << endl;
+    //cout << "finding mu" << endl;
+    n_mu = 1;
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 49){
+    	n_mu += 1;
+    }
+
+    i_mu = n_mu - 1;
+    th0 = acos(mexmcc.mccangl[i_mu]);
+    th1 = acos(mexmcc.mccangl[n_mu]);
+    theta = acos(cos_theta);
+    //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
+    //cout << th0 << " " << th1 << " " << acos(cos_theta) << endl;
+    //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
 
 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + E_dex * 50 + i_mu;
-    //cout << first_inte << endl;
+    //cout << i_lt << " " << i_lgrav << " " << E_dex << " " << i_mu << " " << first_inte << endl;
 
     I_int[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0); //t0, grav0, th0
     I_int[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0); //t0, grav0, th1
     I_int[2] = mexmcc.mccinte[first_inte+5000]*pow(10.0,t0*3.0); //t0, grav1, th0
     I_int[3] = mexmcc.mccinte[first_inte+5001]*pow(10.0,t0*3.0); //t0, grav1, th1
-    I_int[4] = mexmcc.mccinte[first_inte+55000]*pow(10.0,t0*3.0);//t1, grav0, th0
-    I_int[5] = mexmcc.mccinte[first_inte+55001]*pow(10.0,t0*3.0);//t1, grav0, th1
-    I_int[6] = mexmcc.mccinte[first_inte+60000]*pow(10.0,t0*3.0);//t1, grav1, th0
-    I_int[7] = mexmcc.mccinte[first_inte+60001]*pow(10.0,t0*3.0);//t1, grav1, th1
+    I_int[4] = mexmcc.mccinte[first_inte+55000]*pow(10.0,t1*3.0);//t1, grav0, th0
+    I_int[5] = mexmcc.mccinte[first_inte+55001]*pow(10.0,t1*3.0);//t1, grav0, th1
+    I_int[6] = mexmcc.mccinte[first_inte+60000]*pow(10.0,t1*3.0);//t1, grav1, th0
+    I_int[7] = mexmcc.mccinte[first_inte+60001]*pow(10.0,t1*3.0);//t1, grav1, th1
     
     // Interpolate to chosen mu
     J[0] = Linear(theta,th0,I_int[0],th1,I_int[1]); //t0, grav0
@@ -2561,19 +2566,23 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     J[3] = Linear(theta,th0,I_int[6],th1,I_int[7]); //t1, grav1
 
     // Interpolate to chosen local gravity
-    K[0] = Linear(lgrav,grav0,J[0],grav1,J[1]); //t0
-    K[1] = Linear(lgrav,grav0,J[2],grav1,J[3]); //t1
+    K[0] = pow(10.0,Linear(lgrav,grav0,log10(J[0]),grav1,log10(J[1]))); //t0
+    K[1] = pow(10.0,Linear(lgrav,grav0,log10(J[2]),grav1,log10(J[3]))); //t1
 
     // Interpolate to chosen temperature
-    L = Linear(lt,t0,K[0],t1,K[1]);
+    L = pow(10.0,Linear(lt,t0,log10(K[0]),t1,log10(K[1])));
 
     // Set to zero at small angle
     if (cos_theta < 0.015629) L = 0;
-    //cout << P << endl;
 
     //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
-    //if (isnan(L)) cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
-    //if (isnan(P)) cout << "P is nan!" << endl;
+    /*
+    if (isnan(L)) {
+    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
+    	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
+    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    }
+    */
     //cout << L << endl;
 
     return L;

@@ -258,17 +258,21 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     attenuation = mxGetScalar(theInput[28]);
     
     double *atmodata_mccinte = mxGetPr(theInput[29]);
-
     curve.mccinte = dvector(0,1595001);
     for (int i = 0; i < 1595001; i++){
         curve.mccinte[i] = atmodata_mccinte[i];
     }
 
+    double *atmodata_mccangl = mxGetPr(theInput[30]);
+    curve.mccangl = dvector(0,51);
+    for (int i = 0; i < 51; i++){
+        curve.mccangl[i] = atmodata_mccangl[i];
+    }
        
     for (int i = 0; i < numbands; i++){
-    obsdata.f[i] = mxGetPr(theInput[30+3*i]); // array of double
-    obsdata.err[i] = mxGetPr(theInput[31+3*i]); // array of double
-    background[i] = mxGetScalar(theInput[32+3*i]);
+    obsdata.f[i] = mxGetPr(theInput[31+3*i]); // array of double
+    obsdata.err[i] = mxGetPr(theInput[32+3*i]); // array of double
+    background[i] = mxGetScalar(theInput[33+3*i]);
         std::cout << " bg["<<i<<"]=" << background[i] ;
     }
        std::cout << std::endl;

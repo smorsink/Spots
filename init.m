@@ -2,6 +2,7 @@ function extPar = init  %defining an external parameter sent to the executable; 
 
 %spotDir=fileparts(which(mfilename));
 spotDir=fileparts(which('init.m'));
+extPar.dataDir='/home/kitung/Ferret_Runs/May12a';
 %
 % This version of init.m is for running a comparison with Slavko's
 % synthetic data
@@ -65,22 +66,22 @@ else
     extPar.fixed.toa = 0;
 end
 extPar.fixed.spotshape=0;
-cd /home/kitung/spot-albert/Spot/atmosphere
+cd /home/kitung/atmospheres/cole_mcphac
 atmotable=fopen('Hatm8000dT0.05.bin');
 a = fread(atmotable,'double');   
 fclose(atmotable);
 atmo = a([1:1595000]*5);
+angl = a([1:1595000]*5-1);
 extPar.fixed.inte = atmo;
+extPar.fixed.angl = angl(1:50);
 
 %
 %
 % ------------
 % Load data.
 % NEED TO CHANGE THIS IN outputFerret.m TOO, ~ line 80
-exe_dir='/home/kitung/spot-albert/Spot';
-% fileName=strcat(exe_dir,'/input/bb_only_fake_data.txt'); % *** need to change this in outputFerret too
-% fileName=strcat(exe_dir,'/input/nsxh_may1_withnoise_bgh.txt'); % *** need to change this in outputFerret too
-fileName=strcat(exe_dir,'/input/mcphacc_may3_withnoise_bgh.txt'); % *** need to change this in outputFerret too
+exe_dir='/home/kitung/Spot';
+fileName=strcat(exe_dir,'/input/mcphacc_may12_withnoise_bgh.txt'); % *** need to change this in outputFerret too
 eval('dataFile=load(fileName);');
 % ------------
 % Process data
