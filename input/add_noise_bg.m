@@ -1,9 +1,9 @@
 clear, close all
 
-cd /home/kitung/spot-albert/Spot/input
-data = load('mcphacc_may3_inte.txt');
+cd /home/kitung/Spot/input
+data = load('mcphacc_may12.txt');
 data0 = data;
-bg = load('background_hyd_may1.txt');
+bg = load('mcphacc_may12_hbg.txt');
 data(:,2:16) = data(:,2:16)+bg(:,2:16);
 
 %adding noise goes here
@@ -22,8 +22,12 @@ for i = 1:15
     newdata(:,2*i+1) = sqrt(round(data(:,i+1)));
 end
 
-fid = fopen('mcphacc_may3_withnoise_bgh.txt','w');
+fid = fopen('mcphacc_may12_withnoise_bgh.txt','w');
 fprintf(fid, '%.6f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f %d %.4f\n',newdata');
+fclose(fid)
+
+fid = fopen('mcphacc_may12_bgnormalized.txt','w');
+fprintf(fid, '%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g',bg(1,2:16)/1e7*32');
 fclose(fid)
 
 figure,
