@@ -43,6 +43,7 @@ struct Parameters {      // local bit of spot information
   double rspot;          // Radius at the spot
   double mass_over_r;    // Dimensionless mass divided by radius
   double omega;          // Spin frequency of the star; unitless in here
+  double omega_bar_sq;	 // Rotation parameter, omega_bar_squared in AlGendy & Morsink 2014
   double cosgamma;       // Gamma is angle between true normal to surface and radial vector; probably in radians
   double bbrat;          // Ratio of blackbody-to-comptonization of spectrum
   double ts;             // Time shift between 0 and 1 (beginning of period, end of period)

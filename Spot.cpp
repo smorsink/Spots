@@ -518,8 +518,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     mass_over_req = mass/(req) * Units::GMC2;
     incl_1 *= (Units::PI / 180.0);  // radians
+    d_incl_2 *= (Units::PI / 180.0);  // radians
     if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
     theta_1 *= (Units::PI / 180.0); // radians
+    d_theta_2 *= (Units::PI / 180.0);  // radians
     theta_2 = theta_1+d_theta_2; // radians
     //rho *= (Units::PI / 180.0);  // rho is input in radians
     mu_1 = cos( theta_1 );
@@ -541,6 +543,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.mass = mass;
     curve.para.mass_over_r = mass_over_req;
     curve.para.omega = omega;
+    curve.para.omega_bar_sq = rot_par;
     curve.para.radius = req;
     curve.para.req = req;
     curve.para.theta = theta_1;

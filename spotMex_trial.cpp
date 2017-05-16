@@ -310,6 +310,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     curve.para.mass = mass;
     curve.para.mass_over_r = mass_over_req;
     curve.para.omega = omega;
+    curve.para.omega_bar_sq = rot_par;
     curve.para.radius = req;
     curve.para.req = req;
     curve.para.theta = theta_1;

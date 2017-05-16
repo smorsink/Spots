@@ -2386,7 +2386,7 @@ double McPHACC2(int E_dex, double cos_theta){
 
 // Calculate the final interpolated intensity
 double McPHACC3(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
-	double delta, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
 	double e0, e1, th0, th1, grav0, grav1, t0, t1;
 	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
 	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
@@ -2396,8 +2396,9 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
+    obl_approx = (1 + (-0.791 + 0.776 * mexmcc.para.mass_over_r) * pow(sin(mexmcc.para.omega_bar_sq),2) + (1.138 - 1.431 * mexmcc.para.mass_over_r) * pow(cos(mexmcc.para.omega_bar_sq),2));
     //lgrav = log10(delta * Units::G * M / (R * R));
-    lgrav = log10(delta * Units::G * M / R / R * (1 - 0.791 * mexmcc.para.omega * mexmcc.para.omega * sin(mexmcc.para.theta) * sin(mexmcc.para.theta) + 1.138 * mexmcc.para.omega * mexmcc.para.omega * cos(mexmcc.para.theta) * cos(mexmcc.para.theta)));
+    lgrav = log10(delta * Units::G * M / R / R * obl_approx);
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     //cout << "temperature in log(K) is " << lt << endl;
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
@@ -2503,7 +2504,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
 
 // Calculate the final interpolated intensity
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
-	double delta, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
 	double th0, th1, grav0, grav1, t0, t1;
 	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
 	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
@@ -2513,8 +2514,9 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
+    obl_approx = (1 + (-0.791 + 0.776 * mexmcc.para.mass_over_r) * pow(sin(mexmcc.para.omega_bar_sq),2) + (1.138 - 1.431 * mexmcc.para.mass_over_r) * pow(cos(mexmcc.para.omega_bar_sq),2));
     //lgrav = log10(delta * Units::G * M / (R * R));
-    lgrav = log10(delta * Units::G * M / R / R * (1 - 0.791 * mexmcc.para.omega * mexmcc.para.omega * sin(mexmcc.para.theta) * sin(mexmcc.para.theta) + 1.138 * mexmcc.para.omega * mexmcc.para.omega * cos(mexmcc.para.theta) * cos(mexmcc.para.theta)));
+    lgrav = log10(delta * Units::G * M / R / R * obl_approx);
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     //cout << "temperature in log(K) is " << lt << endl;
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
