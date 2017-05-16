@@ -73,8 +73,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
     ts(0.0),                    // Phase shift or time off-set from data; Used in chi^2 calculation
-    spot_temperature(0.0),      // Inner temperature of the spot, in the star's frame, in keV
-    rho(0.0),                   // Angular radius of the inner bullseye part of the spot, in degrees (converted to radians)
+    spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in keV
+    spot2_temperature(0.0),		// Temperature of second spot
+    rho(0.0),                   // Angular radius of the first spot, in radians
+    rho2(0.0),
     dphi(1.0),                  // Each chunk of azimuthal angle projected onto equator, when broken up into the bins (see numphi)
     phishift,
     aniso(0.586),               // Anisotropy parameter
@@ -95,6 +97,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
+    phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
     B;                          // from param_degen/equations.pdf 2
    
   double SurfaceArea(0.0);
@@ -166,15 +169,27 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         			// 3 = NICER J0437 WABS
         			// 4 = NICER J0437 TBABS
         			break;
+
+	    case 'A': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
+	    			sscanf(argv[i+1], "%lf", &phase_2);
+	    			break;
 	            
 	    case 'b': // Bending Angle File
 	            	sscanf(argv[i+1], "%s", bend_file);	
-			bend_file_is_set = true;
+					bend_file_is_set = true;
 	            	break;
+
+	    case 'C': // Temperature of second spot
+	    			sscanf(argv[i+1], "%lf", &spot2_temperature);
+	    			break;
+
+	    case 'd': // Size of second spot
+	    			sscanf(argv[i+1], "%lf", &rho2);
+	    			break;	
 	            
 	    case 'D':  // Distance to NS in kpc
 	            	sscanf(argv[i+1], "%lf", &distance);
-			distance *= 3.0857e19; // Convert to metres
+					distance *= 3.0857e19; // Convert to metres
 	            	break;
 	                
 	    case 'e':  // Emission angle of the spot (degrees), latitude
@@ -199,7 +214,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                // 3 = NSATMOS Hydrogen
 	                // 4 = NSX Helium
 	                // 5 = NSX Hydrogen
-			// 7 = Hopf Function
+					// 7 = Hopf Function
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -226,13 +241,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                break;
 
 	    case 'k': // Background in low energy band (between 0 and 1)
-	      sscanf(argv[i+1], "%lf", &background);
-	      break;
+	      			sscanf(argv[i+1], "%lf", &background);
+	      			break;
 
 	    case 'K': // Background file specified for each band (between 0 and 1)
 	      			sscanf(argv[i+1], "%s", background_file);
 	      			background_file_is_set = true;
-	      break;
+	      			break;
 	          	          
 	    case 'm':  // Mass of the star (solar mass units)
 	                sscanf(argv[i+1], "%lf", &mass);
@@ -241,12 +256,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	          
 	    case 'n':  // Number of phase or time bins
 	                sscanf(argv[i+1], "%u", &databins);
-			if ( databins < MIN_NUMBINS) {
-			  numbins = MIN_NUMBINS;
-			}
-			else
-			  numbins = databins;
-			 
+					if ( databins < MIN_NUMBINS) {
+			  			numbins = MIN_NUMBINS;
+					}
+					else
+			  			numbins = databins;		 
 	                break;
 	                
 	    case 'N': // Flag for not normalizing the flux output
@@ -286,15 +300,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    case 's':  // Spectral Model
 	                sscanf(argv[i+1], "%u", &spectral_model);
-			// 0 = blackbody
-			// 1 = thin line for nicer
-	        // 2 = *slow and old* integrated flux for energy bands
-	        // 3 = *fast and correct* integrated flux for energy bands
-			break;
+					// 0 = blackbody
+					// 1 = thin line for nicer
+	        		// 2 = *slow and old* integrated flux for energy bands
+	        		// 3 = *fast and correct* integrated flux for energy bands
+					break;
 			
 	    case 'S': // Number of Energy bands
-	      sscanf(argv[i+1], "%u", &numbands);
-	      break;
+	      			sscanf(argv[i+1], "%u", &numbands);
+	      			break;
 
 	    case 't':  // Number of theta bins 
 	                sscanf(argv[i+1], "%u", &numtheta);
@@ -336,8 +350,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	break;
 			
 	    case 'Z': // Observation time (in seconds)
-	      sscanf(argv[i+1], "%lf", &obstime);
-	      break;
+	      			sscanf(argv[i+1], "%lf", &obstime);
+	      			break;
 
 	            	
 	    case '2': // If the user want two spots
@@ -406,6 +420,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
     curve.defl.toa_b = dvector(0,3*NN+1);
 	*/
+
+	std::cout << rho2 << " " << spot2_temperature << " " << phase_2 << std::endl;
 	
     if (bend_file_is_set){ // Read in table of bending angles for all M/R
 
@@ -818,143 +834,143 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     for (unsigned int p(0);p<pieces;p++){
 
-      curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
-
-      double deltatheta(0.0);
+      	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
+      	double deltatheta(0.0);
 
     // Looping through the mesh of the spot
-      for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
+      	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
 	//		for (unsigned int k(16); k < 18; k++) { // Loop through the circles
 	 
-	  deltatheta = curve.para.dtheta[k];
+	  		deltatheta = curve.para.dtheta[k];
 
-	  double thetak = curve.para.theta_k[k];
-	  // std::cout << "k = " << k 
-	  //	    << "theta = " << thetak
-	  //	    << std::endl;
+	  		double thetak = curve.para.theta_k[k];
+	  		// std::cout << "k = " << k 
+	  		//	    << "theta = " << thetak
+	  		//	    << std::endl;
 
-	  double phi_edge = curve.para.phi_k[k];
+	  		double phi_edge = curve.para.phi_k[k];
 
-	  dphi = 2.0*Units::PI/(numbins*1.0);
+	  		dphi = 2.0*Units::PI/(numbins*1.0);
 
-	  mu_1 = cos(thetak);
-	  if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
+	  		mu_1 = cos(thetak);
+	  		if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 
-	  //if ( mu_1 < 0.0){
-	    //std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
-			  //mu_1 = fabs(mu_1);
-			  //thetak = Units::PI - thetak;
-			  //curve.para.incl = Units::PI - incl_1;
-	  //}
+	  		//if ( mu_1 < 0.0){
+	    		//std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
+			  		//mu_1 = fabs(mu_1);
+			  		//thetak = Units::PI - thetak;
+			  		//curve.para.incl = Units::PI - incl_1;
+	  		//}
 
-	  if (NS_model != 3)
-	    rspot = model->R_at_costheta(mu_1);
-	  else
-	    rspot = req;
+	  		if (NS_model != 3)
+	    		rspot = model->R_at_costheta(mu_1);
+	  		else
+	    		rspot = req;
 
-	  // Values we need in some of the formulas.
-	  cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-	  curve.para.cosgamma = cosgamma;
+	  		// Values we need in some of the formulas.
+	  		cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+	  		curve.para.cosgamma = cosgamma;
 
-	  curve.para.radius = rspot; // load rspot into structure
-	  curve.para.mass_over_r = mass_over_req * req/rspot;
+	  		curve.para.radius = rspot; // load rspot into structure
+	  		curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
-	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-	  //std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
-	  curve = Bend(&curve,defltoa);
-	  //std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
+	  		//std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+	  		OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+	  		//std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
+	  		curve = Bend(&curve,defltoa);
+	  		//std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
 
 
-	  numphi = 2.0*phi_edge/dphi;
-	  phishift = 2.0*phi_edge - numphi*dphi;
-	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+	  		numphi = 2.0*phi_edge/dphi;
+	  		//std::cout << numphi << " " << phi_edge << " " << dphi << std::endl;
+	  		phishift = 2.0*phi_edge - numphi*dphi;
+	  		curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
 
-	  if (numphi==0){
-	    std::cout << "numphi=0!" << std::endl;
-	    numphi = 1;
-	    phishift = 0.0;
-	    curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
-	    //std::cout << curve.para.dS << std::endl;
-	  }
+	  		if (numphi==0){
+	    		std::cout << "numphi=0!" << std::endl;
+	    		numphi = 1;
+	    		phishift = 0.0;
+	    		curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
+	    		//std::cout << curve.para.dS << std::endl;
+	  		}
 
-	  if (spotshape!=2)
-	    curve.para.dS *= curve.para.gamma_k[k];
+	  		if (spotshape!=2)
+	    		curve.para.dS *= curve.para.gamma_k[k];
 
-	  curve.para.theta = thetak;
-	  //std::cout << curve.para.dS << " " << rspot << " " << sin(thetak) << " " << deltatheta << " " << dphi << std::endl;
+	  		curve.para.theta = thetak;
+	  		//std::cout << curve.para.dS << " " << rspot << " " << sin(thetak) << " " << deltatheta << " " << dphi << std::endl;
 
-	  SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
+	  		SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
 
-	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
-	    numphi=1;
-	    phi_edge=0.0;
-	    dphi=0.0;
-	    phishift = 0.0;
-	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
-	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
-	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
-	    //std::cout << curve.para.dS << std::endl;
-	  }
+	  		if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
+	    		numphi=1;
+	    		phi_edge=0.0;
+	    		dphi=0.0;
+	    		phishift = 0.0;
+	    		curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+	    		if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+	    		if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
+	    		//std::cout << curve.para.dS << std::endl;
+	  		}
        
-	  //std::cout << " numphi=" << numphi << " " 
-	  //	    << " phi_edge=" << phi_edge << " " 
-	  //	    << " dphi=" << dphi << " " 
-	  //	    << " phishift=" << phishift << " " << curve.para.dS << std::endl;
+	  		//std::cout << " numphi=" << numphi << " " 
+	  		//	    << " phi_edge=" << phi_edge << " " 
+	  		//	    << " dphi=" << dphi << " " 
+	  		//	    << " phishift=" << phishift << " " << curve.para.dS << std::endl;
      
-	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
+	  		if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
-	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+	  		for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
 	    
-	    curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
+	    		curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
-	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
-	    if ( j==0){
-	    	//std::cout << "starting ComputeAngles" << std::endl;
-	      curve = ComputeAngles(&curve, defltoa); 	      
-	      curve = ComputeCurve(&curve);	      
-	    }
+	    		//Heart of spot, calculate curve for the first phi bin - otherwise just shift
+	    		if ( j==0){
+	    			//std::cout << "starting ComputeAngles" << std::endl;
+	      			curve = ComputeAngles(&curve, defltoa); 	      
+	      			curve = ComputeCurve(&curve);	      
+	    		}
 	
-	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
-	      for ( unsigned int i(0); i < numbins; i++ ) {
-		for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
-	      }
-	    }
+	    		if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
+	      			for ( unsigned int i(0); i < numbins; i++ ) {
+						for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
+	      			}
+	    		}
 
-	    // Add curves, load into Flux array
-	    for ( unsigned int i(0); i < numbins; i++ ) {
-	      int q(i+j);
-	      if (q>=numbins) q+=-numbins;
-	      for ( unsigned int p(0); p < numbands; p++ ) {
-		Flux[p][i] += curve.f[p][q];
-	      }
-	    } // ending Add curves
-	  } // end for-j-loop
+	    		// Add curves, load into Flux array
+	    		for ( unsigned int i(0); i < numbins; i++ ) {
+	      			int q(i+j);
+	      			if (q>=numbins) q+=-numbins;
+	      			for ( unsigned int p(0); p < numbands; p++ ) {
+						Flux[p][i] += curve.f[p][q];
+	      			}
+	    		} // ending Add curves
+	  		} // end for-j-loop
 
-	  // Add in the missing bit.      
-	  if (phishift != 0.0){ // Add light from last bin, which requires shifting
-	    for ( unsigned int i(0); i < numbins; i++ ) {
-	      int q(i+numphi-1);
-	      if (q>=numbins) q+=-numbins;
-	      for ( unsigned int pp(0); pp < numbands; pp++ ) {
-		Temp[pp][i] = curve.f[pp][q];
-	      }
-	    }
-	    for (unsigned int pp(0); pp < numbands; pp++ )
-	      for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
+	  		// Add in the missing bit.      
+	  		if (phishift != 0.0){ // Add light from last bin, which requires shifting
+	    		for ( unsigned int i(0); i < numbins; i++ ) {
+	      			int q(i+numphi-1);
+	      		if (q>=numbins) q+=-numbins;
+	      		for ( unsigned int pp(0); pp < numbands; pp++ ) {
+					Temp[pp][i] = curve.f[pp][q];
+	      		}
+	    	}
+	    	for (unsigned int pp(0); pp < numbands; pp++ )
+	      		for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
 	    
-	    curve = ShiftCurve(&curve,phishift);
+	    			curve = ShiftCurve(&curve,phishift);
        
-	    for( unsigned int pp(0); pp < numbands; pp++ )
-	      for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
-	  } //end of last bin  
-	  delete defltoa;
+	    		for( unsigned int pp(0); pp < numbands; pp++ )
+	      			for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+	 		} //end of last bin  
+	  	delete defltoa;
 
-	  //insert free memory here
+	  	//insert free memory here
         free_dvector(curve.defl.psi_b,0,301);
         free_dvector(curve.defl.b_psi,0,301);
         free_dvector(curve.defl.dcosa_dcosp_b,0,301);
-        free_dvector(curve.defl.toa_b,0,301);
+       	free_dvector(curve.defl.toa_b,0,301);
       	} // closing for loop through theta divisions
     } // End Standard Case of first spot
 
@@ -964,22 +980,26 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     //Setting new parameters for second spot
     if ( two_spots ) {
+    	std::cout << "Starting Spot 2" << std::endl;
     	incl_2 = Units::PI - incl_1 + d_incl_2; // keeping theta the same, but changing inclination
     	curve.para.incl = incl_2;
-    	theta_2 = theta_1 + d_theta_2;
+    	theta_2 = theta_1 + d_theta_2; //d_theta_2 = 7.78 degrees, for 56+131.78 - 180
     	curve.para.theta = theta_2;  // keeping theta the same, but changing inclination
     	cosgamma = model->cos_gamma(mu_2);
     	curve.para.cosgamma = cosgamma;
-    		    		
+
+    	std::cout << "rho2 = " << rho2 << std::endl;
+
     	if ( T_mesh_in ) {
       		std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
       		spot_temperature = 2;
     	}
-    	curve.para.temperature = spot_temperature;
-
+    	//curve.para.temperature = spot_temperature;
+    	//curve.para.temperature = 0.0577846;
+    	curve.para.temperature = spot2_temperature;
     	int pieces;
     	//Does the spot go over the pole?
-    	if ( rho > theta_2){ // yes
+    	if ( rho2 > theta_2){ // yes
       		pieces=2;
    		}
     	else{ //no
@@ -990,126 +1010,129 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		
 	for (unsigned int p(0);p<pieces;p++){
 
-	  curve = SpotShape(pieces,p,numtheta,theta_2,rho, &curve, model);
+	  	curve = SpotShape(pieces,p,numtheta,theta_2,rho2, &curve, model);
 
-	  double deltatheta(0.0);
+	  	double deltatheta(0.0);
 
     // Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
 	 
-	  deltatheta = curve.para.dtheta[k];
+	  		deltatheta = curve.para.dtheta[k];
 
-	  double thetak = curve.para.theta_k[k];
+	  		double thetak = curve.para.theta_k[k];
 
-	  double phi_edge = Units::PI-curve.para.phi_k[k]; // from our convention for second spot, true phi_edge should be pi - SpotShape:phi_k 
+	  		//double phi_edge = Units::PI-curve.para.phi_k[k]; // from our convention for second spot, true phi_edge should be pi - SpotShape:phi_k 
+	  		double phi_edge = (Units::PI * 2 * phase_2)-curve.para.phi_k[k]; // for phase difference of 0.5626 cycles
 
-	  dphi = 2.0*Units::PI/(numbins*1.0);
+	  		dphi = 2.0*Units::PI/(numbins*1.0);
 
-	  mu_2 = cos(thetak);
-	  if (fabs(mu_2) < DBL_EPSILON) mu_2 = 0.0;
+	  		mu_2 = cos(thetak);
+	  		if (fabs(mu_2) < DBL_EPSILON) mu_2 = 0.0;
 
-	  if ( mu_2 < 0.0){
-	    //std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
-			//mu_2 = fabs(mu_2);
-			//thetak = Units::PI - thetak;
-			//curve.para.incl = Units::PI - incl_2;
-	  }
+	  		if ( mu_2 < 0.0){
+	    		//std::cout << "Southern Hemisphere! mu=" << mu_2 << std::endl;
+				//mu_2 = fabs(mu_2);
+				//thetak = Units::PI - thetak;
+				//curve.para.incl = Units::PI - incl_2;
+	  		}
 
-	  if (NS_model != 3)
-	    rspot = model->R_at_costheta(mu_2);
-	  else
-	    rspot = req;
+	  		if (NS_model != 3)
+	    		rspot = model->R_at_costheta(mu_2);
+	  		else
+	    		rspot = req;
 
-      // Values we need in some of the formulas.
-	  cosgamma = model->cos_gamma(mu_2);
-	  curve.para.cosgamma = cosgamma;
+      		// Values we need in some of the formulas.
+	  		cosgamma = model->cos_gamma(mu_2);
+	  		curve.para.cosgamma = cosgamma;
 
-	  curve.para.radius = rspot; // load rspot into structure
-	  curve.para.mass_over_r = mass_over_req * req/rspot;
+	  		curve.para.radius = rspot; // load rspot into structure
+	  		curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  //std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
+	  		//std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 
-	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+	  		OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 
-	  //std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
+	  		//std::cout << " Entering Bend M/R = " << curve.para.mass_over_r << std::endl; 
 
 
-	  curve = Bend(&curve,defltoa);
+	  		curve = Bend(&curve,defltoa);
 
-	  numphi = 2.0*(Units::PI-phi_edge)/dphi;
-	  phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
-	  //phishift = 2.0*(Units::PI-phi_edge)+ numphi*dphi;
+			//numphi = 2.0*(Units::PI-phi_edge)/dphi;
+	  		numphi = 2.0*((Units::PI * 2 * phase_2)-phi_edge)/dphi;
+	  		std::cout << numphi << " " << phi_edge << " " << dphi << std::endl;
+	  		//phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
+	  		phishift = 2.0*((Units::PI * 2 * phase_2)-phi_edge)- numphi*dphi;
+	  		//phishift = 2.0*(Units::PI-phi_edge)+ numphi*dphi;
 
-	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi * curve.para.gamma_k[k];
-	  curve.para.theta = thetak;
+	  		curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi * curve.para.gamma_k[k];
+	  		curve.para.theta = thetak;
 
-	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
-	    numphi=1;
-	    phi_edge=-1*Units::PI;
-	    dphi=0.0;
-	    phishift = 0.0;
-	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho)) ;
-	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
-	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
-	  }
-	  //std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
+	  		if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
+	    		numphi=1;
+	    		//phi_edge=-1*Units::PI;
+	    		phi_edge=-1*(Units::PI * 2 * phase_2);
+	    		dphi=0.0;
+	    		phishift = 0.0;
+	    		curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho2)) ;
+	    		if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+	    		if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
+	  		}
+	  		//std::cout << numphi << " " << phi_edge << " " << dphi << " " << phishift << " " << curve.para.dS << std::endl;
        
-	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
+	  		if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
-	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+	  		for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
 	    
-	    curve.para.phi_0 =  phi_edge + (j+0.5)*dphi;			
-	    //std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << std::endl;
-	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
-	    if ( j==0){
-	      curve = ComputeAngles(&curve, defltoa); 
-	      curve = ComputeCurve(&curve);
-	    }
+	    		curve.para.phi_0 =  phi_edge + (j+0.5)*dphi;			
+	    		//std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << " " << j << " " << numphi << std::endl;
+	    		//Heart of spot, calculate curve for the first phi bin - otherwise just shift
+	    		if ( j==0){
+	      			curve = ComputeAngles(&curve, defltoa); 
+	      			curve = ComputeCurve(&curve);
+	    		}
 	
-	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
-	      for ( unsigned int i(0); i < numbins; i++ ) {
-		for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
-	      }
-	    }
+	    		if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
+	      			for ( unsigned int i(0); i < numbins; i++ ) {
+						for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
+	      			}
+	    		}
 
-	    // Add curves, load into Flux array
-	    for ( unsigned int i(0); i < numbins; i++ ) {
-	      int q(i+j);
-	      if (q>=numbins) q+=-numbins;
-	      for ( unsigned int p(0); p < numbands; p++ ) {
-		Flux[p][i] += curve.f[p][q];
-	      }
-	    } // ending Add curves
-	  } // end for-j-loop
+	    		// Add curves, load into Flux array
+	    		for ( unsigned int i(0); i < numbins; i++ ) {
+	      			int q(i+j);
+	      			if (q>=numbins) q+=-numbins;
+	      			for ( unsigned int p(0); p < numbands; p++ ) {
+						Flux[p][i] += curve.f[p][q];
+	      			}
+	    		} // ending Add curves
+	  		} // end for-j-loop
 
-	  // Add in the missing bit.      
-	  if (phishift != 0.0){ // Add light from last bin, which requires shifting
-	    for ( unsigned int i(0); i < numbins; i++ ) {
-	      int q(i+numphi-1);
-	      if (q>=numbins) q+=-numbins;
-	      for ( unsigned int pp(0); pp < numbands; pp++ ) {
-		Temp[pp][i] = curve.f[pp][q];
-	      }
-	    }
-	    for (unsigned int pp(0); pp < numbands; pp++ )
-	      for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
+	  		// Add in the missing bit.      
+	  		if (phishift != 0.0){ // Add light from last bin, which requires shifting
+	    		for ( unsigned int i(0); i < numbins; i++ ) {
+	      			int q(i+numphi-1);
+	      			if (q>=numbins) q+=-numbins;
+	      			for ( unsigned int pp(0); pp < numbands; pp++ ) {
+						Temp[pp][i] = curve.f[pp][q];
+	      			}
+	    		}
+	    		for (unsigned int pp(0); pp < numbands; pp++ )
+	      		for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
 	    
-	    curve = ShiftCurve(&curve,phishift);
+	    		curve = ShiftCurve(&curve,phishift);
        
-	    for( unsigned int pp(0); pp < numbands; pp++ )
-	      for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
-	  } //end of last bin  
-	  delete defltoa;
+	    		for( unsigned int pp(0); pp < numbands; pp++ )
+	      		for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+	  		} //end of last bin  
+	  		delete defltoa;
 
-	  //insert free memory here
-        free_dvector(curve.defl.psi_b,0,301);
-        free_dvector(curve.defl.b_psi,0,301);
-        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
-        free_dvector(curve.defl.toa_b,0,301);
-      	} // closing for loop through theta divisions
-    } // End Standard Case of second spot
-	
-
+	  		//insert free memory here
+        	free_dvector(curve.defl.psi_b,0,301);
+        	free_dvector(curve.defl.b_psi,0,301);
+        	free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+	        free_dvector(curve.defl.toa_b,0,301);
+	      	} // closing for loop through theta divisions
+    	} // End Standard Case of second spot
 	} // closing second spot
             
     // You need to be so super sure that ignore_time_delays is set equal to false.
