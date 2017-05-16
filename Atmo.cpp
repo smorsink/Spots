@@ -2396,7 +2396,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
-    lgrav = log10(delta * Units::G * M / (R * R));
+    //lgrav = log10(delta * Units::G * M / (R * R));
+    lgrav = log10(delta * Units::G * M / R / R * (1 - 0.791 * mexmcc.para.omega * mexmcc.para.omega * sin(mexmcc.para.theta) * sin(mexmcc.para.theta) + 1.138 * mexmcc.para.omega * mexmcc.para.omega * cos(mexmcc.para.theta) * cos(mexmcc.para.theta)));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     //cout << "temperature in log(K) is " << lt << endl;
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
@@ -2512,12 +2513,14 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     M = Units::nounits_to_cgs(M, Units::MASS);
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
-    lgrav = log10(delta * Units::G * M / (R * R));
+    //lgrav = log10(delta * Units::G * M / (R * R));
+    lgrav = log10(delta * Units::G * M / R / R * (1 - 0.791 * mexmcc.para.omega * mexmcc.para.omega * sin(mexmcc.para.theta) * sin(mexmcc.para.theta) + 1.138 * mexmcc.para.omega * mexmcc.para.omega * cos(mexmcc.para.theta) * cos(mexmcc.para.theta)));
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     //cout << "temperature in log(K) is " << lt << endl;
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
     //cout << "cos_theta is " << cos_theta << endl;
     //cout << "energy is " << E << endl;
+    cout << mexmcc.para.omega << " " << mexmcc.para.theta << endl;
 
     i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
     n_lt = i_lt+1;
