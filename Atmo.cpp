@@ -2284,6 +2284,7 @@ double McPHACC(double E, double cos_theta){
     Q[2] = Linear(theta,acos(mu[i_mu]),I_int[4],acos(mu[i_mu+1]),I_int[5]);
     Q[3] = Linear(theta,acos(mu[i_mu]),I_int[6],acos(mu[i_mu+1]),I_int[7]);
 
+
     // Set to highest mu values for emission normal to surface
     if (cos_theta > 0.999710) {
     	Q[0] = I_int[0];
@@ -2397,8 +2398,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     R = Units::nounits_to_cgs(R, Units::LENGTH);
     delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
     obl_approx = (1 + (-0.791 + 0.776 * mexmcc.para.mass_over_r) * pow(sin(mexmcc.para.omega_bar_sq),2) + (1.138 - 1.431 * mexmcc.para.mass_over_r) * pow(cos(mexmcc.para.omega_bar_sq),2));
-    //lgrav = log10(delta * Units::G * M / (R * R));
-    lgrav = log10(delta * Units::G * M / R / R * obl_approx);
+    lgrav = log10(delta * Units::G * M / (R * R));
+    //lgrav = log10(delta * Units::G * M / R / R * obl_approx);
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
     //cout << "temperature in log(K) is " << lt << endl;
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
@@ -2409,6 +2410,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     n_lt = i_lt+1;
     t0 = 5.1+0.05*i_lt;
     t1 = t0+0.05;
+    //cout << i_lt << " " << n_lt << " " << t0 << " " << t1 << endl;
     //cout << t0 << " " << t1 << endl;
 
     i_lgrav = (lgrav-13.7)/0.1;
@@ -2424,26 +2426,30 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     }
 
     i_mu = n_mu - 1;
-    th0 = acos(mexmcc.mccangl[i_mu]);
-    th1 = acos(mexmcc.mccangl[n_mu]);
+    th0 = acos(mexmcc.mccangl[i_mu+1]);
+    th1 = acos(mexmcc.mccangl[n_mu+1]);
     theta = acos(cos_theta);
     //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
     //cout << th0 << " " << th1 << " " << acos(cos_theta) << endl;
 
     //Find proper freqency choice
     ener_spacing = pow(10.0,0.0338);
-    first_ener = 0.004969469;
+	first_ener = 0.004969469;
     ener_index = log(E / first_ener) / log(ener_spacing);
     i_f = (int) ener_index;
     n_f = i_f + 1;
     e0 = first_ener*pow(ener_spacing,i_f);
     e1 = e0*ener_spacing;
-    //cout << e0 << " " << e1 << endl;
+    //cout << e0 << " " << e1 << " " << E << endl;
 
 
-    first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu;
-    //cout << first_inte << endl;
+    first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu +1;
+    //cout << i_lt << " " << i_lgrav << " " << i_f << " " << i_mu << " " << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+    double freq = 1E3 * e0 * Units::EV / Units::H_PLANCK;
+    //cout << mexmcc.mccinte[first_inte] << " " << pow(10.0,t0*3.0) << " " << t0 << endl;
+    cout << I_temp[0] << " " << first_inte << " " << t0 << " " << grav0 << " " << freq << " " << th0 << " " << mexmcc.mccangl[i_mu+1] << endl;
+    //cout << mexmcc.mccangl[0] << " " << mexmcc.mccangl[49] << endl;
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
     I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
@@ -2472,6 +2478,8 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     I_int[6] = LogLinear(E, e0, I_temp[12], e1, I_temp[14]);//t1, grav1, th0
     I_int[7] = LogLinear(E, e0, I_temp[13], e1, I_temp[15]);//t1, grav1, th1
     
+    //cout << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
+
     // Interpolate to chosen mu
     J[0] = Linear(theta,th0,I_int[0],th1,I_int[1]); //t0, grav0
     J[1] = Linear(theta,th0,I_int[2],th1,I_int[3]); //t0, grav1
@@ -2522,7 +2530,7 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     //cout << "gravity in log(cgs units) is " << lgrav << endl;
     //cout << "cos_theta is " << cos_theta << endl;
     //cout << "energy is " << E << endl;
-    cout << mexmcc.para.omega << " " << mexmcc.para.theta << endl;
+    //cout << mexmcc.para.omega << " " << mexmcc.para.theta << endl;
 
     i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
     n_lt = i_lt+1;
