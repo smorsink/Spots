@@ -2448,7 +2448,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
     double freq = 1E3 * e0 * Units::EV / Units::H_PLANCK;
     //cout << mexmcc.mccinte[first_inte] << " " << pow(10.0,t0*3.0) << " " << t0 << endl;
-    cout << I_temp[0] << " " << first_inte << " " << t0 << " " << grav0 << " " << freq << " " << th0 << " " << mexmcc.mccangl[i_mu+1] << endl;
+    //cout << I_temp[0] << " " << first_inte << " " << t0 << " " << grav0 << " " << freq << " " << th0 << " " << mexmcc.mccangl[i_mu+1] << endl;
     //cout << mexmcc.mccangl[0] << " " << mexmcc.mccangl[49] << endl;
     I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
     I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
