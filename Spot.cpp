@@ -615,37 +615,155 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
-    if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
+      if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
         //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
    		char atmodir[1024], cwd[1024];
    		getcwd(cwd, sizeof(cwd));
     	sprintf(atmodir,"%s/atmosphere",cwd);
     	chdir(atmodir);
-   		FILE *Hspecttable;
-   		Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
-   		curve.mccangl = dvector(0,51);
+	FILE *Hspecttable;
+	Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
+	curve.mccangl = dvector(0,51);
+	curve.mcloget = dvector(0,101);
     	curve.mccinte = dvector(0,1595001);
-    	double junk(0.0);
-    	for (int i = 0; i < 51; i++){
+	int e_index(0);
+    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
+    	for (int i = 0; i < 50; i++){
         	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk,sizeof(double),1,Hspecttable);
+        	fread(&junk2,sizeof(double),1,Hspecttable);
+        	fread(&junk3,sizeof(double),1,Hspecttable);
         	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
         	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+
+		//setprecision(10);
+		/*
+			std::cout << "i = " << i 
+			  << " junk = " << junk
+			  << " junk2 = " << junk2
+			  << " junk3 = " << junk3
+			  << " costheta=" << curve.mccangl[i]
+			  << " thing = " << curve.mccinte[i]
+			  << std::endl;
+		*/
+			if (i%50 == 0){
+			  curve.mcloget[e_index] = junk3;
+			  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
+			  e_index ++;
+			}
+
+
     	}
-    	for (int i = 51; i < 1595001; i++){
+	double jjunk(junk3);
+    	for (int i = 50; i < 1595001; i++){
         	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk,sizeof(double),1,Hspecttable);    		
+        	fread(&junk2,sizeof(double),1,Hspecttable);
+        	fread(&junk3,sizeof(double),1,Hspecttable);
+        	fread(&junk4,sizeof(double),1,Hspecttable);    		
         	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+
+		if (i%50==0 && e_index < 100){
+		  curve.mcloget[e_index] = junk3;
+		  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
+		  e_index ++;
+		}
+
     	}
     	fclose(Hspecttable);
     	chdir(cwd);
-    	//std::cout << "finished reading Cole's McPHAC" << std::endl;
+    	std::cout << "finished reading Cole's McPHAC" << std::endl;
+    	std::cout << curve.mccangl[50] << std::endl;
+    	std::cout << curve.mccinte[51] << std::endl;
+      } // End Spectrum Option 10
+
+      if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
+	char atmodir[1024], cwd[1024];
+	getcwd(cwd, sizeof(cwd));
+    	sprintf(atmodir,"%s/atmosphere",cwd);
+    	chdir(atmodir);
+	std::ifstream Hspecttable; 
+	Hspecttable.open( "nsx_H_v170524.txt" );  // opening the file with observational data
+
+	int NlogTeff, Nlogg, NlogE, Nmu;
+
+	Hspecttable >> NlogTeff;
+	std::cout << "NlogTeff = " << NlogTeff << std::endl;
+	curve.mclogTeff = dvector(1,NlogTeff);
+	for (int i=1;i<=NlogTeff;i++){
+	  Hspecttable >> curve.mclogTeff[i];
+	  std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
+	}
+
+	Hspecttable >> Nlogg; 
+	std::cout << "Nlogg = " << Nlogg << std::endl;
+	curve.mclogg = dvector(1,Nlogg);
+	for (int i=1;i<=Nlogg;i++){
+	  Hspecttable >> curve.mclogg[i];
+	  std::cout << "logg = " << curve.mclogg[i] << std::endl;
+	}
+
+	Hspecttable >> NlogE;
+	std::cout << "NlogE = " << NlogE << std::endl;
+	curve.mcloget = dvector(1,NlogE);
+	for (int i=1;i<=NlogE;i++){
+	  Hspecttable >> curve.mcloget[i];
+	  std::cout << "logE = " << curve.mcloget[i] << std::endl;
+	}
+
+	Hspecttable >> Nmu;
+	std::cout << "Nmu = " << Nmu << std::endl;
+	curve.mccangl = dvector(1,Nmu);
+	for (int i=1;i<=Nmu;i++){
+	  Hspecttable >> curve.mccangl[i];
+	  std::cout << "cos(theat) = " << curve.mccangl[i] 
+		    << " theta = " << acos(curve.mccangl[i]) 
+		    << std::endl;
+	}
+
+	int Npts (NlogTeff*Nlogg*NlogE);
+	std::cout << "Npts = " << Npts << std::endl;
+
+	curve.mccinte = dvector(0,Npts*Nmu);
+
+	int e_index(0);
+    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
+	double jjunk(junk3);
+
+    	for (int i = 1; i <= 100; i++){
+
+	  
+	 
+	  Hspecttable >> curve.mccinte[i];
+
+	  std::cout
+	    << " i = " << i
+	    << " i%Nmu = " << 
+	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE) +1]
+		    << " logg = " << curve.mclogg[i/NlogE + 1]
+	    << " logE = " << curve.mcloget[i/(Nmu+1) + 1]
+		    << " cos(theta) = " << curve.mccangl[i%Nmu]
+		    << " I = " << curve.mccinte[i]
+		    << std::endl;
+
+
+
+
+	}
+       
+
+    	chdir(cwd);
+	free_dvector(curve.mclogTeff,1,NlogTeff);
+	free_dvector(curve.mclogg,1,Nlogg);
+	free_dvector(curve.mcloget,1,NlogE);
+	free_dvector(curve.mccangl,1,Nmu);
+	free_dvector(curve.mccinte,0,Npts*Nmu);
+
+	Hspecttable.close();
+
+    	std::cout << "finished reading Wynn Ho's NSX-H" << std::endl;
     	//std::cout << curve.mccangl[50] << std::endl;
     	//std::cout << curve.mccinte[51] << std::endl;
-    }
+      } // End Spectrum Option 11
+
 
    // Force energy band settings into NICER specified bands
 
@@ -847,9 +965,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  		deltatheta = curve.para.dtheta[k];
 
 	  		double thetak = curve.para.theta_k[k];
-	  		// std::cout << "k = " << k 
-	  		//	    << "theta = " << thetak
-	  		//	    << std::endl;
+	  		 std::cout << "k = " << k 
+	  			    << "theta = " << thetak
+	  			    << std::endl;
 
 	  		double phi_edge = curve.para.phi_k[k];
 
@@ -1384,9 +1502,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         double E_diff;
 		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
     	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column " << k+2 << ": Monochromatic Number flux (photons/keV) measured at energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+	  //      		out << "% Column " << k+2 << ": Monochromatic Number flux (photons/keV) measured at energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
     	}
-      	out << "%" << std::endl;
+      	//out << "%" << std::endl;
       	for ( unsigned int i(0); i < numbins; i++ ) {
         	out << curve.t[i]<< "\t" ;
 			for ( unsigned int p(0); p < numbands; p++ ) { 
@@ -1525,12 +1643,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-    /*
-    free_dvector(curve.defl.psi_b,0,3*NN+1);   
-    free_dvector(curve.defl.b_psi,0,3*NN+1);
-    free_dvector(curve.defl.dcosa_dcosp_b,0,3*NN+1);
-    free_dvector(curve.defl.toa_b,0,3*NN+1);
-	*/
+     if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere        
+       free_dvector(curve.mccangl,0,51);
+       free_dvector(curve.mcloget,0,101);
+       free_dvector(curve.mccinte,0,1595001);
+     }
+
+
+
 
     delete model;
     return 0;
