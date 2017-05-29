@@ -116,6 +116,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     attenuation(0),       // Attenuation flag, specific to NICER targets with implemented factors
     inst_curve(0);		  // Instrument response flag, 1 = NICER response curve
 
+  int NlogTeff, Nlogg, NlogE, Nmu, Npts;
+
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
        out_file1[256] = "flux2.txt",    // Name of file we send the output to; unused here, done in the shell script
@@ -683,44 +685,50 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	std::ifstream Hspecttable; 
 	Hspecttable.open( "nsx_H_v170524.txt" );  // opening the file with observational data
 
-	int NlogTeff, Nlogg, NlogE, Nmu;
 
 	Hspecttable >> NlogTeff;
-	std::cout << "NlogTeff = " << NlogTeff << std::endl;
-	curve.mclogTeff = dvector(1,NlogTeff);
-	for (int i=1;i<=NlogTeff;i++){
+	//std::cout << "NlogTeff = " << NlogTeff << std::endl;
+	curve.mclogTeff = dvector(0,NlogTeff);
+	for (int i=0;i<NlogTeff;i++){
 	  Hspecttable >> curve.mclogTeff[i];
-	  std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
+	  //std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
 	}
 
 	Hspecttable >> Nlogg; 
-	std::cout << "Nlogg = " << Nlogg << std::endl;
-	curve.mclogg = dvector(1,Nlogg);
-	for (int i=1;i<=Nlogg;i++){
+	//std::cout << "Nlogg = " << Nlogg << std::endl;
+	curve.mclogg = dvector(0,Nlogg);
+	for (int i=0;i<Nlogg;i++){
 	  Hspecttable >> curve.mclogg[i];
-	  std::cout << "logg = " << curve.mclogg[i] << std::endl;
+	  //std::cout << "logg = " << curve.mclogg[i] << std::endl;
 	}
 
 	Hspecttable >> NlogE;
-	std::cout << "NlogE = " << NlogE << std::endl;
-	curve.mcloget = dvector(1,NlogE);
-	for (int i=1;i<=NlogE;i++){
+	//std::cout << "NlogE = " << NlogE << std::endl;
+	curve.mcloget = dvector(0,NlogE);
+	for (int i=0;i<NlogE;i++){
 	  Hspecttable >> curve.mcloget[i];
-	  std::cout << "logE = " << curve.mcloget[i] << std::endl;
+	  //std::cout << "logE = " << curve.mcloget[i] << std::endl;
 	}
 
 	Hspecttable >> Nmu;
-	std::cout << "Nmu = " << Nmu << std::endl;
-	curve.mccangl = dvector(1,Nmu);
-	for (int i=1;i<=Nmu;i++){
+	//std::cout << "Nmu = " << Nmu << std::endl;
+	curve.mccangl = dvector(0,Nmu);
+	for (int i=0;i<Nmu;i++){
 	  Hspecttable >> curve.mccangl[i];
-	  std::cout << "cos(theat) = " << curve.mccangl[i] 
-		    << " theta = " << acos(curve.mccangl[i]) 
-		    << std::endl;
+	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
+	  //	    << " theta = " << acos(curve.mccangl[i]) 
+	  //	    << std::endl;
 	}
 
-	int Npts (NlogTeff*Nlogg*NlogE);
-	std::cout << "Npts = " << Npts << std::endl;
+	Npts =  (NlogTeff*Nlogg*NlogE);
+
+	curve.NlogTeff = NlogTeff;
+	curve.Nlogg = Nlogg;
+	curve.NlogE = NlogE;
+	curve.Nmu = Nmu;
+	curve.Npts = Npts;
+
+	//std::cout << "Npts = " << Npts << std::endl;
 
 	curve.mccinte = dvector(0,Npts*Nmu);
 
@@ -728,34 +736,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
 	double jjunk(junk3);
 
-    	for (int i = 1; i <= 100; i++){
-
-	  
+    	for (int i = 0; i < Npts*Nmu; i++){
 	 
 	  Hspecttable >> curve.mccinte[i];
 
-	  std::cout
+	  /*std::cout
 	    << " i = " << i
-	    << " i%Nmu = " << 
-	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE) +1]
-		    << " logg = " << curve.mclogg[i/NlogE + 1]
-	    << " logE = " << curve.mcloget[i/(Nmu+1) + 1]
-		    << " cos(theta) = " << curve.mccangl[i%Nmu]
+	    << " i%(Nmu) = " << i%(Nmu)
+	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
+	    << " logg = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
+	    << " logE = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
+	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
 		    << " I = " << curve.mccinte[i]
 		    << std::endl;
-
-
-
-
+	  */
 	}
        
 
     	chdir(cwd);
-	free_dvector(curve.mclogTeff,1,NlogTeff);
-	free_dvector(curve.mclogg,1,Nlogg);
-	free_dvector(curve.mcloget,1,NlogE);
-	free_dvector(curve.mccangl,1,Nmu);
-	free_dvector(curve.mccinte,0,Npts*Nmu);
 
 	Hspecttable.close();
 
@@ -1648,7 +1646,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);
      }
-
+     if (curve.flags.beaming_model == 11){ // New NSX-H model
+	free_dvector(curve.mclogTeff,0,NlogTeff);
+	free_dvector(curve.mclogg,0,Nlogg);
+	free_dvector(curve.mcloget,0,NlogE);
+	free_dvector(curve.mccangl,0,Nmu);
+	free_dvector(curve.mccinte,0,Npts*Nmu);
+     }
 
 
 

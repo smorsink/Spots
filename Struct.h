@@ -123,6 +123,11 @@ class LightCurve {                     // Stores all the data about the light cu
 	double *mcloget;                        // log(photonenergy/temperature)
 	double *mclogTeff;
 	double *mclogg;
+	int Nmu;
+	int NlogTeff;
+	int Nlogg;
+	int NlogE;
+	int Npts;
 	unsigned int numbins;                  // Number of time or phase bins for one spin period; Also the number of flux data points
 	unsigned int numbands;
 	bool eclipse;                          // True if an eclipse occurs
