@@ -25,6 +25,7 @@
 #include "Units.h"
 #include "Struct.h"
 #include "time.h"
+#include "interp.h"
 #include <stdio.h>
 using namespace std;
 
@@ -74,6 +75,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     //    E_mono = 1.0;
     //std::cout << "starting computeangles" << std::endl;
     curve = (*angles);
+
     mass_over_r = curve.para.mass_over_r;
     temperature = curve.para.temperature;       // T in keV 
 
@@ -88,25 +90,35 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     E2 = curve.para.L2;
     DeltaE = curve.para.DeltaE;
     //cout << curve.mccinte[0] << endl;
+    //std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
    
     redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
+
+    double M = Units::nounits_to_cgs(curve.para.mass, Units::MASS);
+    double R = Units::nounits_to_cgs(curve.para.req, Units::LENGTH);
+    double delta = 1 / sqrt(1 - 2.0*curve.para.mass/curve.para.req);
+    double cos_theta = cos(curve.para.theta);
+    double obl_approx = 1 + (-0.791 + 0.776 * curve.para.mass/curve.para.req) * curve.para.omega_bar_sq * (1.0-pow(cos_theta,2)) 
+		  + (1.138 - 1.431 * curve.para.mass/curve.para.req) * curve.para.omega_bar_sq *  pow(cos_theta,2);
+    std::cout << "obl_approx = " << obl_approx << std::endl;
+    double lgrav = log10(delta * Units::G * M / R / R * obl_approx);
+    std::cout << "log(g) = " << lgrav << std::endl;
+
+
+
     bolo = 2.0e9 * 2.404 * Units::C * pow(temperature * Units::EV/(Units::H_PLANCK * Units::C) , 3); // use this one! probably!
     // the e9 in the beginning is for changing T^3 from keV to eV
     // 2.404 comes from evaluating Bradt equation 6.17 (modified, for photon number count units), using the Riemann zeta function for z=3
 
-/*
-    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-        Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using hydrogen atmosphere" << endl;
-    }
+    //std::cout << " numbins = " << numbins << std::endl;
 
-    if (curve.flags.beaming_model == 4){ // Hydrogen Atmosphere
-        Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        //cout << "Using helium atmosphere" << endl;
-    }
-*/
+    // numbins=0;
 
     for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
+
+      //std::cout << "i = " << i << std::endl;
+      //std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
+
 
       if ( curve.dOmega_s[i] != 0.0 ) {
 
@@ -130,13 +142,14 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	/*      photons/(s cm^2 keV)                                       */
 	/*******************************************************************/
 
+
 	if (curve.flags.spectral_model == 0){ // Monochromatic Observation of a modified blackbody
 	  	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
-	    if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 1 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
+		if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 1 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
 
-	    	curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
-	    	curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+		  curve.f[0][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+		  curve.f[0][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
            
 	  	}
 
@@ -144,68 +157,66 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	}
 
 	  	if (curve.flags.beaming_model == 3){ // NSATMOS Hydrogen Atmosphere
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	  		}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Hydrogen((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		  }
 	  	}
 
 	  	if (curve.flags.beaming_model == 4){ // NSX Helium Atmosphere
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    	}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * Helium((E_band_lower_1+p*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		  }
 	  	}
 
 	  	if (curve.flags.beaming_model == 5){ // NSXH Atmosphere
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXH((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    		/*
-	    		if (p == 0 && i == 0){
-	    			cout << curve.dOmega_s[i] << " " << pow(curve.eta[i],4) << " " << pow(redshift,-3) << " " << NSXH((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]) << endl;
-	    			cout << curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXH((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]) << " " << (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK )) << " " << endl;
-					cout << curve.f[p][i] << endl;	    			
-	    		}
-				*/
-	    	}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXH((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+	    	
+		  }
 	  	}
 
 	  	if (curve.flags.beaming_model == 8){ // *slavko* McPHAC
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHAC((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    	}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHAC((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		    curve.f[p][i] *= E_diff;
+		  }
 	  	}
 
 	  	if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHe((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    	}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHe((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		  }
 	  	}
 	 	
-	 	/*
-	 	if (curve.flags.beaming_model == 10){ // *cole* McPHACC
-	  		for (unsigned int p = 0; p<numbands; p++){
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i]);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    		if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
-	    	}
-	  	}
-	  	*/
-	  	
-
-	  	
+	 
+	        	
 	  	if (curve.flags.beaming_model == 10){ // *cole* McPHACC3
-	  		for (unsigned int p = 0; p<numbands; p++){
-	  			//cout << p << endl;
-	    		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
-	    		curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
-	    		//if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
-	    	}
+		  for (unsigned int p = 0; p<numbands; p++){
+		    //cout << p << endl;
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3new((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		    
+curve.f[p][i] *= E_diff; // Fake Integration
+		   
+		  }
 	  	}
-	  	
+
+
+		if (curve.flags.beaming_model == 11){ // New NSX-H
+		  //cout << "Calling NSXHnew!" << endl;
+		  for (unsigned int p = 0; p<numbands; p++){
+		    //cout << p << endl;
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHnew((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
+		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+		    //if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
+		  }
+	  	}
+	
 	  	
 	  	
 	  	
@@ -250,11 +261,11 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
             if (curve.flags.beaming_model == 3 || curve.flags.beaming_model == 4 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 8 || curve.flags.beaming_model == 9){
 	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
 	      	}
-	      	if (curve.flags.beaming_model == 10){
-	      		//curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
-	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
+	    if (curve.flags.beaming_model == 10){ // Cole's McPhac File
+	      	       	      		
+	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
 	      	}
-	    //if (curve.f[0][i] != 0.0) nullcurve[p] = false;
+	   
 	  	}
 	}
 	
@@ -267,6 +278,22 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     //cout << "phase " << i << " done." << endl;
     } // ending the for(i) loop
     
+
+    //std::cout << "McPhac (Old) Flux = " << McPHAC(1.0,0.5) << std::endl;
+    
+
+    //    std::cout << "McPhac Flux = " << 
+    //McPHACC3new(1.0,0.5, curve.para.temperature, curve.para.mass, curve.para.radius, curve)
+    //	      << std::endl;
+
+
+    //std::cout << "NSXH Flux = " <<
+    //NSXH(1.0, 0.5)
+    //	      << std::endl;
+    
+    
+
+
 
 	
     /***********************************************************/
@@ -1573,7 +1600,7 @@ double NSXH(double E, double cos_theta){
 
     // Perform interpolation to correct mu (cos_theta)
     P = Linear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
-    //cout << P << endl;
+    cout << P << endl;
 
     return P;
 }
@@ -1752,6 +1779,9 @@ double McPHAC(double E, double cos_theta){
     // Perform interpolation to correct mu (cos_theta)
     //P = LogLinear(cos_theta,mu[i_mu],I_int[0],mu[n_mu],I_int[1]);
     P1 = LogLinear(cos_theta,cos((255-i_mu)*mu_spacing),I_int[0],cos((255-n_mu)*mu_spacing),I_int[1]);
+    
+    cout << "Intensity = " << P1 << endl;
+
     return P1;
 }
 
@@ -2509,6 +2539,289 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
 
     return L;
 }
+
+// Calculate the final interpolated intensity
+// This "new" version takes into account that the energy is really the ratio: E/kT
+double McPHACC3new(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc){
+	double delta, obl_approx, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double e0, e1, th0, th1, grav0, grav1, t0, t1;
+	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
+	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
+	double mu0, mu1;
+
+       
+	
+
+
+    lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+
+    // This part is purely for testing against the old mcphac file.
+    /*
+    lt = 6.3;
+    T = pow(10,lt) * 1e-3/(Units::EV / Units::K_BOLTZ);
+    lgrav = 14.25;
+    */
+
+    // Find the correct temperature range
+    i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
+    if (i_lt < 1) i_lt = 1;
+
+
+    i_lgrav = (lgrav-13.7)/0.1;
+    if (i_lgrav < 1) i_lgrav = 1;
+
+    //Find proper mu choice
+    n_mu = 1;
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 50){
+    	n_mu += 1;
+    }
+    i_mu = n_mu - 1;
+
+    //    mu0 = mexmcc.mccangl[i_mu+1];
+    //mu1 = mexmcc.mccangl[n_mu+1];
+
+    //Find proper freqency choice
+
+    ener_spacing = pow(10.0,0.0338);
+    ener_index = (log10(E/T) + 1.30369)/0.0338;
+    i_f = (int) ener_index;  
+
+    // Now do a 4pt interpolation
+    double evec[4];
+    double ivec[4][4][4][4];
+    double err;
+    double muvec[4];
+    double gvec[4];
+    double tvec[4];
+    
+    int ii_mu(i_mu-1);
+    if (ii_mu < 0)
+      ii_mu = 0;
+    if (ii_mu > 46)
+      ii_mu = 46;
+
+    for (int r(0); r<4; r++){
+      tvec[r] =  5.1+0.05*(i_lt-1+r);
+      //std::cout << "tvec[r]=" << tvec[r] << std::endl;
+      for (int q(0); q<4; q++){
+	gvec[q] = 13.7+0.1*(i_lgrav-1+q);
+	//std::cout << "logg = " << gvec[q] << std::endl;
+	for (int k(0); k<4; k++){
+	  muvec[k] =  mexmcc.mccangl[ii_mu+k];
+	  //std::cout << "muvec[k] = " << muvec[k] << std::endl;
+	  // Interpolate over Energy for fixed Teff, gravity, and mu
+	  for( int j(0); j<4; j++){
+	    //evec[j] = pow(10,mexmcc.mcloget[i_f-1+j]);
+	    evec[j] = mexmcc.mcloget[i_f-1+j];
+	    first_inte = ((i_lt-1+r)*11 + i_lgrav-1+q) * 5000 + (i_f-1+j) * 50 + (ii_mu + k) +1 -1;
+	    t0 = tvec[r];
+	    ivec[r][q][k][j] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+      
+	    //std::cout << "evec[j] = " << evec[j] 
+	    //	      << " ivec[j] = " << ivec[r][q][k][j]
+	    //	      << std::endl;
+	  }
+	  I_int[k] = polint(evec,ivec[r][q][k],4,log10(E/T),&err);
+	  //cout << "0 mu[k] = " << muvec[k]
+	  //   <<" E=" << E/T << " New 4pt Interpolated: I = " << I_int[k] 
+	  //   << " err = " << err << endl;
+	}
+	// Intepolate over mu for fixed Teff, gravity
+	J[q] = polint(muvec,I_int,4,cos_theta,&err);
+	//cout << " costheta = " << cos_theta << " Interpolated I = " << J[q]
+	//   << " err = " << err << std::endl;
+      }
+      // Interpolate over logg for fixed Teff
+      K[r] = polint(gvec,J,4,lgrav,&err);
+      //cout << " logg = " << lgrav 
+      //   << " Interpolated I = " 
+      //   <<  K[r] 
+      //   << " err = " << err << endl;      
+    }
+
+    L = polint(tvec,K,4,lt,&err);
+
+    //std::cout << " log(T_eff) = " << lt 
+    //	      << " Interpolated I = " << L
+    //	      << " err = " << err << std::endl;
+
+
+  
+    //  cout << L << endl;
+
+   
+        return L;
+}
+
+// Calculate the final interpolated intensity
+// This "new" version takes into account that the energy is really the ratio: E/kT
+double NSXHnew(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
+	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double e0, e1, th0, th1, grav0, grav1, t0, t1;
+	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
+	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
+	double mu0, mu1;
+
+    //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
+    M = Units::nounits_to_cgs(M, Units::MASS);
+    R = Units::nounits_to_cgs(R, Units::LENGTH);
+    delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
+    obl_approx = (1 + (-0.791 + 0.776 * mexmcc.para.mass_over_r) * pow(sin(mexmcc.para.omega_bar_sq),2) + (1.138 - 1.431 * mexmcc.para.mass_over_r) * pow(cos(mexmcc.para.omega_bar_sq),2));
+    lgrav = log10(delta * Units::G * M / (R * R));
+    //lgrav = log10(delta * Units::G * M / R / R * obl_approx);
+    lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+
+    cout << endl; 
+    cout << "temperature in log(K) is " << lt << endl;
+    cout << "gravity in log(cgs units) is " << lgrav << endl;
+    cout << "cos_theta is " << cos_theta << endl;
+    cout << "energy is " << E << " keV" << endl;
+    cout << "temperature is " << T  << " keV" << endl;
+
+
+    i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
+    n_lt = i_lt+1;
+    t0 = 5.1+0.05*i_lt;
+    t1 = t0+0.05;
+    //    cout << i_lt << " " << n_lt << " " << t0 << " " << t1 << endl;
+    //cout << t0 << " " << t1 << endl;
+
+    i_lgrav = (lgrav-13.7)/0.1;
+    n_lgrav = i_lgrav+1;
+    grav0 = 13.7+0.1*i_lgrav;
+    grav1 = grav0+0.1;
+    //cout << grav0 << " " << grav1 << endl;
+    
+    //Find proper mu choice
+    n_mu = 1;
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 50){
+    	n_mu += 1;
+    }
+
+    i_mu = n_mu - 1;
+    //    th0 = acos(mexmcc.mccangl[i_mu+1]);
+    //th1 = acos(mexmcc.mccangl[n_mu+1]);
+    //theta = acos(cos_theta);
+
+    mu0 = mexmcc.mccangl[i_mu+1];
+    mu1 = mexmcc.mccangl[n_mu+1];
+
+
+    //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
+    //cout << th0 << " " << th1 << " " << acos(cos_theta) << endl;
+
+    //Find proper freqency choice
+
+    ener_spacing = pow(10.0,0.0338);
+    ener_index = (log10(E/T) + 1.30369)/0.0338;
+
+    i_f = (int) ener_index;
+    n_f = i_f + 1;
+    //    e0 = first_ener*pow(ener_spacing,i_f);
+    //e1 = e0*ener_spacing;
+    
+    e0 = pow(10,mexmcc.mcloget[i_f]);
+    e1 = pow(10,mexmcc.mcloget[n_f]);
+
+
+    //cout << "log(e0) = " << mexmcc.mcloget[i_f] << std::endl;
+    //  cout << "log(e0)=" << log10(e0) << " " << log10(e1) << " " << log10(E/T) << endl;
+	  //cout << "e0=" << e0 << " " << e1 << " " << E/T << endl;
+    
+    first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu +1 -1;
+    
+
+    I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+    //cout << endl;
+    //cout << "0: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[0] << std::endl;
+    I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
+    //cout << "2: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[2] << std::endl;
+
+
+
+
+    I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
+    //cout << "1: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[1] << std::endl;
+    I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
+    //cout << "3: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[3] << std::endl;
+
+   
+
+
+    I_temp[4] = mexmcc.mccinte[first_inte+5000]*pow(10.0,t0*3.0);
+    I_temp[5] = mexmcc.mccinte[first_inte+5001]*pow(10.0,t0*3.0);
+    I_temp[6] = mexmcc.mccinte[first_inte+5050]*pow(10.0,t0*3.0);
+    I_temp[7] = mexmcc.mccinte[first_inte+5051]*pow(10.0,t0*3.0);
+
+    I_temp[8] = mexmcc.mccinte[first_inte+55000]*pow(10.0,t1*3.0);
+    I_temp[9] = mexmcc.mccinte[first_inte+55001]*pow(10.0,t1*3.0);
+    I_temp[10] = mexmcc.mccinte[first_inte+55050]*pow(10.0,t1*3.0);
+    I_temp[11] = mexmcc.mccinte[first_inte+55051]*pow(10.0,t1*3.0);
+
+    I_temp[12] = mexmcc.mccinte[first_inte+60000]*pow(10.0,t1*3.0);
+    I_temp[14] = mexmcc.mccinte[first_inte+60001]*pow(10.0,t1*3.0);
+    I_temp[13] = mexmcc.mccinte[first_inte+60050]*pow(10.0,t1*3.0);
+    I_temp[15] = mexmcc.mccinte[first_inte+60051]*pow(10.0,t1*3.0);
+
+    I_int[0] = LogLinear(E/T, e0, I_temp[0], e1, I_temp[2]); //t0, grav0, th0
+    //cout << "0 E Interpolated: I = " << I_int[0] << endl;
+
+    I_int[1] = LogLinear(E/T, e0, I_temp[1], e1, I_temp[3]); //t0, grav0, th1
+    //cout << "1 E Interpolated: I = " << I_int[1] << endl;
+    
+
+    I_int[2] = LogLinear(E/T, e0, I_temp[4], e1, I_temp[6]); //t0, grav1, th0
+    I_int[3] = LogLinear(E/T, e0, I_temp[5], e1, I_temp[7]); //t0, grav1, th1
+    I_int[4] = LogLinear(E/T, e0, I_temp[8], e1, I_temp[10]);//t1, grav0, th0
+    I_int[5] = LogLinear(E/T, e0, I_temp[9], e1, I_temp[11]);//t1, grav0, th1
+    I_int[6] = LogLinear(E/T, e0, I_temp[12], e1, I_temp[14]);//t1, grav1, th0
+    I_int[7] = LogLinear(E/T, e0, I_temp[13], e1, I_temp[15]);//t1, grav1, th1
+    
+    //cout << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
+
+    // Interpolate to chosen mu
+    J[0] = Linear(cos_theta,mu0,I_int[0],mu1,I_int[1]); //t0, grav0
+    //cout << "J mu interpolated = " << J[0] << std::endl;
+    J[1] = Linear(cos_theta,mu0,I_int[2],mu1,I_int[3]); //t0, grav1
+    J[2] = Linear(cos_theta,mu0,I_int[4],mu1,I_int[5]); //t1, grav0
+    J[3] = Linear(cos_theta,mu0,I_int[6],mu1,I_int[7]); //t1, grav1
+
+    // Interpolate to chosen local gravity
+    //cout << "grav0 = " << grav0 << " J0 = " << J[0] << endl;
+    // cout << "grav1 = " << grav1 << " J1 = " << J[1] << endl;
+
+    //lgrav = 14.25;
+
+     // cout << " Interp to grav = " << lgrav << endl;
+
+    K[0] = pow(10.0,Linear(lgrav,grav0,log10(J[0]),grav1,log10(J[1]))); //t0
+    K[1] = pow(10.0,Linear(lgrav,grav0,log10(J[2]),grav1,log10(J[3]))); //t1
+
+    //cout << "t0 = " << t0 << " K0 = " << K[0] << endl;
+    //cout << "t1 = " << t1 << " K1= " << K[1] << endl;
+
+    //lt = 6.3;
+
+    // cout << "Interp to t=" << lt << endl;
+
+
+    // Interpolate to chosen temperature
+    L = pow(10.0,Linear(lt,t0,log10(K[0]),t1,log10(K[1])));
+
+    // Set to zero at small angle
+    if (cos_theta < 0.015629) L = 0;
+    //cout << L << endl;
+
+    //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
+    /*
+    if (isnan(L)) {
+    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
+    	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
+    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    }
+    */
+        return L;
+} // End of New NSX-H from Wynn Ho
 
 // Calculate the final interpolated intensity
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
@@ -3392,6 +3705,8 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
 }
 
 
+
+// This is version makes use of Cole's version of McPhac
 double AtmosEBandFlux3( unsigned int model, double cos_theta, double T, double M, double R, double E1, double E2, class LightCurve mexmcc){
 
     int e1_dex(0);              // largest energy index that's smaller than E1
@@ -3498,6 +3813,78 @@ double AtmosEBandFlux3( unsigned int model, double cos_theta, double T, double M
     flux = flux/Units::H_PLANCK;
     return flux;
 }
+
+
+
+// This is version makes use of Cole's version of McPhac
+double AtmosEBandFlux3new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc){
+
+    int e1_dex(0);              // largest energy index that's smaller than E1
+    int e2_dex(0);              // largest energy index that's smaller than E2
+    int n_steps(0);             // number of energy points within band
+    double flux(0.0);           // total integrated flux
+
+ 
+
+
+    double ener_spacing = pow(10.0,0.0338);
+    double first_ener = 0.04969469;
+    double ener_index = log10(E1/T / first_ener) / log10(ener_spacing);
+    e1_dex = (int) ener_index;
+    ener_index = log10(E2/T / first_ener) / log10(ener_spacing);
+    e2_dex = (int) ener_index;
+
+    n_steps = 1* (e2_dex - e1_dex);
+
+    // n_steps = 4;
+
+
+    if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+      //cout << "0 steps" << endl;
+      flux = (E2 - E1) / 2.0 * (McPHACC3new(E1,cos_theta, T, lgrav, mexmcc) / E1 + McPHACC3new(E2,cos_theta, T, lgrav, mexmcc) / E2);
+    }
+    if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+      //cout << "1 step" << endl;
+        int e_dex = e1_dex+1; // index of the energy point
+        double e_m = first_ener*pow(ener_spacing,e_dex)*T; // energy point in keV
+	
+	e_m = 0.5*(E2+E1);
+
+	double counts_m = McPHACC3new(e_m,cos_theta, T,lgrav, mexmcc) / e_m;
+
+        flux = (e_m - E1) / 2 * (McPHACC3new(E1,cos_theta, T, lgrav, mexmcc) / E1 
+				 + counts_m);  // first trapezoid
+        flux += (E2 - e_m) / 2 * (counts_m + McPHACC3new(E2,cos_theta, T,lgrav, mexmcc) / E2); // second trapezoid
+    }
+    if (n_steps >= 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+      //cout << "n steps= " << n_steps << endl;
+     
+       double e_step = (E2-E1)/(n_steps+1.0);
+       double e_l, e_u;
+       double counts_l, counts_u;
+
+       flux = e_step * 0.5 * McPHACC3new(E1,cos_theta, T, lgrav, mexmcc) / E1;
+       //cout << "flux = " << flux << endl;
+
+       for (int i(1); i<=n_steps; i++){
+
+	 e_l = E1 + i*e_step;
+	 counts_l = McPHACC3new(e_l,cos_theta, T, lgrav, mexmcc) / e_l;
+	 flux += e_step * (counts_l);
+	 //cout << "flux = " << flux << endl;
+
+       }
+
+       flux += e_step * 0.5 *  McPHACC3new(E2,cos_theta, T,lgrav, mexmcc) / E2;
+       // cout << "flux = " << flux << endl;
+
+    }
+   
+    flux = flux/Units::H_PLANCK;
+    return flux;
+} // new version of energy integration
+
+
 
 
 

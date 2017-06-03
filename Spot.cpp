@@ -513,7 +513,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     
  
- 	
+    std::cout << " numbins = " << numbins << std::endl;
+
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
@@ -849,15 +850,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	data.close();
     }
 
-      //if ( numLines != numbins ) {
-	//throw (Exception( "Numbins indicated in command-line not equal to numbins in data file."));
-	//std::cout << "Warning! Numbins from command-line not equal to numbins in data file." << std::endl;
-	//std::cout << "Command-line numbins = " << numbins <<", data file numbins = " << numLines << std::endl;
-	//std::cout << "\t! Setting numbins = numbins from data file." << std::endl;
-	//numbins = numLines;
-	//curve.numbins = numLines;
-	//return -1;
-      //}
+  
        
       // Read in data file to structure "obsdata" (observed data)
       // f[1][i] flux in low energy band
