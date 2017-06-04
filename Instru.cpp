@@ -27,7 +27,7 @@
 using namespace std;
 
 
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation){
+class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh){
 
 	class LightCurve curve, newcurve;
 	double temp;
@@ -63,6 +63,9 @@ class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation)
 		case 4: // j0437 TBABS
 			file.open("j0437.tbabs_4e19.txt");
 			break;
+		case 5: //
+			file.open("tbnew_4e19.txt");
+			break;
 	}
 
 	if(file.is_open()){
@@ -88,7 +91,7 @@ class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation)
         		newcurve.f[p][i] = curve.f[p][i];
         	} 
         	else {
-        		newcurve.f[p][i] = curve.f[p][i] * atten_factors[p];
+        		newcurve.f[p][i] = curve.f[p][i] * pow(atten_factors[p],nh);
         	}
 
         	/*
@@ -121,7 +124,7 @@ class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve){
 	chdir(resdir);
 
 	ifstream file;
-	file.open("niceravgarea.txt");
+	file.open("NICER_fine_area.txt");
 
 	if(file.is_open()) {
 		while (file >> temp) {
@@ -197,3 +200,133 @@ class LightCurve Background_list (class LightCurve* incurve, char *background_fi
 	}
 	return newcurve;
 }
+
+
+class LightCurve AGN_Background (class LightCurve* incurve, double agnbackground, double nh){
+
+	class LightCurve newcurve, curve;
+	unsigned int numbands, numbins;
+	double temp, gamma, n(0.0), A;
+	char cwd[1024], bgddir[1024];
+	std::vector<double> nicer_area, ism;
+
+	//Pour numbands, numbins, and nh into newcurve
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	//nh = curve.nh;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
+	//newcurve.nh = nh;
+
+	//Read in NICER effective area
+    getcwd(cwd, sizeof(cwd));
+    sprintf(bgddir,"%s/Area",cwd);
+    chdir(bgddir);
+
+    ifstream file;
+	file.open("NICER_fine_area.txt");
+
+	if(file.is_open()){
+        while (file >> temp) {
+        	file >> temp;
+            nicer_area.push_back(temp);
+        }
+	}
+	else{
+	  throw( Exception( "nicer_area_file is not found" ));
+	}
+	file.close();
+	chdir(cwd);
+
+    //Read in ISM factors
+    getcwd(cwd, sizeof(cwd));
+    sprintf(bgddir,"%s/ISM",cwd);
+    chdir(bgddir);
+
+    ifstream file1;
+	file1.open("tbnew_4e19.txt");
+
+	if(file1.is_open()){
+        while (file1 >> temp) {
+        	file1 >> temp;
+        	file1 >> temp;
+            ism.push_back(temp);
+        }
+	}
+	else{
+	  throw( Exception( "ISM file is not found" ));
+	}
+	file1.close();
+	chdir(cwd);
+
+	//Calculate Normalization
+
+	gamma = -2.59;
+
+	for (unsigned int i = 0; i < 301; i++){
+		n += nicer_area[i] * pow((i/100+0.1),gamma) * 0.01 * pow(ism[i],nh);
+	}
+	A = agnbackground/n;
+
+
+	// Apply Background
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        	newcurve.f[p][i] = curve.f[p][i] + nicer_area[p] * pow((p/100+0.1),gamma) * A * 0.01 * pow(ism[p],nh) / numbins;        	
+        }
+	}
+
+    return newcurve;
+}
+
+
+class LightCurve Sky_Background (class LightCurve* incurve, double skybackground){
+
+	class LightCurve newcurve, curve;
+	unsigned int numbands, numbins;
+	double temp;
+	char cwd[1024], bgddir[1024];
+	std::vector<double> skyback;
+
+	//Pour numbands and numbins into newcurve
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	//nh = curve.nh;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
+	//newcurve.nh = nh;
+
+    //Read in background numbers
+    getcwd(cwd, sizeof(cwd));
+    sprintf(bgddir,"%s/Background",cwd);
+    chdir(bgddir);
+
+	ifstream file;
+	//std::cout << "background_file = " << background_file << std::endl;
+	file.open("skyback_1191.txt");
+
+	if(file.is_open()){
+        while (file >> temp) {
+        	file >> temp;
+            skyback.push_back(temp);
+        }
+	}
+	else{
+	  throw( Exception( "Diffuse sky background file is not found" ));
+	}
+	file.close();
+	chdir(cwd);
+
+
+
+	for (unsigned int p = 0; p < numbands; p++){
+        for (unsigned int i = 0; i < numbins; i++){
+        		newcurve.f[p][i] = curve.f[p][i] + skyback[p]*skybackground/0.3*16/numbins;
+				//This list is normalized to 0.3 counts per second with 16 phse bins, calculated using May 2014 NICER effective area	
+        }
+	}
+	return newcurve;
+}
+

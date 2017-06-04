@@ -93,11 +93,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     E_band_lower_2(5.0),        // Lower bound of second energy band to calculate flux over, in keV.
     E_band_upper_2(6.0),        // Upper bound of second energy band to calculate flux over, in keV.
     background(0.0),	        // One background value for all bands.
+    dsbackground(0.0),			// Diffuse sky background normalization
+    agnbackground(0.0),			// AGN background normalization
+    plbackground(0.0),			// Phase-dependent power law background normalization
     T_mesh[30][30],             // Temperature mesh over the spot; same mesh as theta and phi bins, assuming square mesh
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
+    nh(1.0),					// real nh = nh*4e19
     B;                          // from param_degen/equations.pdf 2
    
   double SurfaceArea(0.0);
@@ -145,7 +149,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 //E_band_lower_2_set(false),  // True if the lower bound of the second energy band is set
     	 //E_band_upper_2_set(false),  // True if the upper bound of the second energy band is set
     	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
-    	 only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
+    	 //only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
     	 pd_neg_soln(false),
     	 background_file_is_set(false),
     	 out_file1_is_set(false);	 // True to produce second output file with alternate format
@@ -170,16 +174,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         			// 2 = NICER J0030 TBABS
         			// 3 = NICER J0437 WABS
         			// 4 = NICER J0437 TBABS
+        			// 5 = NICER J0437 TBnew (with fine bands)
         			break;
 
-	    case 'A': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
-	    			sscanf(argv[i+1], "%lf", &phase_2);
-	    			break;
+        case 'A': // ISM column density, in multiples of 4e19
+        			sscanf(argv[i+1], "%u", &nh);
+        			break;
 	            
 	    case 'b': // Bending Angle File
 	            	sscanf(argv[i+1], "%s", bend_file);	
 					bend_file_is_set = true;
 	            	break;
+
+	    case 'B': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
+	    			sscanf(argv[i+1], "%lf", &phase_2);
+	    			break;
 
 	    case 'C': // Temperature of second spot
 	    			sscanf(argv[i+1], "%lf", &spot2_temperature);
@@ -229,9 +238,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	datafile_is_set = true;
 	            	break;
 	                
-	    case 'j':  // Flag for calculating only the second (antipodal) hot spot
-	            	only_second_spot = true;
-	            	break;
+	    case 'j': // Diffuse Sky Background
+	                sscanf(argv[i+1], "%lf", &dsbackground);
+	                break;
+
+	    case 'J': // AGN Background
+	    	        sscanf(argv[i+1], "%lf", &agnbackground);
+	    	        break;
 	          	          
 	    case 'l':  // Time shift, phase shift.
 	                sscanf(argv[i+1], "%lf", &ts);
@@ -522,7 +535,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mass_over_req = mass/(req) * Units::GMC2;
     incl_1 *= (Units::PI / 180.0);  // radians
     d_incl_2 *= (Units::PI / 180.0);  // radians
-    if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
+    //if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
     theta_1 *= (Units::PI / 180.0); // radians
     d_theta_2 *= (Units::PI / 180.0);  // radians
     theta_2 = theta_1+d_theta_2; // radians
@@ -765,7 +778,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
    // Force energy band settings into NICER specified bands
-
+/*
    	if (curve.flags.attenuation >= 1){
    		  
     	std::cout << "You are using attenuation files for NICER, specified for each NS target." << std::endl;
@@ -777,7 +790,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	curve.para.E_band_upper_1 = E_band_upper_1;
    		curve.numbands = numbands;
    	} 
-
+*/
     /*************************/
     /* OPENING THE DATA FILE */
     /*************************/
@@ -885,7 +898,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		   		    mass_over_req,
 				    rot_par );
 
-      //std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
+      std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
 
        
     }
@@ -912,7 +925,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /****************************/
     /* Initialize time and flux */
     /****************************/
-	
+
+    //std::cout << numbins << " " << numbands << std::endl;
     for ( unsigned int i(0); i < numbins; i++ ) {
         curve.t[i] = i / (1.0 * numbins);// + ts;  // defining the time used in the lightcurves
         for ( unsigned int p(0); p < numbands; p++ ) {
@@ -920,7 +934,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
             curve.f[p][i] = 0.0;
         }
     } 
-    
+
 	/*********************************/
 	/* FIRST HOT SPOT - STANDARD CASE*/
 	/*********************************/
@@ -957,7 +971,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  		double thetak = curve.para.theta_k[k];
 	  		 std::cout << "k = " << k 
-	  			    << "theta = " << thetak
+	  			    << " theta = " << thetak
 	  			    << std::endl;
 
 	  		double phi_edge = curve.para.phi_k[k];
@@ -1268,15 +1282,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	/**********************************/
 
 	if (curve.flags.attenuation != 0){
-		/*
-    	for (unsigned int p = 0; p < numbands; p++){
-        	for (unsigned int i = 0; i < numbins; i++){
-        		Flux[p][i] = Attenuate(p,Flux[p][i],curve.flags.attenuation);
-        	}
-		}
-		*/
 
-		tempcurve = Attenuate(&tempcurve,curve.flags.attenuation);
+		tempcurve = Attenuate(&tempcurve,curve.flags.attenuation,nh);
 
 	}
     
@@ -1311,6 +1318,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    }
 	  }
 	}
+
+	
+	if (agnbackground > 0){
+		tempcurve = AGN_Background(&tempcurve, agnbackground, nh);
+	}
+
+	if (dsbackground > 0){
+		tempcurve = Sky_Background(&tempcurve, dsbackground);
+	}
+	
 
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
