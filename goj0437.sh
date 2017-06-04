@@ -52,13 +52,13 @@ if test ! -d "$out_dir"
 fi
 
 # TEST 1: theta bin = 10
-out_file="$out_dir/may15_mcphac_obl_j0437_nobg_noinstru_10theta.txt"
+out_file="$out_dir/jun3_nsxhnew_obl_j0437_agn_ism_instru_10theta.txt"
 ## RUNNING THE CODE
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -2 -a "$attenuation" -A "$nh" -B "$phase_2" -C "$temp_2" -d "$rho2" -j "$dsback" -J "agnback"
 times
 
 # TEST 2: theta bin = 15
-out_file="$out_dir/may15_mcphac_obl_j0437_nobg_noinstru_15theta.txt"
+out_file="$out_dir/jun3_nsxhnew_obl_j0437_agn_ism_instru_15theta.txt"
 ## RUNNING THE CODE
 numtheta=15
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -2 -a "$attenuation" -A "$nh" -B "$phase_2" -C "$temp_2" -d "$rho2" -j "$dsback" -J "agnback"
