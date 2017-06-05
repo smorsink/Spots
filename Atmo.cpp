@@ -103,6 +103,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     std::cout << "obl_approx = " << obl_approx << std::endl;
     double lgrav = log10(delta * Units::G * M / R / R * obl_approx);
     std::cout << "log(g) = " << lgrav << std::endl;
+    std::cout << curve.flags.beaming_model << std::endl;
 
 
 
@@ -2648,8 +2649,13 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 
   
     //  cout << L << endl;
+    
+    if (isnan(L)) {
+    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
+    	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
+    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    }
 
-   
         return L;
 }
 
@@ -2670,14 +2676,14 @@ double NSXHnew(double E, double cos_theta, double T, double M, double R, class L
     lgrav = log10(delta * Units::G * M / (R * R));
     //lgrav = log10(delta * Units::G * M / R / R * obl_approx);
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
-
+/*
     cout << endl; 
     cout << "temperature in log(K) is " << lt << endl;
     cout << "gravity in log(cgs units) is " << lgrav << endl;
     cout << "cos_theta is " << cos_theta << endl;
     cout << "energy is " << E << " keV" << endl;
     cout << "temperature is " << T  << " keV" << endl;
-
+*/
 
     i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
     n_lt = i_lt+1;
@@ -2694,7 +2700,7 @@ double NSXHnew(double E, double cos_theta, double T, double M, double R, class L
     
     //Find proper mu choice
     n_mu = 1;
-    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 50){
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 67){
     	n_mu += 1;
     }
 
@@ -2703,8 +2709,8 @@ double NSXHnew(double E, double cos_theta, double T, double M, double R, class L
     //th1 = acos(mexmcc.mccangl[n_mu+1]);
     //theta = acos(cos_theta);
 
-    mu0 = mexmcc.mccangl[i_mu+1];
-    mu1 = mexmcc.mccangl[n_mu+1];
+    mu0 = mexmcc.mccangl[i_mu];
+    mu1 = mexmcc.mccangl[n_mu];
 
 
     //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
@@ -2712,8 +2718,8 @@ double NSXHnew(double E, double cos_theta, double T, double M, double R, class L
 
     //Find proper freqency choice
 
-    ener_spacing = pow(10.0,0.0338);
-    ener_index = (log10(E/T) + 1.30369)/0.0338;
+    ener_spacing = pow(10.0,0.02);
+    ener_index = (log10(E) + 1.32 )/0.02;
 
     i_f = (int) ener_index;
     n_f = i_f + 1;
@@ -2731,51 +2737,51 @@ double NSXHnew(double E, double cos_theta, double T, double M, double R, class L
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu +1 -1;
     
 
-    I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
+    I_temp[0] = mexmcc.mccinte[first_inte];
     //cout << endl;
     //cout << "0: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[0] << std::endl;
-    I_temp[2] = mexmcc.mccinte[first_inte+50]*pow(10.0,t0*3.0);
+    I_temp[2] = mexmcc.mccinte[first_inte+50];
     //cout << "2: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[2] << std::endl;
 
 
 
 
-    I_temp[1] = mexmcc.mccinte[first_inte+1]*pow(10.0,t0*3.0);
+    I_temp[1] = mexmcc.mccinte[first_inte+1];
     //cout << "1: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[1] << std::endl;
-    I_temp[3] = mexmcc.mccinte[first_inte+51]*pow(10.0,t0*3.0);
+    I_temp[3] = mexmcc.mccinte[first_inte+51];
     //cout << "3: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[3] << std::endl;
 
    
 
 
-    I_temp[4] = mexmcc.mccinte[first_inte+5000]*pow(10.0,t0*3.0);
-    I_temp[5] = mexmcc.mccinte[first_inte+5001]*pow(10.0,t0*3.0);
-    I_temp[6] = mexmcc.mccinte[first_inte+5050]*pow(10.0,t0*3.0);
-    I_temp[7] = mexmcc.mccinte[first_inte+5051]*pow(10.0,t0*3.0);
+    I_temp[4] = mexmcc.mccinte[first_inte+5000];
+    I_temp[5] = mexmcc.mccinte[first_inte+5001];
+    I_temp[6] = mexmcc.mccinte[first_inte+5050];
+    I_temp[7] = mexmcc.mccinte[first_inte+5051];
 
-    I_temp[8] = mexmcc.mccinte[first_inte+55000]*pow(10.0,t1*3.0);
-    I_temp[9] = mexmcc.mccinte[first_inte+55001]*pow(10.0,t1*3.0);
-    I_temp[10] = mexmcc.mccinte[first_inte+55050]*pow(10.0,t1*3.0);
-    I_temp[11] = mexmcc.mccinte[first_inte+55051]*pow(10.0,t1*3.0);
+    I_temp[8] = mexmcc.mccinte[first_inte+55000];
+    I_temp[9] = mexmcc.mccinte[first_inte+55001];
+    I_temp[10] = mexmcc.mccinte[first_inte+55050];
+    I_temp[11] = mexmcc.mccinte[first_inte+55051];
 
-    I_temp[12] = mexmcc.mccinte[first_inte+60000]*pow(10.0,t1*3.0);
-    I_temp[14] = mexmcc.mccinte[first_inte+60001]*pow(10.0,t1*3.0);
-    I_temp[13] = mexmcc.mccinte[first_inte+60050]*pow(10.0,t1*3.0);
-    I_temp[15] = mexmcc.mccinte[first_inte+60051]*pow(10.0,t1*3.0);
+    I_temp[12] = mexmcc.mccinte[first_inte+60000];
+    I_temp[14] = mexmcc.mccinte[first_inte+60001];
+    I_temp[13] = mexmcc.mccinte[first_inte+60050];
+    I_temp[15] = mexmcc.mccinte[first_inte+60051];
 
-    I_int[0] = LogLinear(E/T, e0, I_temp[0], e1, I_temp[2]); //t0, grav0, th0
+    I_int[0] = LogLinear(E, e0, I_temp[0], e1, I_temp[2]); //t0, grav0, th0
     //cout << "0 E Interpolated: I = " << I_int[0] << endl;
 
-    I_int[1] = LogLinear(E/T, e0, I_temp[1], e1, I_temp[3]); //t0, grav0, th1
+    I_int[1] = LogLinear(E, e0, I_temp[1], e1, I_temp[3]); //t0, grav0, th1
     //cout << "1 E Interpolated: I = " << I_int[1] << endl;
     
 
-    I_int[2] = LogLinear(E/T, e0, I_temp[4], e1, I_temp[6]); //t0, grav1, th0
-    I_int[3] = LogLinear(E/T, e0, I_temp[5], e1, I_temp[7]); //t0, grav1, th1
-    I_int[4] = LogLinear(E/T, e0, I_temp[8], e1, I_temp[10]);//t1, grav0, th0
-    I_int[5] = LogLinear(E/T, e0, I_temp[9], e1, I_temp[11]);//t1, grav0, th1
-    I_int[6] = LogLinear(E/T, e0, I_temp[12], e1, I_temp[14]);//t1, grav1, th0
-    I_int[7] = LogLinear(E/T, e0, I_temp[13], e1, I_temp[15]);//t1, grav1, th1
+    I_int[2] = LogLinear(E, e0, I_temp[4], e1, I_temp[6]); //t0, grav1, th0
+    I_int[3] = LogLinear(E, e0, I_temp[5], e1, I_temp[7]); //t0, grav1, th1
+    I_int[4] = LogLinear(E, e0, I_temp[8], e1, I_temp[10]);//t1, grav0, th0
+    I_int[5] = LogLinear(E, e0, I_temp[9], e1, I_temp[11]);//t1, grav0, th1
+    I_int[6] = LogLinear(E, e0, I_temp[12], e1, I_temp[14]);//t1, grav1, th0
+    I_int[7] = LogLinear(E, e0, I_temp[13], e1, I_temp[15]);//t1, grav1, th1
     
     //cout << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
 

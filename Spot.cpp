@@ -687,7 +687,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	fclose(Hspecttable);
     	chdir(cwd);
     	std::cout << "finished reading Cole's McPHAC" << std::endl;
-    	std::cout << curve.mccangl[50] << std::endl;
+    	std::cout << curve.mccangl[0] << std::endl;
     	std::cout << curve.mccinte[51] << std::endl;
       } // End Spectrum Option 10
 
@@ -729,9 +729,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	curve.mccangl = dvector(0,Nmu);
 	for (int i=0;i<Nmu;i++){
 	  Hspecttable >> curve.mccangl[i];
-	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
-	  //	    << " theta = " << acos(curve.mccangl[i]) 
-	  //	    << std::endl;
+	  std::cout << "cos(theat) = " << curve.mccangl[i] 
+	  	    << " theta = " << acos(curve.mccangl[i]) 
+	        << std::endl;
 	}
 
 	Npts =  (NlogTeff*Nlogg*NlogE);
@@ -772,8 +772,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	Hspecttable.close();
 
     	std::cout << "finished reading Wynn Ho's NSX-H" << std::endl;
-    	//std::cout << curve.mccangl[50] << std::endl;
-    	//std::cout << curve.mccinte[51] << std::endl;
+    	std::cout << curve.mccangl[0] << std::endl;
+    	std::cout << curve.mccinte[51] << std::endl;
       } // End Spectrum Option 11
 
 
@@ -970,10 +970,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  		deltatheta = curve.para.dtheta[k];
 
 	  		double thetak = curve.para.theta_k[k];
+	  		/*
 	  		 std::cout << "k = " << k 
 	  			    << " theta = " << thetak
 	  			    << std::endl;
-
+			*/
 	  		double phi_edge = curve.para.phi_k[k];
 
 	  		dphi = 2.0*Units::PI/(numbins*1.0);
@@ -1114,7 +1115,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	cosgamma = model->cos_gamma(mu_2);
     	curve.para.cosgamma = cosgamma;
 
-    	std::cout << "rho2 = " << rho2 << std::endl;
+    	//std::cout << "rho2 = " << rho2 << std::endl;
 
     	if ( T_mesh_in ) {
       		std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
@@ -1274,6 +1275,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	for (unsigned int p = 0; p < numbands; p++){
         for (unsigned int i = 0; i < numbins; i++){
         	tempcurve.f[p][i] = Flux[p][i];
+        	//std::cout << tempcurve.f[p][i] << std::endl;
         }
 	}
 
@@ -1282,7 +1284,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	/**********************************/
 
 	if (curve.flags.attenuation != 0){
-
+		std::cout << "ISM" << std::endl;
 		tempcurve = Attenuate(&tempcurve,curve.flags.attenuation,nh);
 
 	}
@@ -1318,13 +1320,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    }
 	  }
 	}
-
 	
 	if (agnbackground > 0){
+		std::cout << "AGN Background" << std::endl;		
 		tempcurve = AGN_Background(&tempcurve, agnbackground, nh);
 	}
 
 	if (dsbackground > 0){
+		std::cout << "Sky Background" << std::endl;
 		tempcurve = Sky_Background(&tempcurve, dsbackground);
 	}
 	
@@ -1341,6 +1344,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	}
 		}
 		*/
+		std::cout << "Instrument Response" << std::endl;
 		tempcurve = Inst_Res(&tempcurve, curve.flags.inst_curve);
 	}
 
