@@ -52,20 +52,20 @@ if test ! -d "$out_dir"
 fi
 
 # TEST 1: NSXH full
-out_file="$out_dir/jun5_nsxhnew_obl_j0437_mono.txt"
+out_file="$out_dir/jun6_nsxhnew_obl_j0437_mono.txt"
 ## RUNNING THE CODE
 #./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -2 -B "$phase_2" -C "$temp_2" -d "$rho2"
 times
 
 # TEST 2: Cole's McPHAC
-out_file="$out_dir/jun5_mcphacc_obl_j0437_mono.txt"
+out_file="$out_dir/jun6_mcphacc_obl_j0437_mono.txt"
 ## RUNNING THE CODE
 beaming=10     # Cole's McPHAC
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -2 -B "$phase_2" -C "$temp_2" -d "$rho2"
 times
 
 # TEST 3: Cole's McPHAC
-out_file="$out_dir/jun5_mcphacc_obl_j0437_inte.txt"
+out_file="$out_dir/jun6_mcphacc_obl_j0437_inte.txt"
 ## RUNNING THE CODE
 spectraltype=3
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -2 -B "$phase_2" -C "$temp_2" -d "$rho2"

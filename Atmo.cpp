@@ -130,8 +130,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 	if (curve.flags.beaming_model == 1)
 	    gray = Gray(curve.cosbeta[i]*curve.eta[i]); // Chandrasekhar limb-darkening	  
-	if (curve.flags.beaming_model == 5)
-	    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
+	//if (curve.flags.beaming_model == 5)
+	//    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
 	if (curve.flags.beaming_model == 6)
 	    gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
 	if (curve.flags.beaming_model == 7) // Hopf Function
@@ -202,7 +202,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3new((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
 		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
 		    
-curve.f[p][i] *= E_diff; // Fake Integration
+//curve.f[p][i] *= E_diff; // Fake Integration
 		   
 		  }
 	  	}
@@ -212,7 +212,7 @@ curve.f[p][i] *= E_diff; // Fake Integration
 		  //cout << "Calling NSXHnew!" << endl;
 		  for (unsigned int p = 0; p<numbands; p++){
 		    //cout << p << endl;
-		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHnew((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, curve.para.mass, curve.para.radius, curve);
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHnew((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
 		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
 		    //if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
 		  }
@@ -1736,7 +1736,7 @@ void Read_McPHAC(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double McPHAC(double E, double cos_theta){
-    double freq, P, P1, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
+    double freq, P1, mu_spacing, theta, mu_index, freq_spacing, first_freq, freq_index;
     double I_int[2];
     int i_mu(0), n_mu, i_f(0), n_f, e_size(100);
     std::vector<double> mu, I_temp,Iv_temp;
@@ -1788,7 +1788,7 @@ double McPHAC(double E, double cos_theta){
 
 
 double McPHAC2(int E_dex, double cos_theta){
-    double P, P1, mu_spacing, theta, mu_index;
+    double P1, mu_spacing, theta, mu_index;
     int i_mu(0), n_mu(0);
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
 
@@ -2007,7 +2007,8 @@ double NSXHe2(int E_dex, double cos_theta){
 void Read_McPHACC(double T, double M, double R){
     
     double delta, lt, lgrav, temp, dump, real_T;
-    int size_logt(13), size_lsgrav(8), size_mu(23), i_lt, i_lgrav, n_lt, n_lgrav, size_ener(125), size_set, skip_to, skip_two;
+    //int size_logt(13), size_lsgrav(8), size_mu(23), i_lt, i_lgrav, n_lt, n_lgrav, size_ener(125), size_set, skip_to, skip_two;
+    int i_lt, i_lgrav, n_lt, n_lgrav;
     char s1[40], s2[40], s3[40], s4[40], atmodir[1024], cwd[1024];
     std::vector<double> freq, logt, lsgrav;
 
@@ -2245,9 +2246,9 @@ void Read_McPHACC(double T, double M, double R){
 
 // Calculate the final interpolated intensity
 double McPHACC(double E, double cos_theta){
-    double freq, P, mu_spacing, theta, mu_index, ener_spacing, first_ener, freq_index;
+    double P, mu_spacing, theta, mu_index, ener_spacing, first_ener, freq_index;
     double I_int[8],Q[4],R[2];
-    int i_mu(0), n_mu, i_f(0), n_f, e_size(100);
+    int i_mu(0), n_mu, i_f(0), n_f;
     std::vector<double> mu, I_temp, Iv_temp, II_temp, IIv_temp, III_temp, IIIv_temp, IIII_temp, IIIIv_temp;
 
     //cout << "starting NSXH" << endl;
@@ -2347,7 +2348,7 @@ double McPHACC(double E, double cos_theta){
 
 
 double McPHACC2(int E_dex, double cos_theta){
-    double P, P1, mu_spacing, theta, mu_index;
+    double P, mu_spacing, theta, mu_index;
     double Q[4],R[2];
     int i_mu(0), n_mu(0);
     std::vector<double> mu, I_temp,Iv_temp,II_temp,IIv_temp,III_temp,IIIv_temp,IIII_temp,IIIIv_temp;
@@ -2418,7 +2419,7 @@ double McPHACC2(int E_dex, double cos_theta){
 
 // Calculate the final interpolated intensity
 double McPHACC3(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
-	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double delta, obl_approx, lgrav, lt, theta, ener_spacing, first_ener, ener_index;
 	double e0, e1, th0, th1, grav0, grav1, t0, t1;
 	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
 	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
@@ -2477,7 +2478,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
     first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu +1;
     //cout << i_lt << " " << i_lgrav << " " << i_f << " " << i_mu << " " << first_inte << endl;
     I_temp[0] = mexmcc.mccinte[first_inte]*pow(10.0,t0*3.0);
-    double freq = 1E3 * e0 * Units::EV / Units::H_PLANCK;
+    //double freq = 1E3 * e0 * Units::EV / Units::H_PLANCK;
     //cout << mexmcc.mccinte[first_inte] << " " << pow(10.0,t0*3.0) << " " << t0 << endl;
     //cout << I_temp[0] << " " << first_inte << " " << t0 << " " << grav0 << " " << freq << " " << th0 << " " << mexmcc.mccangl[i_mu+1] << endl;
     //cout << mexmcc.mccangl[0] << " " << mexmcc.mccangl[49] << endl;
@@ -2544,11 +2545,12 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
 // Calculate the final interpolated intensity
 // This "new" version takes into account that the energy is really the ratio: E/kT
 double McPHACC3new(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc){
-	double delta, obl_approx, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
-	double e0, e1, th0, th1, grav0, grav1, t0, t1;
-	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
-	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
-	double mu0, mu1;
+	double lt, ener_index;
+	//double e0, e1, th0, th1, t0, t1;
+	double t0;
+	double I_int[8], J[4], K[2], L(0.0);
+	int i_f, i_lt, i_lgrav, i_mu, n_mu, first_inte;
+	//double mu0, mu1;
 
        
 	
@@ -2583,7 +2585,6 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 
     //Find proper freqency choice
 
-    ener_spacing = pow(10.0,0.0338);
     ener_index = (log10(E/T) + 1.30369)/0.0338;
     i_f = (int) ener_index;  
 
@@ -2611,7 +2612,7 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 	  muvec[k] =  mexmcc.mccangl[ii_mu+k];
 	  //std::cout << "muvec[k] = " << muvec[k] << std::endl;
 	  // Interpolate over Energy for fixed Teff, gravity, and mu
-	  for( int j(0); j<4; j++){
+	  for( int j(1); j<5; j++){
 	    //evec[j] = pow(10,mexmcc.mcloget[i_f-1+j]);
 	    evec[j] = mexmcc.mcloget[i_f-1+j];
 	    first_inte = ((i_lt-1+r)*11 + i_lgrav-1+q) * 5000 + (i_f-1+j) * 50 + (ii_mu + k) +1 -1;
@@ -2623,6 +2624,10 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 	    //	      << std::endl;
 	  }
 	  I_int[k] = polint(evec,ivec[r][q][k],4,log10(E/T),&err);
+	  	  if (isnan(I_int[k])){ cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << " " << ivec[r][q][k][0] << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << endl;
+	    	I_int[k] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
+	    	cout << "err = " << err << endl;
+	    }
 	  //cout << "0 mu[k] = " << muvec[k]
 	  //   <<" E=" << E/T << " New 4pt Interpolated: I = " << I_int[k] 
 	  //   << " err = " << err << endl;
@@ -2651,9 +2656,8 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
     //  cout << L << endl;
     
     if (isnan(L)) {
-    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
     	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
-    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    	cout << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
     }
 
         return L;
@@ -2661,180 +2665,142 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 
 // Calculate the final interpolated intensity
 // This "new" version takes into account that the energy is really the ratio: E/kT
-double NSXHnew(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
-	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
-	double e0, e1, th0, th1, grav0, grav1, t0, t1;
-	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
-	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
-	double mu0, mu1;
+double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc){
+	double lt, ener_index;
+	double t0;
+	double I_int[8], J[4], K[2], L(0.0);
+	int i_f, i_lt, i_lgrav, i_mu, n_mu, first_inte;
 
-    //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
-    M = Units::nounits_to_cgs(M, Units::MASS);
-    R = Units::nounits_to_cgs(R, Units::LENGTH);
-    delta = 1 / sqrt(1 - (2 * Units::G * M / (R * Units::C * Units::C)));
-    obl_approx = (1 + (-0.791 + 0.776 * mexmcc.para.mass_over_r) * pow(sin(mexmcc.para.omega_bar_sq),2) + (1.138 - 1.431 * mexmcc.para.mass_over_r) * pow(cos(mexmcc.para.omega_bar_sq),2));
-    lgrav = log10(delta * Units::G * M / (R * R));
-    //lgrav = log10(delta * Units::G * M / R / R * obl_approx);
+       
+	//cout << "starting NSXHnew" << endl;
+
+
     lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
-/*
-    cout << endl; 
-    cout << "temperature in log(K) is " << lt << endl;
-    cout << "gravity in log(cgs units) is " << lgrav << endl;
-    cout << "cos_theta is " << cos_theta << endl;
-    cout << "energy is " << E << " keV" << endl;
-    cout << "temperature is " << T  << " keV" << endl;
-*/
+    //cout << lt << endl;
 
-    i_lt = (lt-5.1)/0.05; //if we need to load 1st temperature, i_lt = 0. this is discrete math
-    n_lt = i_lt+1;
-    t0 = 5.1+0.05*i_lt;
-    t1 = t0+0.05;
-    //    cout << i_lt << " " << n_lt << " " << t0 << " " << t1 << endl;
-    //cout << t0 << " " << t1 << endl;
+    // Find the correct temperature range
+    i_lt = (lt-5.1)/0.1; //if we need to load 1st temperature, i_lt = 0. this is discrete math
+    if (i_lt < 1) i_lt = 1;
+
 
     i_lgrav = (lgrav-13.7)/0.1;
-    n_lgrav = i_lgrav+1;
-    grav0 = 13.7+0.1*i_lgrav;
-    grav1 = grav0+0.1;
-    //cout << grav0 << " " << grav1 << endl;
-    
+    if (i_lgrav < 1) i_lgrav = 1;
+
     //Find proper mu choice
     n_mu = 1;
-    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 67){
+    while (cos_theta < mexmcc.mccangl[n_mu] && n_mu < 67){
     	n_mu += 1;
     }
-
     i_mu = n_mu - 1;
-    //    th0 = acos(mexmcc.mccangl[i_mu+1]);
-    //th1 = acos(mexmcc.mccangl[n_mu+1]);
-    //theta = acos(cos_theta);
 
-    mu0 = mexmcc.mccangl[i_mu];
-    mu1 = mexmcc.mccangl[n_mu];
-
-
-    //cout << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << " " << cos_theta << endl;
-    //cout << th0 << " " << th1 << " " << acos(cos_theta) << endl;
+    //    mu0 = mexmcc.mccangl[i_mu+1];
+    //mu1 = mexmcc.mccangl[n_mu+1];
 
     //Find proper freqency choice
 
-    ener_spacing = pow(10.0,0.02);
-    ener_index = (log10(E) + 1.32 )/0.02;
+    ener_index = (log10(E) + 1.32)/0.02;
+    i_f = (int) ener_index; 
 
-    i_f = (int) ener_index;
-    n_f = i_f + 1;
-    //    e0 = first_ener*pow(ener_spacing,i_f);
-    //e1 = e0*ener_spacing;
+    //cout << i_lt << " " << i_lgrav << " " << i_mu << " " << i_f << endl; 
+
+    // Now do a 4pt interpolation
+    double evec[4];
+    double ivec[4][4][4][4];
+    double err;
+    double muvec[4];
+    double gvec[4];
+    double tvec[4];
+
+    int ii_f(i_f-1);
+    if (ii_f < 0)
+      ii_f = 0;
+    if (ii_f > 133)
+      ii_f = 133;
     
-    e0 = pow(10,mexmcc.mcloget[i_f]);
-    e1 = pow(10,mexmcc.mcloget[n_f]);
+    int ii_lgrav(i_lgrav-1);
+    if (ii_lgrav < 0)
+      ii_lgrav = 0;
+    if (ii_lgrav > 7)
+      ii_lgrav = 7;
+
+    int ii_lt(i_lt-1);
+    if (ii_lt < 0)
+      ii_lt = 0;
+    if (ii_lt > 11)
+      ii_lt = 11;
+
+    int ii_mu(i_mu-1);
+    if (ii_mu < 0)
+      ii_mu = 0;
+    if (ii_mu > 63)
+      ii_mu = 63;
+
+    for (int r(0); r<4; r++){
+      tvec[r] =  5.1+0.1*(ii_lt+r);
+      //std::cout << "tvec[r]=" << tvec[r] << std::endl;
+      for (int q(0); q<4; q++){
+	gvec[q] = 13.7+0.1*(ii_lgrav+q);
+	//std::cout << "logg = " << gvec[q] << std::endl;
+	for (int k(0); k<4; k++){
+	  muvec[k] =  mexmcc.mccangl[ii_mu+k];
+	  //std::cout << "muvec[k] = " << muvec[k] << std::endl;
+	  // Interpolate over Energy for fixed Teff, gravity, and mu
+	  for( int j(1); j<5; j++){
+	    //evec[j] = pow(10,mexmcc.mcloget[i_f-1+j]);
+	    evec[j] = mexmcc.mcloget[ii_f+j];
+	    first_inte = ((ii_lt+r)*11 + ii_lgrav-1+q) * 9179 + (ii_f+j) * 67 + (ii_mu + k);
+	    t0 = tvec[r];
+	    ivec[r][q][k][j] = mexmcc.mccinte[first_inte];
+      
+	    //cout << "evec[j] = " << evec[j] << " ivec[j] = " << ivec[r][q][k][j] << endl;
+	  }
+	  I_int[k] = polint(evec,ivec[r][q][k],4,log10(E),&err);
+	  if (isnan(I_int[k])){ cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << " " << ivec[r][q][k][0] << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << endl;
+	    	I_int[k] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
+	    	cout << "err = " << err << endl;
+	    }//cout << "0 mu[k]  = " << muvec[k] <<" E=" << E << " New 4pt Interpolated: I = " << I_int[k] << " err = " << err << endl;
+	}
+	// Intepolate over mu for fixed Teff, gravity
+	J[q] = polint(muvec,I_int,4,cos_theta,&err);
+	if (isnan(J[q])) cout << muvec[0] << " " << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << cos_theta << " " << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
+	//cout << " costheta = " << cos_theta << " Interpolated I = " << J[q] << " err = " << err << std::endl;
+      }
+      // Interpolate over logg for fixed Teff
+      //cout << gvec[0] << " " << J[0] << " " << gvec[1] << " " << J[1] << endl;
+      //cout << gvec[2] << " " << J[2] << " " << gvec[3] << " " << J[3] << " " << lgrav << endl;
+      K[r] = polint(gvec,J,4,lgrav,&err);
+      if (isnan(K[r])) cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+      //cout << " logg = " << lgrav << " Interpolated I = " << K[r] << " err = " << err << endl;      
+      //cout << first_inte << endl;
+    }
+
+    L = polint(tvec,K,4,lt,&err);
+    if (isnan(L)) cout << tvec[0] << " " << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << lt << " " << K[0] << " " << K[1] << " " << K[2] << " " << K[3] << endl;
+
+    //std::cout << " log(T_eff) = " << lt 
+    //	      << " Interpolated I = " << L
+    //	      << " err = " << err << std::endl;
 
 
-    //cout << "log(e0) = " << mexmcc.mcloget[i_f] << std::endl;
-    //  cout << "log(e0)=" << log10(e0) << " " << log10(e1) << " " << log10(E/T) << endl;
-	  //cout << "e0=" << e0 << " " << e1 << " " << E/T << endl;
-    
-    first_inte = (i_lt*11 + i_lgrav) * 5000 + i_f * 50 + i_mu +1 -1;
-    
-
-    I_temp[0] = mexmcc.mccinte[first_inte];
-    //cout << endl;
-    //cout << "0: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[0] << std::endl;
-    I_temp[2] = mexmcc.mccinte[first_inte+50];
-    //cout << "2: costheta = " <<  mexmcc.mccangl[i_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[2] << std::endl;
-
-
-
-
-    I_temp[1] = mexmcc.mccinte[first_inte+1];
-    //cout << "1: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E0/kT) = " << log10(e0) << " I = " << I_temp[1] << std::endl;
-    I_temp[3] = mexmcc.mccinte[first_inte+51];
-    //cout << "3: costheta = " <<  mexmcc.mccangl[n_mu] << " log(E1/kT) = " << log10(e1) << " I = " << I_temp[3] << std::endl;
-
-   
-
-
-    I_temp[4] = mexmcc.mccinte[first_inte+5000];
-    I_temp[5] = mexmcc.mccinte[first_inte+5001];
-    I_temp[6] = mexmcc.mccinte[first_inte+5050];
-    I_temp[7] = mexmcc.mccinte[first_inte+5051];
-
-    I_temp[8] = mexmcc.mccinte[first_inte+55000];
-    I_temp[9] = mexmcc.mccinte[first_inte+55001];
-    I_temp[10] = mexmcc.mccinte[first_inte+55050];
-    I_temp[11] = mexmcc.mccinte[first_inte+55051];
-
-    I_temp[12] = mexmcc.mccinte[first_inte+60000];
-    I_temp[14] = mexmcc.mccinte[first_inte+60001];
-    I_temp[13] = mexmcc.mccinte[first_inte+60050];
-    I_temp[15] = mexmcc.mccinte[first_inte+60051];
-
-    I_int[0] = LogLinear(E, e0, I_temp[0], e1, I_temp[2]); //t0, grav0, th0
-    //cout << "0 E Interpolated: I = " << I_int[0] << endl;
-
-    I_int[1] = LogLinear(E, e0, I_temp[1], e1, I_temp[3]); //t0, grav0, th1
-    //cout << "1 E Interpolated: I = " << I_int[1] << endl;
-    
-
-    I_int[2] = LogLinear(E, e0, I_temp[4], e1, I_temp[6]); //t0, grav1, th0
-    I_int[3] = LogLinear(E, e0, I_temp[5], e1, I_temp[7]); //t0, grav1, th1
-    I_int[4] = LogLinear(E, e0, I_temp[8], e1, I_temp[10]);//t1, grav0, th0
-    I_int[5] = LogLinear(E, e0, I_temp[9], e1, I_temp[11]);//t1, grav0, th1
-    I_int[6] = LogLinear(E, e0, I_temp[12], e1, I_temp[14]);//t1, grav1, th0
-    I_int[7] = LogLinear(E, e0, I_temp[13], e1, I_temp[15]);//t1, grav1, th1
-    
-    //cout << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
-
-    // Interpolate to chosen mu
-    J[0] = Linear(cos_theta,mu0,I_int[0],mu1,I_int[1]); //t0, grav0
-    //cout << "J mu interpolated = " << J[0] << std::endl;
-    J[1] = Linear(cos_theta,mu0,I_int[2],mu1,I_int[3]); //t0, grav1
-    J[2] = Linear(cos_theta,mu0,I_int[4],mu1,I_int[5]); //t1, grav0
-    J[3] = Linear(cos_theta,mu0,I_int[6],mu1,I_int[7]); //t1, grav1
-
-    // Interpolate to chosen local gravity
-    //cout << "grav0 = " << grav0 << " J0 = " << J[0] << endl;
-    // cout << "grav1 = " << grav1 << " J1 = " << J[1] << endl;
-
-    //lgrav = 14.25;
-
-     // cout << " Interp to grav = " << lgrav << endl;
-
-    K[0] = pow(10.0,Linear(lgrav,grav0,log10(J[0]),grav1,log10(J[1]))); //t0
-    K[1] = pow(10.0,Linear(lgrav,grav0,log10(J[2]),grav1,log10(J[3]))); //t1
-
-    //cout << "t0 = " << t0 << " K0 = " << K[0] << endl;
-    //cout << "t1 = " << t1 << " K1= " << K[1] << endl;
-
-    //lt = 6.3;
-
-    // cout << "Interp to t=" << lt << endl;
-
-
-    // Interpolate to chosen temperature
-    L = pow(10.0,Linear(lt,t0,log10(K[0]),t1,log10(K[1])));
-
-    // Set to zero at small angle
-    if (cos_theta < 0.015629) L = 0;
-    //cout << L << endl;
-
-    //cout << I_temp[0] << " " << I_int[0] << " " << J[0] << " " << K[0] << " " << L << endl;
+  
+    //  cout << L << endl;
     /*
     if (isnan(L)) {
-    	cout << theta << " " << th0 << " " << th1 << " " << i_mu << " " << n_mu << endl;
-    	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
-    	cout << theta << " " << I_int[0] << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+    	cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << endl;
+    	cout << muvec[0] << " " << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << cos_theta << endl;
+    	cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << endl;    	
+    	cout << tvec[0] << " " << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << lt << endl;
     }
-    */
+	*/
         return L;
 } // End of New NSX-H from Wynn Ho
 
 // Calculate the final interpolated intensity
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc){
-	double delta, obl_approx, lgrav, lt, th_spacing, theta, th_index, ener_spacing, first_ener, ener_index;
+	double delta, obl_approx, lgrav, lt, theta;
 	double th0, th1, grav0, grav1, t0, t1;
-	double I_temp[16], I_int[8], J[4], K[2], L(0.0);
-	int i_f, n_f, i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
+	double I_int[8], J[4], K[2], L(0.0);
+	int i_lt, i_lgrav, n_lt, n_lgrav, i_mu, n_mu, first_inte;
 
 	//cout << "McPHACC4" << endl;
     //setting values of lt and lgrav based on input T, M, and R. Also sets to load using first mu value.   
@@ -3866,8 +3832,8 @@ double AtmosEBandFlux3new( unsigned int model, double cos_theta, double T, doubl
       //cout << "n steps= " << n_steps << endl;
      
        double e_step = (E2-E1)/(n_steps+1.0);
-       double e_l, e_u;
-       double counts_l, counts_u;
+       double e_l;
+       double counts_l;
 
        flux = e_step * 0.5 * McPHACC3new(E1,cos_theta, T, lgrav, mexmcc) / E1;
        //cout << "flux = " << flux << endl;

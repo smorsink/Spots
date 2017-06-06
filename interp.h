@@ -11,6 +11,8 @@
 
 double polint(double *xp, double *yp, int order, double xb, double *err);
 
+double printpolint(double *xp, double *yp, int order, double xb, double *err);
+
 double interp1(double *xp, double **yp, int first, int np, double xb, int *x_nearest_pt);
 
 void hunt_surf(double xx[], int first, int n, double x, int *jlo);

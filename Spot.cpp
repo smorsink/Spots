@@ -729,9 +729,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	curve.mccangl = dvector(0,Nmu);
 	for (int i=0;i<Nmu;i++){
 	  Hspecttable >> curve.mccangl[i];
-	  std::cout << "cos(theat) = " << curve.mccangl[i] 
-	  	    << " theta = " << acos(curve.mccangl[i]) 
-	        << std::endl;
+	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
+	  	    //<< " theta = " << acos(curve.mccangl[i]) 
+	        //<< std::endl;
 	}
 
 	Npts =  (NlogTeff*Nlogg*NlogE);
@@ -772,8 +772,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	Hspecttable.close();
 
     	std::cout << "finished reading Wynn Ho's NSX-H" << std::endl;
-    	std::cout << curve.mccangl[0] << std::endl;
-    	std::cout << curve.mccinte[51] << std::endl;
+    	//std::cout << Npts << std::endl;
+    	//std::cout << curve.mccinte[51] << std::endl;
       } // End Spectrum Option 11
 
 
@@ -1186,7 +1186,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 			//numphi = 2.0*(Units::PI-phi_edge)/dphi;
 	  		numphi = 2.0*((Units::PI * 2 * phase_2)-phi_edge)/dphi;
-	  		std::cout << numphi << " " << phi_edge << " " << dphi << std::endl;
+	  		//std::cout << numphi << " " << phi_edge << " " << dphi << std::endl;
 	  		//phishift = 2.0*(Units::PI-phi_edge)- numphi*dphi;
 	  		phishift = 2.0*((Units::PI * 2 * phase_2)-phi_edge)- numphi*dphi;
 	  		//phishift = 2.0*(Units::PI-phi_edge)+ numphi*dphi;

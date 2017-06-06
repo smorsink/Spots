@@ -101,7 +101,7 @@ double McPHACC3(double E, double cos_theta, double T, double M, double R, class 
 
 double McPHACC3new(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
-double NSXHnew(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
+double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
 
 // Cole's McPHAC in spotMex

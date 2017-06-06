@@ -20,7 +20,7 @@ numbands=301   # energy bands
 spectraltype=3 # BB Integrated energies
 beaming=10     # Cole's McPHAC
 spotmodel=0    # circular in the static frame, no gamma
-inst_res=0
+inst_res=1
 attenuation=5  # Using TBnew model
 
 # doubles -- using "e" notation
