@@ -188,6 +188,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    case 'B': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
 	    			sscanf(argv[i+1], "%lf", &phase_2);
+				phase_2 *= -1.0;
 	    			break;
 
 	    case 'C': // Temperature of second spot
@@ -635,6 +636,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
    		char atmodir[1024], cwd[1024];
    		getcwd(cwd, sizeof(cwd));
+		
+		std::cout << "Reading in McPhac Binary File " << std::endl;
+
     	sprintf(atmodir,"%s/atmosphere",cwd);
     	chdir(atmodir);
 	FILE *Hspecttable;
@@ -652,15 +656,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
 
 		//setprecision(10);
-		/*
-			std::cout << "i = " << i 
+		
+		/*	std::cout << "i = " << i 
 			  << " junk = " << junk
 			  << " junk2 = " << junk2
 			  << " junk3 = " << junk3
 			  << " costheta=" << curve.mccangl[i]
 			  << " thing = " << curve.mccinte[i]
-			  << std::endl;
-		*/
+			  << std::endl;*/
+		
 			if (i%50 == 0){
 			  curve.mcloget[e_index] = junk3;
 			  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
@@ -682,6 +686,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
 		  e_index ++;
 		}
+
+		/*if (junk == 6.15 && junk2 == 14.5 && junk3 > 0.96 && junk3 < 0.97)
+		  std::cout <<
+		  "junk = " << junk
+			    <<" junk2 = " << junk2
+			    <<" junk3 = " << junk3
+			    <<" junk4 = " << junk4
+			    <<" Intensity = " << curve.mccinte[i]
+			    << std::endl;*/
+
 
     	}
     	fclose(Hspecttable);
@@ -1110,7 +1124,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	std::cout << "Starting Spot 2" << std::endl;
     	incl_2 = Units::PI - incl_1 + d_incl_2; // keeping theta the same, but changing inclination
     	curve.para.incl = incl_2;
-    	theta_2 = theta_1 + d_theta_2; //d_theta_2 = 7.78 degrees, for 56+131.78 - 180
+    	theta_2 = theta_1 - d_theta_2; //d_theta_2 = 7.78 degrees, for 56+131.78 - 180
     	curve.para.theta = theta_2;  // keeping theta the same, but changing inclination
     	cosgamma = model->cos_gamma(mu_2);
     	curve.para.cosgamma = cosgamma;
@@ -1605,12 +1619,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     if (out_file1_is_set){
-   		std::ofstream out1;
-    	out1.open(out_file1, std::ios_base::trunc);
-    	if ( out1.bad() || out1.fail() ) {
-        	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
-        	return -1;
-    	}
+      std::ofstream out1;
+      out1.open(out_file1, std::ios_base::trunc);
+      if ( out1.bad() || out1.fail() ) {
+	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
+	return -1;
+      }
+      else
+	std::cout << "Opening "<< out_file1 << " for printing " << std::endl;
     	if (curve.flags.spectral_model==0){
 
         	double E_diff;
