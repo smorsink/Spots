@@ -206,7 +206,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * McPHACC3new((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
 		    curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
 		    
-		    curve.f[p][i] *= E_diff; // Fake Integration
+		    //curve.f[p][i] *= E_diff; // Fake Integration
 		   
 		  }
 	  	}
@@ -2683,7 +2683,7 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc){
 	double lt, ener_index;
 	double t0;
-	double I_int[8], J[4], K[2], L(0.0);
+	double I_int[9], J[5], K[3], L(0.0);
 	int i_f, i_lt, i_lgrav, i_mu, n_mu, first_inte;
 
        
@@ -2719,12 +2719,12 @@ double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCu
     //cout << i_lt << " " << i_lgrav << " " << i_mu << " " << i_f << endl; 
 
     // Now do a 4pt interpolation
-    double evec[4];
-    double ivec[4][4][4][4];
+    double evec[5];
+    double ivec[5][5][5][5];
     double err;
-    double muvec[4];
-    double gvec[4];
-    double tvec[4];
+    double muvec[5];
+    double gvec[5];
+    double tvec[5];
 
     int ii_f(i_f-1);
     if (ii_f < 0)
@@ -2751,41 +2751,41 @@ double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCu
       ii_mu = 63;
 
     for (int r(0); r<4; r++){
-      tvec[r] =  5.1+0.1*(ii_lt+r);
-      //std::cout << "tvec[r]=" << tvec[r] << std::endl;
+      tvec[r+1] =  5.1+0.1*(ii_lt+r);
+      //std::cout << "tvec[r]=" << tvec[r+1] << std::endl;
       for (int q(0); q<4; q++){
-	gvec[q] = 13.7+0.1*(ii_lgrav+q);
-	//std::cout << "logg = " << gvec[q] << std::endl;
+	gvec[q+1] = 13.7+0.1*(ii_lgrav+q);
+	//std::cout << "logg = " << gvec[q+1] << std::endl;
 	for (int k(0); k<4; k++){
-	  muvec[k] =  mexmcc.mccangl[ii_mu+k];
-	  //std::cout << "muvec[k] = " << muvec[k] << std::endl;
+	  muvec[k+1] =  mexmcc.mccangl[ii_mu+k];
+	  //std::cout << "muvec[k] = " << muvec[k+1] << std::endl;
 	  // Interpolate over Energy for fixed Teff, gravity, and mu
-	  for( int j(1); j<5; j++){
+	  for( int j(0); j<4; j++){
 	    //evec[j] = pow(10,mexmcc.mcloget[i_f-1+j]);
-	    evec[j] = mexmcc.mcloget[ii_f+j];
+	    evec[j+1] = mexmcc.mcloget[ii_f+j];
 	    first_inte = ((ii_lt+r)*11 + ii_lgrav-1+q) * 9179 + (ii_f+j) * 67 + (ii_mu + k);
-	    t0 = tvec[r];
-	    ivec[r][q][k][j] = mexmcc.mccinte[first_inte];
+	    t0 = tvec[r+1];
+	    ivec[r][q][k][j+1] = mexmcc.mccinte[first_inte];
       
 	    //cout << "evec[j] = " << evec[j] << " ivec[j] = " << ivec[r][q][k][j] << endl;
 	  }
-	  I_int[k] = polint(evec,ivec[r][q][k],4,log10(E),&err);
+	  I_int[k+1] = polint(evec,ivec[r][q][k],4,log10(E),&err);
 	  if (isnan(I_int[k])){ cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << " " << ivec[r][q][k][0] << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << endl;
 	    	I_int[k] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
 	    	cout << "err = " << err << endl;
 	    }//cout << "0 mu[k]  = " << muvec[k] <<" E=" << E << " New 4pt Interpolated: I = " << I_int[k] << " err = " << err << endl;
 	}
 	// Intepolate over mu for fixed Teff, gravity
-	J[q] = polint(muvec,I_int,4,cos_theta,&err);
+	J[q+1] = polint(muvec,I_int,4,cos_theta,&err);
 	if (isnan(J[q])) cout << muvec[0] << " " << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << cos_theta << " " << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
 	//cout << " costheta = " << cos_theta << " Interpolated I = " << J[q] << " err = " << err << std::endl;
       }
       // Interpolate over logg for fixed Teff
       //cout << gvec[0] << " " << J[0] << " " << gvec[1] << " " << J[1] << endl;
       //cout << gvec[2] << " " << J[2] << " " << gvec[3] << " " << J[3] << " " << lgrav << endl;
-      K[r] = polint(gvec,J,4,lgrav,&err);
+      K[r+1] = polint(gvec,J,4,lgrav,&err);
       if (isnan(K[r])) cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
-      //cout << " logg = " << lgrav << " Interpolated I = " << K[r] << " err = " << err << endl;      
+      //cout << " logg = " << lgrav << " Interpolated I = " << K[r+1] << " err = " << err << endl;      
       //cout << first_inte << endl;
     }
 

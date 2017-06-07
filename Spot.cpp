@@ -383,42 +383,79 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	break;
 	            
                 case 'h': default: // Prints help
-       	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
-                              << "-a Anisotropy parameter. [0.586]" << std::endl
-                              << "-b Ratio of blackbody flux to comptonized flux. [1.0]" << std::endl
-                              << "-d Ignores time delays in output (see source). [0]" << std::endl
-                              << "-D Distance from earth to star, in meters. [~10kpc]" << std::endl
+      	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
+       	            		  
+                              << "-a Attenuation Flag [0]:" << std::endl
+                              << "      1 for NICER J0030 WABS model" << std::endl
+                              << "      2 for NICER J0030 TBABS model" << std::endl
+                              << "      3 for NICER J0437 WABS model" << std::endl
+                              << "      4 for NICER J0437 TBABS model" << std::endl
+                              << "      5 for NICER J0437 'fine channels' TBnew model" << std::endl
+                              << "-A ISM column density, in multiples of base value [0]" << std::endl
+                              << "      base value is 4e19 for J0437 and 1.8e20 for J0030" << std::endl
+                              << "-b Bending Angle File" << std::endl
+                              << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
+                              << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
+                              << "-d Size of second spot. [0.0]" << std::endl
+                              << "-D Distance from earth to star, in kpc. [10]" << std::endl
                               << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
+                              << "-E Offset latitudinal angle of second spot (from antipodal), in degrees [0.0]" << std::endl
                               << "-f * Spin frequency of star, in Hz." << std::endl
-                              << "-g Graybody factor of beaming model: 0 = isotropic, 1 = Gray Atmosphere. [0]" << std::endl
+                              << "-g Atmosphere beaming model [0]:" << std::endl
+                              << "      0 for BB, no beaming" << std::endl
+                              << "      1 for BB + graybody" << std::endl
+                              << "      2 for NICER fake spectral lines" << std::endl
+                              << "      3 for NSATMOS (Khaled's)" << std::endl
+                              << "      4 for *Old* NSX Helium" << std::endl
+                              << "      5 for *limited T/g* NSXH" << std::endl
+                              << "      6 for BB * (1 - cosbeta*coseta^2)" << std::endl
+                              << "      7 for BB Hopf Function" << std::endl
+                              << "      8 for *limited T/g* Slavko's McPHAC" << std::endl
+                              << "      9 for *limited T/g* NSX Helium" << std::endl
+                              << "      10 for Cole's McPHAC correct E/T version" << std::endl
+                              << "      11 for Wynn's full NSXH table" << std::endl
 		                      << "-i * Inclination of observer, in degrees, between 0 and 90." << std::endl
                               << "-I Input filename." << std::endl
-		                      << "-j Flag for computing only the second (antipodal) hot spot. [false]" << std::endl
+		                      << "-j Diffuse Sky Background, normalized to expected counts/second in NICER [0.0]" << std::endl
+		                      << "-J AGN Background, normalized to expected counts/second in NICER [0.0]" << std::endl
+		                      << "-k Constant background for all bands" << std::endl
+		                      << "-K Listed backgrounds for each band" << std::endl
 		                      << "-l Time shift (or phase shift), in seconds." << std::endl
+		                      << "-L Offset inclination of observer, in degrees, between 0 and 90." << std::endl
 		                      << "-m * Mass of star in Msun." << std::endl          
       	  	                  << "-n Number of phase or time bins. [128]" << std::endl
       	  	                  << "-N Flag for normalizing the flux. Using this sets it to true. [false]" << std::endl
 		                      << "-o Output filename." << std::endl
-		                      << "-O Second output filename" << std::endl
+		                      << "-O Name for second output file, file has alternative format" << std::endl
 		                      << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
-		                      << "-q * Model of star: [3]" << std::endl
+		                      << "-P Hot spot shape model [0]:" << std::endl
+		                      << "      0 for standard circular" << std::endl
+		                      << "      1 for circular in rotating frame" << std::endl
+		                      << "-q * Oblateness Model of star: [1]" << std::endl
 		                      << "      1 for Neutron/Hybrid quark star poly model" << std::endl
 		                      << "      2 for CFL quark star poly model" << std::endl
 		                      << "      3 for spherical model" << std::endl
+		                      << "-R Instrument response curve [0]:" << std::endl
+		                      << "      0 nothing's done as if all channels are 1 cm^2" << std::endl
+		                      << "      1 NICER 2014 'fine channels' effective areas" << std::endl
 		                      << "-r * Radius of star (at the equator), in km." << std::endl
 		                      << "-s Spectral model of radiation: [0]" << std::endl
-		                      << "      0 for bolometric light curve." << std::endl
-		                      << "      1 for blackbody in monochromatic energy bands (must include T option)." << std::endl
+		                      << "      0 for monochromatic." << std::endl
+		                      << "      1 for NICER fake lines" << std::endl
+		                      << "      2 for BB integrated" << std::endl
+		                      << "      3 for Atmosphere integrated" << std::endl
+		                      << "-S Number of energy bands: [NCURVES]" << std::endl
 		                      << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
-		                      << "-T Temperature of the spot, in keV. [2]" << std::endl
-		                      << "-u Low energy band, lower limit, in keV. [2]" << std::endl
-		                      << "-U Low energy band, upper limit, in keV. [3]" << std::endl
-		                      << "-v High energy band, lower limit, in keV. [5]" << std::endl
-		                      << "-V High energy band, upper limit, in keV. [6]" << std::endl
-		                      << "-x Scattering radius, in kpc." << std::endl
-		                      << "-X Scattering intensity, units unspecified." << std::endl
+		                      << "-T Temperature of the spot, in keV. [0]" << std::endl
+		                      << "-u Energy bands' lower limit, in keV. [2]" << std::endl
+		                      << "-U Energy bands' upper limit, in keV. [3]" << std::endl
+		                      << "-v NICER funny line L1" << std::endl
+		                      << "-V NICER funny line L2" << std::endl
+		                      << "-x NICER funny line E0" << std::endl
+		                      << "-X NICER funny line DeltaE" << std::endl
 		                      << "-z Input file name for temperature mesh." << std::endl
-		                      << "-2 Flag for calculating two hot spots, on both magnetic poles. Using this sets it to true. [false]" << std::endl
+		                      << "-Z Observation time in seconds [1.0]" << std::endl
+		                      << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
 		                      << "-3 File name header, for use with Ferret and param_degen." << std::endl
 		                      << "-8 Sets a flag to indicate that param_degen gave a negative solution." << std::endl
 		                      << " Note: '*' next to description means required input parameter." << std::endl
