@@ -2765,11 +2765,11 @@ double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCu
 	    evec[j+1] = mexmcc.mcloget[ii_f+j];
 	    first_inte = ((ii_lt+r)*11 + ii_lgrav-1+q) * 9179 + (ii_f+j) * 67 + (ii_mu + k);
 	    t0 = tvec[r+1];
-	    ivec[r][q][k][j+1] = mexmcc.mccinte[first_inte];
+	    ivec[r][q][k][j+1] = log10(mexmcc.mccinte[first_inte]);
       
 	    //cout << "evec[j] = " << evec[j] << " ivec[j] = " << ivec[r][q][k][j] << endl;
 	  }
-	  I_int[k+1] = polint(evec,ivec[r][q][k],4,log10(E),&err);
+	  I_int[k+1] = pow(10,polint(evec,ivec[r][q][k],4,log10(E),&err));
 	  if (isnan(I_int[k])){ cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << " " << ivec[r][q][k][0] << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << endl;
 	    	I_int[k] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
 	    	cout << "err = " << err << endl;
@@ -2783,13 +2783,13 @@ double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCu
       // Interpolate over logg for fixed Teff
       //cout << gvec[0] << " " << J[0] << " " << gvec[1] << " " << J[1] << endl;
       //cout << gvec[2] << " " << J[2] << " " << gvec[3] << " " << J[3] << " " << lgrav << endl;
-      K[r+1] = polint(gvec,J,4,lgrav,&err);
+      K[r+1] = log10(polint(gvec,J,4,lgrav,&err));
       if (isnan(K[r])) cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
       //cout << " logg = " << lgrav << " Interpolated I = " << K[r+1] << " err = " << err << endl;      
       //cout << first_inte << endl;
     }
 
-    L = polint(tvec,K,4,lt,&err);
+    L = pow(10,polint(tvec,K,4,lt,&err));
     if (isnan(L)) cout << tvec[0] << " " << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << lt << " " << K[0] << " " << K[1] << " " << K[2] << " " << K[3] << endl;
 
     //std::cout << " log(T_eff) = " << lt 
