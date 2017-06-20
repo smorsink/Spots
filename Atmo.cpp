@@ -2769,28 +2769,28 @@ double NSXHnew(double E, double cos_theta, double T, double lgrav, class LightCu
       
 	    //cout << "evec[j] = " << evec[j] << " ivec[j] = " << ivec[r][q][k][j] << endl;
 	  }
-	  I_int[k+1] = pow(10,polint(evec,ivec[r][q][k],4,log10(E),&err));
-	  if (isnan(I_int[k])){ cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << " " << ivec[r][q][k][0] << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << endl;
-	    	I_int[k] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
+	  I_int[k+1] = polint(evec,ivec[r][q][k],4,log10(E),&err);
+	  if (isnan(I_int[k+1])){ cout << evec[1] << " " << evec[2] << " " << evec[3] << " " << evec[4] << " " << log10(E) << " " << ivec[r][q][k][1] << " " << ivec[r][q][k][2] << " " << ivec[r][q][k][3] << " " << ivec[r][q][k][4] << endl;
+	    	I_int[k+1] = printpolint(evec,ivec[r][q][k],4,log10(E),&err);
 	    	cout << "err = " << err << endl;
 	    }//cout << "0 mu[k]  = " << muvec[k] <<" E=" << E << " New 4pt Interpolated: I = " << I_int[k] << " err = " << err << endl;
 	}
 	// Intepolate over mu for fixed Teff, gravity
 	J[q+1] = polint(muvec,I_int,4,cos_theta,&err);
-	if (isnan(J[q])) cout << muvec[0] << " " << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << cos_theta << " " << I_int[0] << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << endl;
+	if (isnan(J[q+1])) cout << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << muvec[4] << " " << cos_theta << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << " " << I_int[4] << endl;
 	//cout << " costheta = " << cos_theta << " Interpolated I = " << J[q] << " err = " << err << std::endl;
       }
       // Interpolate over logg for fixed Teff
       //cout << gvec[0] << " " << J[0] << " " << gvec[1] << " " << J[1] << endl;
       //cout << gvec[2] << " " << J[2] << " " << gvec[3] << " " << J[3] << " " << lgrav << endl;
-      K[r+1] = log10(polint(gvec,J,4,lgrav,&err));
-      if (isnan(K[r])) cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << " " << J[0] << " " << J[1] << " " << J[2] << " " << J[3] << endl;
+      K[r+1] = polint(gvec,J,4,lgrav,&err);
+      if (isnan(K[r+1])) cout << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << gvec[4] << " " << lgrav << " " << J[1] << " " << J[2] << " " << J[3] << " " << J[4] << endl;
       //cout << " logg = " << lgrav << " Interpolated I = " << K[r+1] << " err = " << err << endl;      
       //cout << first_inte << endl;
     }
 
-    L = pow(10,polint(tvec,K,4,lt,&err));
-    if (isnan(L)) cout << tvec[0] << " " << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << lt << " " << K[0] << " " << K[1] << " " << K[2] << " " << K[3] << endl;
+    L = pow(10.0,polint(tvec,K,4,lt,&err));
+    if (isnan(L)) cout << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << tvec[4] << " " << lt << " " << K[1] << " " << K[2] << " " << K[3] << " " << K[4] << endl;
 
     //std::cout << " log(T_eff) = " << lt 
     //	      << " Interpolated I = " << L
