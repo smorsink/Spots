@@ -220,12 +220,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    case 'g':  // Spectral Model, beaming (graybody factor)
 	                sscanf(argv[i+1],"%u", &beaming_model);
 	                // 0 = BB, no beaming
-	                // 1 = BB + graybody
 	                // 2 = Fake Spectral Line
 	                // 3 = NSATMOS Hydrogen
 	                // 4 = NSX Helium
 	                // 5 = NSX Hydrogen
 					// 7 = Hopf Function
+			// 10 = McPhac 
+			// 11 = NSX Hydrogen (New version by Wynn Ho)
+			// 12 = Blackbody Test
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -464,16 +466,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         } // end if
     } // end for
 
-    // Allocate Memory for Bending Angle table for specific M/R
-      // Allocate Memory -- Look up table for specific M/R value
-    /*
-    curve.defl.psi_b = dvector(0,3*NN+1);
-    curve.defl.b_psi = dvector(0,3*NN+1);
-    curve.defl.dcosa_dcosp_b = dvector(0,3*NN+1);
-    curve.defl.toa_b = dvector(0,3*NN+1);
-	*/
-
-	std::cout << rho2 << " " << spot2_temperature << " " << phase_2 << std::endl;
 	
     if (bend_file_is_set){ // Read in table of bending angles for all M/R
 
@@ -563,7 +555,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     
  
-    std::cout << " numbins = " << numbins << std::endl;
+    //std::cout << " numbins = " << numbins << std::endl;
 
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
@@ -668,78 +660,74 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
-      if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
-        //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
-   		char atmodir[1024], cwd[1024];
-   		getcwd(cwd, sizeof(cwd));
+    if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
+      //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
+      char atmodir[1024], cwd[1024];
+      getcwd(cwd, sizeof(cwd));
 		
-		std::cout << "Reading in McPhac Binary File " << std::endl;
+      std::cout << "Reading in McPhac Binary File " << std::endl;
 
-    	sprintf(atmodir,"%s/atmosphere",cwd);
-    	chdir(atmodir);
-	FILE *Hspecttable;
-	Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
-	curve.mccangl = dvector(0,51);
-	curve.mcloget = dvector(0,101);
-    	curve.mccinte = dvector(0,1595001);
-	int e_index(0);
-    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
-    	for (int i = 0; i < 50; i++){
-        	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk2,sizeof(double),1,Hspecttable);
-        	fread(&junk3,sizeof(double),1,Hspecttable);
-        	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
-        	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+      sprintf(atmodir,"%s/atmosphere",cwd);
+      chdir(atmodir);
+      FILE *Hspecttable;
+      Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
+      curve.mccangl = dvector(0,51);
+      curve.mcloget = dvector(0,101);
+      curve.mccinte = dvector(0,1595001);
+      int e_index(0);
+      double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
+      for (int i = 0; i < 50; i++){
+	fread(&junk,sizeof(double),1,Hspecttable);
+	fread(&junk2,sizeof(double),1,Hspecttable);
+	fread(&junk3,sizeof(double),1,Hspecttable);
+	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
+	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
 
-		//setprecision(10);
+	//setprecision(10);
 		
-		/*	std::cout << "i = " << i 
-			  << " junk = " << junk
-			  << " junk2 = " << junk2
-			  << " junk3 = " << junk3
-			  << " costheta=" << curve.mccangl[i]
-			  << " thing = " << curve.mccinte[i]
-			  << std::endl;*/
+	/*	std::cout << "i = " << i 
+		<< " junk = " << junk
+		<< " junk2 = " << junk2
+		<< " junk3 = " << junk3
+		<< " costheta=" << curve.mccangl[i]
+		<< " thing = " << curve.mccinte[i]
+		<< std::endl;*/
 		
-			if (i%50 == 0){
-			  curve.mcloget[e_index] = junk3;
-			  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-			  e_index ++;
-			}
+	if (i%50 == 0){
+	  curve.mcloget[e_index] = junk3;
+	  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
+	  e_index ++;
+	}
+      }
+      double jjunk(junk3);
+      for (int i = 50; i < 1595001; i++){
+	fread(&junk,sizeof(double),1,Hspecttable);
+	fread(&junk2,sizeof(double),1,Hspecttable);
+	fread(&junk3,sizeof(double),1,Hspecttable);
+	fread(&junk4,sizeof(double),1,Hspecttable);    		
+	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
+	
+	if (i%50==0 && e_index < 100){
+	  curve.mcloget[e_index] = junk3;
+	  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
+	  e_index ++;
+	}
 
-
-    	}
-	double jjunk(junk3);
-    	for (int i = 50; i < 1595001; i++){
-        	fread(&junk,sizeof(double),1,Hspecttable);
-        	fread(&junk2,sizeof(double),1,Hspecttable);
-        	fread(&junk3,sizeof(double),1,Hspecttable);
-        	fread(&junk4,sizeof(double),1,Hspecttable);    		
-        	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
-
-		if (i%50==0 && e_index < 100){
-		  curve.mcloget[e_index] = junk3;
-		  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-		  e_index ++;
-		}
-
-		/*if (junk == 6.15 && junk2 == 14.5 && junk3 > 0.96 && junk3 < 0.97)
-		  std::cout <<
-		  "junk = " << junk
-			    <<" junk2 = " << junk2
-			    <<" junk3 = " << junk3
-			    <<" junk4 = " << junk4
-			    <<" Intensity = " << curve.mccinte[i]
-			    << std::endl;*/
-
-
-    	}
-    	fclose(Hspecttable);
-    	chdir(cwd);
-    	std::cout << "finished reading Cole's McPHAC" << std::endl;
-    	std::cout << curve.mccangl[0] << std::endl;
-    	std::cout << curve.mccinte[51] << std::endl;
-      } // End Spectrum Option 10
+	/*if (junk == 6.15 && junk2 == 14.5 && junk3 > 0.96 && junk3 < 0.97)
+	  std::cout <<
+	  "junk = " << junk
+	  <<" junk2 = " << junk2
+	  <<" junk3 = " << junk3
+	  <<" junk4 = " << junk4
+	  <<" Intensity = " << curve.mccinte[i]
+	  << std::endl;*/
+      }
+      fclose(Hspecttable);
+      chdir(cwd);
+      std::cout << "finished reading Cole's McPHAC" << std::endl;
+      std::cout << curve.mccangl[0] << std::endl;
+      std::cout << curve.mccinte[51] << std::endl;
+    } // End Spectrum Option 10
 
       if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
 	char atmodir[1024], cwd[1024];
@@ -825,6 +813,38 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	//std::cout << Npts << std::endl;
     	//std::cout << curve.mccinte[51] << std::endl;
       } // End Spectrum Option 11
+
+    if (curve.flags.beaming_model == 12){ // Tabulated BlackBody File
+
+      char atmodir[1024], cwd[1024];
+      getcwd(cwd, sizeof(cwd));
+		
+      std::cout << "Reading in Blackbody File " << std::endl;
+
+      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
+      chdir(atmodir);
+
+      FILE *BBtable;
+      BBtable=fopen("logEtable.txt","r");
+      curve.mccangl = dvector(0,51);
+      curve.mcloget = dvector(0,101);
+      curve.mccinte = dvector(0,1595001);
+      int e_index(0);
+
+      for (int i = 0; i < 101; i++){
+	fread(&curve.mcloget[i],sizeof(double),1,BBtable);    		
+	fread(&curve.mccinte[i],sizeof(double),1,BBtable);
+      }
+      
+      fclose(BBtable);
+      chdir(cwd);
+      std::cout << "finished reading Tabulated Blackbody" << std::endl;
+
+    } // End Spectrum Option 12
+
+
+
+
 
 
    // Force energy band settings into NICER specified bands
@@ -1707,7 +1727,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere        
+     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model == 12){ // *cole* McPHAC Hydrogen Atmosphere        
        free_dvector(curve.mccangl,0,51);
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);

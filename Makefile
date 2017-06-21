@@ -20,7 +20,7 @@ LDFLAGS=-lm
 NAMES=spot bend
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
-	Chi.o Atmo.o McPhac.o Instru.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
+	Chi.o Atmo.o McPhac.o BlackBody.o Instru.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
 
 APPOBJ=Spot.o
 
@@ -124,6 +124,14 @@ McPhac.o: \
 	Units.h \
 	matpack.h
 	$(CC) $(CCFLAGS) -c McPhac.cpp
+
+BlackBody.o: \
+	BlackBody.h \
+	Blackbody.cpp \
+	interp.h \
+	Units.h \
+	matpack.h
+	$(CC) $(CCFLAGS) -c BlackBody.cpp
 
 Instru.o: \
 	Instru.h \

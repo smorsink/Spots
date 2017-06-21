@@ -101,25 +101,17 @@ double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightC
 // Cole's McPHAC in spotMex
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
 
-// flux from a blackbody (bolometric, p = 0)
-double BlackBody( double T, double E );
 
 double Line( double T, double E , double E1, double E2);
 
 double LineBandFlux( double T, double E1, double E2, double L1, double L2 );
 
-// flux from a specific energy band (E1 is lower bound, E2 is upper bound, both in keV) 
-//(p = NCURVES-1)
-double EnergyBandFlux( double T, double E1, double E2 );
+
 
 // flux from a specific energy band, for atmosphere models
 double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E2 );
 
 // flux from a specific energy band, for helium model at log-spaced energy points
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
-
-
-// Does the integral for the flux from a specific energy band
-double Bradt_flux_integrand( double x );
 
 
