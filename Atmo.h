@@ -87,18 +87,12 @@ double NSXHe(double E, double cos_theta);
 // NSX Helium
 double NSXHe2(int E_dex, double cos_theta);
 
-// Reading McPHAC Hydrogen table
-void Read_McPHACC(double T, double M, double R);
 
 // Cole's McPHAC
 double McPHACC(double E, double cos_theta);
 
 // Cole's McPHAC
 double McPHACC2(int E_dex, double cos_theta);
-
-// Cole's McPHAC in spotMex
-double McPHACC3(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
-
 
 
 double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
@@ -125,16 +119,7 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
 
-// flux from a specific energy band, for helium model at log-spaced energy points
-double AtmosEBandFlux3( unsigned int model, double cos_theta, double T, double M, double R, double E1, double E2, class LightCurve mexmcc);
-
-
-
-
 // Does the integral for the flux from a specific energy band
 double Bradt_flux_integrand( double x );
 
 
-
-// Calculates the graybody factor, if not negligible
-double Gray( double cosine );
