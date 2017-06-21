@@ -101,8 +101,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
-    nh(1.0),					// real nh = nh*4e19
-    B;                          // from param_degen/equations.pdf 2
+    nh(1.0);					// real nh = nh*4e19
    
   double SurfaceArea(0.0);
 
@@ -178,7 +177,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         			break;
 
         case 'A': // ISM column density, in multiples of 4e19
-        			sscanf(argv[i+1], "%u", &nh);
+        			sscanf(argv[i+1], "%lf", &nh);
         			break;
 	            
 	    case 'b': // Bending Angle File

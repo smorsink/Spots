@@ -99,7 +99,7 @@ double McPHACC2(int E_dex, double cos_theta);
 // Cole's McPHAC in spotMex
 double McPHACC3(double E, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
 
-double McPHACC3new(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
+
 
 double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
@@ -129,7 +129,6 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
 double AtmosEBandFlux3( unsigned int model, double cos_theta, double T, double M, double R, double E1, double E2, class LightCurve mexmcc);
 
 
-double AtmosEBandFlux3new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc);
 
 
 // Does the integral for the flux from a specific energy band
