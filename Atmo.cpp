@@ -228,8 +228,39 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	}
 	
 	  	
+		if ( curve.flags.beaming_model == 12 ){
+
+		  for (unsigned int p = 0; p<numbands; p++){
+		    E0 = (E_band_lower_1+p*E_diff);
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyTab(temperature,E0*redshift/curve.eta[i],curve); 
+		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
+		  }
+	  	}
 	  	
+
+		if ( curve.flags.beaming_model == 13 ){
+
+		  for (unsigned int p = 0; p<numbands; p++){
+		    E0 = (E_band_lower_1+p*E_diff);
+
+		    gray = HopfTab(curve.cosbeta[i]*curve.eta[i], curve);
+
+		    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
+		  }
+	  	}
 	  	
+		if ( curve.flags.beaming_model == 14 ){
+
+		  for (unsigned int p = 0; p<numbands; p++){
+		    E0 = (E_band_lower_1+p*E_diff);
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyHopfTab(temperature,E0*redshift/curve.eta[i],curve.cosbeta[i]*curve.eta[i],curve); 
+		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
+		  }
+	  	}
 
 
 	} // Spectral_model == 0 

@@ -228,6 +228,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			// 10 = McPhac 
 			// 11 = NSX Hydrogen (New version by Wynn Ho)
 			// 12 = Blackbody Test
+			// 13 = Hopf function Test
+			// 14 = BB + Hopf Test
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -829,22 +831,82 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       curve.mccangl = dvector(0,51);
       curve.mcloget = dvector(0,101);
       curve.mccinte = dvector(0,1595001);
-      int e_index(0);
 
-      for (int i = 0; i < 101; i++){
-	fread(&curve.mcloget[i],sizeof(double),1,BBtable);    		
-	fread(&curve.mccinte[i],sizeof(double),1,BBtable);
-      }
-      
+      for (int i = 0; i < 100; i++){
+	fscanf(BBtable,"%lf %lf\n",&curve.mcloget[i], &curve.mccinte[i]);	
+	/*std::cout << "i = " << i 
+		  << " E/T = " << curve.mcloget[i]
+		  << " I = " << curve.mccinte[i]
+		  << std::endl;*/
+      }      
       fclose(BBtable);
       chdir(cwd);
       std::cout << "finished reading Tabulated Blackbody" << std::endl;
 
     } // End Spectrum Option 12
 
+    if (curve.flags.beaming_model == 13){ // Tabulated Hopf Function
+
+      char atmodir[1024], cwd[1024];
+      getcwd(cwd, sizeof(cwd));
+		
+      std::cout << "Reading in Hopf Function File " << std::endl;
+
+      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
+      chdir(atmodir);
+
+      FILE *BBtable;
+      BBtable=fopen("cosalphatable.txt","r");
+      curve.mccangl = dvector(0,51);
+      curve.mcloget = dvector(0,101);
+      curve.mccinte = dvector(0,1595001);
+
+      for (int i = 0; i < 50; i++){
+
+	fscanf(BBtable,"%lf %lf\n",&curve.mccangl[i], &curve.mccinte[i]);	
+	/*std::cout << "i = " << i 
+		  << " cosalpha = " << curve.mccangl[i]
+		  << " I = " << curve.mccinte[i]
+		  << std::endl;*/
+      }      
+      fclose(BBtable);
+      chdir(cwd);
+      std::cout << "finished reading Tabulated Hopf" << std::endl;
+
+    } // End Spectrum Option 13
 
 
+    if (curve.flags.beaming_model == 14){ // Tabulated BlackBody with Limb Darkening File
 
+      char atmodir[1024], cwd[1024];
+      getcwd(cwd, sizeof(cwd));
+		
+      std::cout << "Reading in Blackbody + Hopf File " << std::endl;
+
+      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
+      chdir(atmodir);
+
+      FILE *BBtable;
+      BBtable=fopen("logEcosalphatable.txt","r");
+      curve.mccangl = dvector(0,51);
+      curve.mcloget = dvector(0,101);
+      curve.mccinte = dvector(0,1595001);
+
+      for (int i = 0; i < 100; i++){
+	for (int j = 0; j< 50; j++){
+	  fscanf(BBtable,"%lf %lf %lf\n",&curve.mcloget[i], &curve.mccangl[j],&curve.mccinte[i*50+j]);	
+	  /* std::cout << "i = " << i << " j=" << j << " i+j=" << i+j << " i*50 + j " << i*50+j
+		    << " E/T = " << curve.mcloget[i]
+		    << " cosalpha = " << curve.mccangl[j]
+		    << " I = " << curve.mccinte[i+j]
+		    << std::endl;*/
+	}      
+      }
+      fclose(BBtable);
+      chdir(cwd);
+      std::cout << "finished reading Tabulated Blackbody + Hopf" << std::endl;
+
+    } // End Spectrum Option 14
 
 
    // Force energy band settings into NICER specified bands
@@ -1727,7 +1789,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model == 12){ // *cole* McPHAC Hydrogen Atmosphere        
+     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
        free_dvector(curve.mccangl,0,51);
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);
