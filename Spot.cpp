@@ -35,6 +35,7 @@
 #include "OblDeflectionTOA.h"
 #include "Chi.h"
 #include "Atmo.h"
+#include "TimeDelays.h"
 #include "Instru.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
@@ -1190,7 +1191,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    		if ( j==0){
 	    			//std::cout << "starting ComputeAngles" << std::endl;
 	      			curve = ComputeAngles(&curve, defltoa); 	      
-	      			curve = ComputeCurve(&curve);	      
+	      			curve = ComputeCurve(&curve);
+				curve = TimeDelays(&curve);
 	    		}
 	
 	    		if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
@@ -1353,6 +1355,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			 
 	      			curve = ComputeAngles(&curve, defltoa); 
 	      			curve = ComputeCurve(&curve);
+				curve = TimeDelays(&curve);
 	    		}
 	
 	    		if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
