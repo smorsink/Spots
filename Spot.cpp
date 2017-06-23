@@ -1133,6 +1133,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  		curve.para.radius = rspot; // load rspot into structure
 	  		curve.para.mass_over_r = mass_over_req * req/rspot;
 
+			std::cout << "Redshift = " << 1.0/sqrt(1.0-2.0*curve.para.mass_over_r) << std::endl;
+
+
 	  		//std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 	  		OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 	  		//std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
@@ -1307,6 +1310,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  		curve.para.radius = rspot; // load rspot into structure
 	  		curve.para.mass_over_r = mass_over_req * req/rspot;
 
+		
+
 	  		//std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
 
 	  		OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
@@ -1341,11 +1346,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  		if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
 	  		for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
-	    
 	    		curve.para.phi_0 =  phi_edge + (j+0.5)*dphi;			
 	    		//std::cout << phi_edge << " " << dphi << " " << curve.para.phi_0 << " " << j << " " << numphi << std::endl;
 	    		//Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    		if ( j==0){
+			 
 	      			curve = ComputeAngles(&curve, defltoa); 
 	      			curve = ComputeCurve(&curve);
 	    		}
@@ -1739,6 +1744,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if (out_file1_is_set){
       std::ofstream out1;
       out1.open(out_file1, std::ios_base::trunc);
+      out1.precision(10);
       if ( out1.bad() || out1.fail() ) {
 	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
 	return -1;
@@ -1747,28 +1753,33 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	std::cout << "Opening "<< out_file1 << " for printing " << std::endl;
     	if (curve.flags.spectral_model==0){
 
-        	double E_diff;
-			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
-			out1 << "%Column 3: Counts/keV. " << std::endl;
+	  double E_diff, Eobs, Eem;
+	  double redshift (1.0/sqrt(1 - 2.0*curve.para.mass_over_r));
+	  E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+			//out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
+			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
+			//out1 << "%Column 3: Counts/keV. " << std::endl;
 
-      		for ( unsigned int p(0); p < numbands; p++ ) {
-				for ( unsigned int i(0); i < numbins; i++ ) { 
-            		out1 << curve.t[i]<< "\t";
-            		out1 << curve.para.E_band_lower_1+p*E_diff+E_diff/2 << "\t";
-            		out1 << curve.f[p][i] << std::endl;
-        		}
-      		}
+	  for ( unsigned int p(0); p < numbands; p++ ) {
+	    Eobs = curve.para.E_band_lower_1+p*E_diff+E_diff/2;
+	    for ( unsigned int i(0); i < numbins; i++ ) { 
+	      Eem = Eobs *redshift/curve.eta[i];
+	      out1 << curve.t[i]<< "\t";
+	      out1 << Eobs << "\t";
+	      out1 << curve.f[p][i] << "\t";
+	      out1 << Eem << "\t"
+	      << std::endl;
+	    }
+	  }
     	}
 
     	if (curve.flags.spectral_model==2 || curve.flags.spectral_model==3){
 
         	double E_diff;
 			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-			out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
-			out1 << "%Column 3: Counts. " << std::endl;
+			//out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
+			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
+			//out1 << "%Column 3: Counts. " << std::endl;
 
       		for ( unsigned int p(0); p < numbands; p++ ) {
 				for ( unsigned int i(0); i < numbins; i++ ) { 

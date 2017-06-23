@@ -96,6 +96,8 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
    
     redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
 
+    std::cout << "redshift = " << redshift << std::endl;
+
     double M = Units::nounits_to_cgs(curve.para.mass, Units::MASS);
     double R = Units::nounits_to_cgs(curve.para.req, Units::LENGTH);
     double delta = 1 / sqrt(1 - 2.0*curve.para.mass/curve.para.req);
@@ -115,7 +117,213 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
     //std::cout << " numbins = " << numbins << std::endl;
 
-    // numbins=0;
+    //numbins=0;
+
+    if (numbins == 0){
+
+    double tt, ee, ii, cosalpha;
+    std::ofstream out;      // output stream; printing information to the output file
+    out.open("BBtests/interptestAB.txt", std::ios_base::app);
+    out.precision(10);
+
+    if (curve.flags.beaming_model == 12){
+
+      // Interpolation Tests for Blackbody E/T=0.2, 1, 3, and 5.
+      out << "%Blackbody Interpolation Tests" << std::endl;
+
+      out << "%E/T Exact      Log-Linear %Diff        Log-Log    %Diff  " << std::endl;
+
+      double i1, i2, i3;
+
+      tt=1.0;
+
+      for (unsigned i=0; i<1000000; i++){
+	ee=0.1 + i*(10.0/(1000000.0));
+	i1 = BlackBody(tt,ee);
+	i2 = BlackBodyTabLogLinear(tt,ee,curve);
+	i3 = BlackBodyTabLogLog(tt,ee,curve);
+      
+	out << " " << ee/tt << " "  << i1 << " " << i2 << " " << (1.0-i2/i1)*100 << " " << i3 << " " << (1.0-i3/i1)*100 << std::endl;
+
+      }
+
+
+      /*
+      out << "E/T  Intensity (1-tab/exact)" << std::endl;
+
+      tt=1.0;
+      ee=0.2;
+      ii = BlackBodyTabLogLog(tt,ee,curve);
+      out << ee << "  " << ii << " " << (1.0 - ii/BlackBody(tt,ee)) << std::endl;
+      ee=1.0;
+      ii = BlackBodyTabLogLog(tt,ee,curve);
+      out << ee << "  " << ii << " " << (1.0 - ii/BlackBody(tt,ee)) << std::endl;
+      ee=3.0;
+      ii = BlackBodyTabLogLog(tt,ee,curve);
+      out << ee << "  " << ii << " " << (1.0 - ii/BlackBody(tt,ee)) << std::endl;
+      ee=5.0;
+      ii = BlackBodyTabLogLog(tt,ee,curve);
+      out << ee << "  " << ii << " " << (1.0 - ii/BlackBody(tt,ee)) << std::endl;
+      ee=10.0;
+      ii = BlackBodyTabLogLog(tt,ee,curve);
+      out << ee << "  " << ii << " " << (1.0 - ii/BlackBody(tt,ee)) << std::endl;
+
+      */
+    }
+
+    if (curve.flags.beaming_model == 13){
+
+      // Interpolation Tests for Hopf cos(alpha)=0.12, 0.4, and 0.95
+      out << "Hopf Interpolation Tests" << std::endl;
+      out << "cos(a) Intensity (1.0-tab/exact)" << std::endl;
+      
+      cosalpha=0.12;
+      ii = HopfTab(cosalpha,curve);
+      out << cosalpha << "   " << ii <<" " << (1.0 - ii/Hopf(cosalpha)) << std::endl;
+      cosalpha=0.4;
+      ii = HopfTab(cosalpha,curve);
+      out << cosalpha << "   " << ii <<" " << (1.0 - ii/Hopf(cosalpha)) << std::endl;
+      cosalpha=0.95;
+      ii = HopfTab(cosalpha,curve);
+      out << cosalpha << "   " << ii <<" " << (1.0 - ii/Hopf(cosalpha)) << std::endl;
+     
+    }
+    
+    if (curve.flags.beaming_model == 14){
+
+      // Interpolation Tests for Hopf cos(alpha)=0.12, 0.4, and 0.95
+      out << "Limb-Darkened BlackBody Interpolation Tests" << std::endl;
+      out << "E/T cos(a) Intensity (1-tab/exact)" << std::endl;
+      
+     
+      tt=1.0;
+
+      ee=0.2;      
+      cosalpha=0.12;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.4;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.95;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+
+      ee=1.0;      
+      cosalpha=0.12;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.4;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.95;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+     
+      ee=3.0;      
+      cosalpha=0.12;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.4;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.95;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+
+      ee=5.0;      
+      cosalpha=0.12;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.4;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.95;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+
+      ee=10.0;      
+      cosalpha=0.12;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.4;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+      cosalpha=0.95;
+      ii = BlackBodyHopfTab(tt,ee,cosalpha,curve);
+      out << ee << "  " << cosalpha << "   " << ii << " " << (1.0 - ii/(Hopf(cosalpha)*BlackBody(tt,ee)))<< std::endl;
+
+    }
+
+    if (curve.flags.beaming_model == 10){
+
+      // Interpolation Tests for McPhac
+      out << "McPhac Interpolation Tests" << std::endl;
+      out << "T         logg E/T cos(a) Intensity " << std::endl;
+      
+      tt = 0.0543718;
+      lgrav = 14.1;
+
+      ee = 0.2 * tt;
+      cosalpha = 0.12;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.4;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.95;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+
+      ee = 1.0 * tt;
+      cosalpha = 0.12;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.4;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.95;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+
+
+      ee = 3.0 * tt;
+      cosalpha = 0.12;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.4;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.95;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+
+      ee = 5.0 * tt;
+      cosalpha = 0.12;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.4;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.95;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+
+      ee = 10.0 * tt;
+      cosalpha = 0.12;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.4;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+      cosalpha = 0.95;
+      ii = McPHACC3new(ee, cosalpha, tt, lgrav, curve);
+      out << tt << " " << lgrav << " " << ee/tt << " " << cosalpha << "   " << ii << std::endl;
+
+    }
+    out.close();
+    }
+   
 
     for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
 
@@ -153,7 +361,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 		  for (unsigned int p = 0; p<numbands; p++){
 		    E0 = (E_band_lower_1+p*E_diff);
-		    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i]); 
+		    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBody(temperature,E0*redshift/curve.eta[i])*2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3); 
 		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
 		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
 		  }
@@ -232,7 +440,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 		  for (unsigned int p = 0; p<numbands; p++){
 		    E0 = (E_band_lower_1+p*E_diff);
-		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyTab(temperature,E0*redshift/curve.eta[i],curve); 
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyTabLogLinear(temperature,E0*redshift/curve.eta[i],curve) * 2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3) ; 
 		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
 		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
 		  }
@@ -256,7 +464,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 		  for (unsigned int p = 0; p<numbands; p++){
 		    E0 = (E_band_lower_1+p*E_diff);
-		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyHopfTab(temperature,E0*redshift/curve.eta[i],curve.cosbeta[i]*curve.eta[i],curve); 
+		    curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * BlackBodyHopfTab(temperature,E0*redshift/curve.eta[i],curve.cosbeta[i]*curve.eta[i],curve) * 2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3); 
 		    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
 		    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
 		  }
