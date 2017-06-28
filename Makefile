@@ -119,8 +119,8 @@ Atmo.o: \
 	$(CC) $(CCFLAGS) -c Atmo.cpp
 
 TimeDelays.o: \
-	Timedelays.h \
-	Timedelays.cpp \
+	TimeDelays.h \
+	TimeDelays.cpp \
 	interp.h \
 	Units.h \
 	matpack.h
