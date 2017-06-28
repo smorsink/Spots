@@ -35,9 +35,9 @@ namespace Units {
   const double MBARYON = 1.67e-24;  // baryon mass  
   const double PI = 3.14159265358979323846; // (Eric W. Weisstein. "Pi." From MathWorld--A Wolfram Web Resource. 
                                              //    http://mathworld.wolfram.com/Pi.html)
-  const double H_PLANCK = 6.6260693e-27; // erg-seconds (CODATA 2002).  This isn't hbar.  hbar = H_PLANCK/(2*PI)
-  const double EV = 1.60217653e-12; // 1 eV in ergs (CODATA 2002)
-  const double K_BOLTZ = 1.3806505e-16; // erg / Kelvin  (CODATA 2002)
+  const double H_PLANCK = 6.6260657e-27; // erg-seconds (2014).  This isn't hbar.  hbar = H_PLANCK/(2*PI)
+  const double EV = 1.60217665e-12; // 1 eV in ergs (2014)
+  const double K_BOLTZ = 1.3806488e-16; // erg / Kelvin  (2014)
   const double PARSEC = 3.08572e18; // in cm (agrees with IAU, above)
  
   struct Dimensions{ int a, b, c; };
