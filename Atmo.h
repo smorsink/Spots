@@ -114,4 +114,6 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 // flux from a specific energy band, for helium model at log-spaced energy points
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
+double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc);
+
 

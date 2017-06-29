@@ -509,11 +509,13 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	for (unsigned int p = 0; p<numbands; p++){
             if (curve.flags.beaming_model == 3 || curve.flags.beaming_model == 4 || curve.flags.beaming_model == 5 || curve.flags.beaming_model == 8 || curve.flags.beaming_model == 9){
 	      		curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux2(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)        	      		
-	      	}
-	    if (curve.flags.beaming_model == 10){ // Cole's McPhac File
-	      	       	      		
-	      curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
-	      	}
+	      	  }
+	          if (curve.flags.beaming_model == 10){ // Cole's McPhac File
+	      	  curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux3new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
+	      	  }
+            if (curve.flags.beaming_model == 11){ // NSXHnew integration            
+            curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux4new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
+            }
 	   
 	  	}
 	}
@@ -2923,6 +2925,72 @@ double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double 
     return flux;
 }
 
+// This is version makes use of Cole's version of McPhac
+double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc){
 
+    int e1_dex(0);              // largest energy index that's smaller than E1
+    int e2_dex(0);              // largest energy index that's smaller than E2
+    int n_steps(0);             // number of energy points within band
+    double flux(0.0);           // total integrated flux
+
+ 
+
+
+    double ener_spacing = pow(10.0,0.02);
+    double first_ener = pow(10.0,-1.32);
+    double ener_index = log10(E1 / first_ener) / log10(ener_spacing);
+    e1_dex = (int) ener_index;
+    ener_index = log10(E2 / first_ener) / log10(ener_spacing);
+    e2_dex = (int) ener_index;
+
+    n_steps = 1* (e2_dex - e1_dex);
+
+    // n_steps = 4;
+
+
+    if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+      //cout << "0 steps" << endl;
+      flux = (E2 - E1) / 2.0 * (NSXHnew(E1,cos_theta, T, lgrav, mexmcc) / E1 + NSXHnew(E2,cos_theta, T, lgrav, mexmcc) / E2);
+    }
+    if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+      //cout << "1 step" << endl;
+        int e_dex = e1_dex+1; // index of the energy point
+        double e_m = first_ener*pow(ener_spacing,e_dex)*T; // energy point in keV
+  
+  e_m = 0.5*(E2+E1);
+
+  double counts_m = NSXHnew(e_m,cos_theta, T,lgrav, mexmcc) / e_m;
+
+        flux = (e_m - E1) / 2 * (NSXHnew(E1,cos_theta, T, lgrav, mexmcc) / E1 
+         + counts_m);  // first trapezoid
+        flux += (E2 - e_m) / 2 * (counts_m + NSXHnew(E2,cos_theta, T,lgrav, mexmcc) / E2); // second trapezoid
+    }
+    if (n_steps >= 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+      //cout << "n steps= " << n_steps << endl;
+     
+       double e_step = (E2-E1)/(n_steps+1.0);
+       double e_l;
+       double counts_l;
+
+       flux = e_step * 0.5 * NSXHnew(E1,cos_theta, T, lgrav, mexmcc) / E1;
+       //cout << "flux = " << flux << endl;
+
+       for (int i(1); i<=n_steps; i++){
+
+   e_l = E1 + i*e_step;
+   counts_l = NSXHnew(e_l,cos_theta, T, lgrav, mexmcc) / e_l;
+   flux += e_step * (counts_l);
+   //cout << "flux = " << flux << endl;
+
+       }
+
+       flux += e_step * 0.5 *  NSXHnew(E2,cos_theta, T,lgrav, mexmcc) / E2;
+       // cout << "flux = " << flux << endl;
+
+    }
+   
+    flux = flux/Units::H_PLANCK;
+    return flux;
+} // new version of energy integration
 
 
