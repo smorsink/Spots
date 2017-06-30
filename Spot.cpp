@@ -231,6 +231,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			// 12 = Blackbody Test
 			// 13 = Hopf function Test
 			// 14 = BB + Hopf Test
+	                // 15 = NSX Helium (New version by Wynn Ho)
+	                // 16 = NSX Hydrogen w/ Partial Ionization
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -733,6 +735,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     } // End Spectrum Option 10
 
       if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
+	std::cout << "Start Reading Wynn Ho's NSX-H" << std::endl;
 	char atmodir[1024], cwd[1024];
 	getcwd(cwd, sizeof(cwd));
     	sprintf(atmodir,"%s/atmosphere",cwd);
@@ -908,6 +911,93 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       std::cout << "finished reading Tabulated Blackbody + Hopf" << std::endl;
 
     } // End Spectrum Option 14
+    
+
+     if (curve.flags.beaming_model == 15){ // Wynn Ho's NSX Helium atmosphere
+	std::cout << "Start Reading Wynn Ho's NSX Helium" << std::endl;
+	char atmodir[1024], cwd[1024];
+	getcwd(cwd, sizeof(cwd));
+    	sprintf(atmodir,"%s/atmosphere",cwd);
+    	chdir(atmodir);
+	std::ifstream Hspecttable; 
+	Hspecttable.open( "nsx_He_v170628.out" );  // opening the file with observational data
+
+
+	Hspecttable >> NlogTeff;
+	//std::cout << "NlogTeff = " << NlogTeff << std::endl;
+	curve.mclogTeff = dvector(0,NlogTeff);
+	for (int i=0;i<NlogTeff;i++){
+	  Hspecttable >> curve.mclogTeff[i];
+	  //std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
+	}
+
+	Hspecttable >> Nlogg; 
+	//std::cout << "Nlogg = " << Nlogg << std::endl;
+	curve.mclogg = dvector(0,Nlogg);
+	for (int i=0;i<Nlogg;i++){
+	  Hspecttable >> curve.mclogg[i];
+	  //std::cout << "logg = " << curve.mclogg[i] << std::endl;
+	}
+
+	Hspecttable >> NlogE;
+	//std::cout << "NlogE = " << NlogE << std::endl;
+	curve.mcloget = dvector(0,NlogE);
+	for (int i=0;i<NlogE;i++){
+	  Hspecttable >> curve.mcloget[i];
+	  //std::cout << "logE = " << curve.mcloget[i] << std::endl;
+	}
+
+	Hspecttable >> Nmu;
+	//std::cout << "Nmu = " << Nmu << std::endl;
+	curve.mccangl = dvector(0,Nmu);
+	for (int i=0;i<Nmu;i++){
+	  Hspecttable >> curve.mccangl[i];
+	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
+	  	    //<< " theta = " << acos(curve.mccangl[i]) 
+	        //<< std::endl;
+	}
+
+	Npts =  (NlogTeff*Nlogg*NlogE);
+
+	curve.NlogTeff = NlogTeff;
+	curve.Nlogg = Nlogg;
+	curve.NlogE = NlogE;
+	curve.Nmu = Nmu;
+	curve.Npts = Npts;
+
+	//std::cout << "Npts = " << Npts << std::endl;
+
+	curve.mccinte = dvector(0,Npts*Nmu);
+
+	int e_index(0);
+    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
+	double jjunk(junk3);
+
+    	for (int i = 0; i < Npts*Nmu; i++){
+	 
+	  Hspecttable >> curve.mccinte[i];
+
+	  /*std::cout
+	    << " i = " << i
+	    << " i%(Nmu) = " << i%(Nmu)
+	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
+	    << " logg = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
+	    << " logE = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
+	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
+		    << " I = " << curve.mccinte[i]
+		    << std::endl;
+	  */
+	}
+       
+
+    	chdir(cwd);
+
+	Hspecttable.close();
+
+    	std::cout << "finished reading Wynn Ho's NSX Helium" << std::endl;
+    	//std::cout << Npts << std::endl;
+    	//std::cout << curve.mccinte[51] << std::endl;
+      } // End Spectrum Option 15
 
 
    // Force energy band settings into NICER specified bands
