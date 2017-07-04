@@ -471,7 +471,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	}
 
     if (curve.flags.beaming_model == 15){ // New NSX Helium
-      //cout << "Calling NSXHnew!" << endl;
+      //cout << "Calling NSXHe!" << endl;
       for (unsigned int p = 0; p<numbands; p++){
         //cout << p << endl;
         curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHenew((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
@@ -480,6 +480,16 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       }
       }
 
+    if (curve.flags.beaming_model == 16){ // NSX Hydrogen Partially Ionized
+      //cout << "Calling NSXHpi!" << endl;
+      for (unsigned int p = 0; p<numbands; p++){
+        cout << p << endl;
+        //cout << "Temperature = " << curve.para.temperature << endl;
+        curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * NSXHpi((E_band_lower_1+(p+0.5)*E_diff)*redshift/curve.eta[i], curve.cosbeta[i]*curve.eta[i], curve.para.temperature, lgrav, curve);
+        curve.f[p][i] *= (1.0 / ( (E_band_lower_1+(p+0.5)*E_diff) * Units::H_PLANCK ));
+        //if (isnan(curve.f[p][i])) cout << "curve at " << p << " " << " is nan!" << endl;
+      }
+      }
 
 	} // Spectral_model == 0 
 
@@ -527,6 +537,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
             curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux4new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
             }
             if (curve.flags.beaming_model == 15){ // NSXHenew integration            
+            curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux4new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
+            }
+            if (curve.flags.beaming_model == 16){ // NSXHpi integration
+            //cout << "calling NSXHpi" << endl;            
             curve.f[p][i] = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * AtmosEBandFlux4new(curve.flags.beaming_model, curve.cosbeta[i]*curve.eta[i], curve.para.temperature,lgrav, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)        
             }
 	   
@@ -2344,7 +2358,92 @@ double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class
     return L;
 }
 
+double NSXHpi(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc){
+  double lt, ener_index;
+  double t0;
+  double I_int[9], L(0.0);
+  int n_f, i_f, i_lt, i_lgrav, i_mu, n_mu, first_inte;
 
+       
+  //cout << "starting NSXHnew" << endl;
+
+    //cout << lt << endl;
+
+    //Find proper mu choice
+    //cout << "Temperature = " << T << endl;
+    n_mu = 1;
+    while (cos_theta > mexmcc.mccangl[n_mu] && n_mu < 256){
+      n_mu += 1;
+    }
+    i_mu = n_mu - 1;
+
+    n_f = 1;
+    while (E > mexmcc.mcloget[n_f] && n_f < 100){
+      n_f += 1;
+    }
+    i_f = n_f - 1; 
+    //cout << i_f << endl;
+
+    //cout << i_lt << " " << i_lgrav << " " << i_mu << " " << i_f << endl; 
+
+    // Now do a 4pt interpolation
+    double evec[5];
+    double ivec[5][5];
+    double err;
+    double muvec[5];
+
+    int ii_f(i_f-1);
+    if (ii_f < 0)
+      ii_f = 0;
+    if (ii_f > 96)
+      ii_f = 96;
+
+    int ii_mu(i_mu-1);
+    if (ii_mu < 0)
+      ii_mu = 0;
+    if (ii_mu > 253)
+      ii_mu = 253;
+
+  for (int k(0); k<4; k++){
+    muvec[k+1] =  mexmcc.mccangl[ii_mu+k];
+    //std::cout << "muvec[k] = " << muvec[k+1] << std::endl;
+    // Interpolate over Energy for fixed Teff, gravity, and mu
+    for( int j(0); j<4; j++){
+      //evec[j] = pow(10,mexmcc.mcloget[i_f-1+j]);
+      evec[j+1] = mexmcc.mcloget[ii_f+j];
+      first_inte = (ii_f+j) * 256 + (ii_mu + k);
+      ivec[k][j+1] = mexmcc.mccinte[first_inte];
+    }
+    I_int[k+1] = polint(evec,ivec[k], 4, E, &err);
+    //cout << I_int[k+1] << endl;
+    //cout << evec[1] << " " << evec[2] << " " << evec[3] << " " << evec[4] << " " << E << " " << ivec[k][1] << " " << ivec[k][2] << " " << ivec[k][3] << " " << ivec[k][4] << endl;
+    if (isnan(I_int[k+1])){ cout << evec[1] << " " << evec[2] << " " << evec[3] << " " << evec[4] << " " << E << " " << ivec[k][1] << " " << ivec[k][2] << " " << ivec[k][3] << " " << ivec[k][4] << endl;
+        I_int[k+1] = printpolint(evec,ivec[k],4,E,&err);
+        cout << "err = " << err << endl;
+      }//cout << "0 mu[k]  = " << muvec[k] <<" E=" << E << " New 4pt Interpolated: I = " << I_int[k] << " err = " << err << endl;
+  }
+  // Intepolate over mu for fixed Teff, gravity
+  L = polint(muvec,I_int,4,cos_theta,&err);
+  //cout << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << muvec[4] << " " << cos_theta << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << " " << I_int[4] << endl;
+  if (isnan(L)) cout << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << muvec[4] << " " << cos_theta << " " << I_int[1] << " " << I_int[2] << " " << I_int[3] << " " << I_int[4] << endl;
+  //cout << " costheta = " << cos_theta << " Interpolated I = " << J[q] << " err = " << err << std::endl;
+    //std::cout << " log(T_eff) = " << lt 
+    //        << " Interpolated I = " << L
+    //        << " err = " << err << std::endl;
+
+
+  
+    //cout << L << endl;
+    /*
+    if (isnan(L)) {
+      cout << evec[0] << " " << evec[1] << " " << evec[2] << " " << evec[3] << " " << log10(E) << endl;
+      cout << muvec[0] << " " << muvec[1] << " " << muvec[2] << " " << muvec[3] << " " << cos_theta << endl;
+      cout << gvec[0] << " " << gvec[1] << " " << gvec[2] << " " << gvec[3] << " " << lgrav << endl;      
+      cout << tvec[0] << " " << tvec[1] << " " << tvec[2] << " " << tvec[3] << " " << lt << endl;
+    }
+  */
+        return L;
+} // End of NSX Hydrogen partially ionized from Wynn Ho
 
 
 
@@ -3078,7 +3177,6 @@ double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, doubl
     int n_steps(0);             // number of energy points within band
     double flux(0.0);           // total integrated flux
 
- 
 
   if (model == 11){
     double ener_spacing = pow(10.0,0.02);
@@ -3190,7 +3288,63 @@ double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, doubl
     }
   }
 
-   
+if (model == 16){
+    //cout << "integrating NSXHpi" << endl;
+    double ener_spacing = mexmcc.mcloget[1]/mexmcc.mcloget[0];
+    double first_ener = mexmcc.mcloget[0];
+    double ener_index = log10(E1 / first_ener) / log10(ener_spacing);
+    e1_dex = (int) ener_index;
+    ener_index = log10(E2 / first_ener) / log10(ener_spacing);
+    e2_dex = (int) ener_index;
+
+    n_steps = 1* (e2_dex - e1_dex);
+
+    // n_steps = 4;
+
+
+    if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid
+      //cout << "0 steps" << endl;
+      flux = (E2 - E1) / 2.0 * (NSXHpi(E1,cos_theta, T, lgrav, mexmcc) / E1 + NSXHpi(E2,cos_theta, T, lgrav, mexmcc) / E2);
+    }
+    if (n_steps == 1){ // one energy points within bandwidth: (4.1.3) two trapzoids
+      //cout << "1 step" << endl;
+        int e_dex = e1_dex+1; // index of the energy point
+        double e_m = first_ener*pow(ener_spacing,e_dex)*T; // energy point in keV
+  
+  e_m = 0.5*(E2+E1);
+
+  double counts_m = NSXHpi(e_m,cos_theta, T,lgrav, mexmcc) / e_m;
+
+        flux = (e_m - E1) / 2 * (NSXHpi(E1,cos_theta, T, lgrav, mexmcc) / E1 
+         + counts_m);  // first trapezoid
+        flux += (E2 - e_m) / 2 * (counts_m + NSXHpi(E2,cos_theta, T,lgrav, mexmcc) / E2); // second trapezoid
+    }
+    if (n_steps >= 2){ // two energy points within bandwidth: (4.1.3) three trapzoids
+      //cout << "n steps= " << n_steps << endl;
+     
+       double e_step = (E2-E1)/(n_steps+1.0);
+       double e_l;
+       double counts_l;
+
+       flux = e_step * 0.5 * NSXHpi(E1,cos_theta, T, lgrav, mexmcc) / E1;
+       //cout << "flux = " << flux << endl;
+
+       for (int i(1); i<=n_steps; i++){
+
+   e_l = E1 + i*e_step;
+   counts_l = NSXHpi(e_l,cos_theta, T, lgrav, mexmcc) / e_l;
+   flux += e_step * (counts_l);
+   //cout << "flux = " << flux << endl;
+
+       }
+
+       flux += e_step * 0.5 *  NSXHpi(E2,cos_theta, T,lgrav, mexmcc) / E2;
+       // cout << "flux = " << flux << endl;
+
+    }
+  }
+
+    //cout << flux << endl;
     flux = flux/Units::H_PLANCK;
     return flux;
 } // new version of energy integration

@@ -644,7 +644,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     }
 
-    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 3){ // NSATMOS Hydrogen Atmosphere
         Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
@@ -652,7 +652,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
-    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 5){ // *old* NSX Hydrogen Atmosphere
         Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
@@ -911,9 +911,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       std::cout << "finished reading Tabulated Blackbody + Hopf" << std::endl;
 
     } // End Spectrum Option 14
-    
 
-     if (curve.flags.beaming_model == 15){ // Wynn Ho's NSX Helium atmosphere
+
+     if (curve.flags.beaming_model == 15){ // Wynn Ho's full NSX Helium atmosphere
 	std::cout << "Start Reading Wynn Ho's NSX Helium" << std::endl;
 	char atmodir[1024], cwd[1024];
 	getcwd(cwd, sizeof(cwd));
@@ -998,6 +998,45 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	//std::cout << Npts << std::endl;
     	//std::cout << curve.mccinte[51] << std::endl;
       } // End Spectrum Option 15
+
+    if (curve.flags.beaming_model == 16){ // NSX Hydrogen Partially Ionized
+      char atmodir[1024], cwd[1024];
+      getcwd(cwd, sizeof(cwd));
+		
+      std::cout << "Reading in McPhac Binary File " << std::endl;
+
+      sprintf(atmodir,"%s/atmosphere",cwd);
+      chdir(atmodir);
+	  std::ifstream Hspecttable; 
+	  Hspecttable.open("nsx_spint0_6.05g1425pi_nrp11.out" );  // opening the file with observational data
+      curve.mccangl = dvector(0,257);
+      curve.mcloget = dvector(0,101);
+      curve.mccinte = dvector(0,25601);
+      double junk(0.0);
+      int e_index(0);
+
+	  for (int i = 0; i < 25600; i++){
+	  	Hspecttable >> junk;
+	  	//std::cout << "f = " << junk << std::endl;
+	  	if (i % 256 == 0){
+	      curve.mcloget[e_index] = junk*Units::H_PLANCK/1000/Units::EV;
+	      //std::cout << "f = " << junk << " e = " << curve.mcloget[e_index] << std::endl;
+	      e_index++;
+	    }
+	  	Hspecttable >> junk;
+	  	if (i < 256){
+	      curve.mccangl[i] = junk;
+	    }	  	
+	  	Hspecttable >> curve.mccinte[i];
+	  }
+
+	  chdir(cwd);
+
+	  Hspecttable.close();
+
+      std::cout << "finished reading NSX Hydrogen Paritially Ionized." << std::endl;
+
+    }
 
 
    // Force energy band settings into NICER specified bands
@@ -1893,17 +1932,22 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
+     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model == 12 || curve.flags.beaming_model == 13 || curve.flags.beaming_model == 14 ){ // *cole* McPHAC Hydrogen Atmosphere        
        free_dvector(curve.mccangl,0,51);
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);
      }
-     if (curve.flags.beaming_model == 11){ // New NSX-H model
+     if (curve.flags.beaming_model == 11 || curve.flags.beaming_model == 15){ // New NSX-H model
 	free_dvector(curve.mclogTeff,0,NlogTeff);
 	free_dvector(curve.mclogg,0,Nlogg);
 	free_dvector(curve.mcloget,0,NlogE);
 	free_dvector(curve.mccangl,0,Nmu);
 	free_dvector(curve.mccinte,0,Npts*Nmu);
+     }
+     if (curve.flags.beaming_model == 16){
+     	free_dvector(curve.mccangl,0,257);
+     	free_dvector(curve.mcloget,0,101);
+     	free_dvector(curve.mccinte,0,25601);
      }
 
 

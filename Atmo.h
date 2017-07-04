@@ -99,6 +99,9 @@ double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightC
 
 double NSXHenew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
+double NSXHpi(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc);
+
+
 // Cole's McPHAC in spotMex
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
 

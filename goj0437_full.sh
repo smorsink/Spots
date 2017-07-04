@@ -32,7 +32,7 @@ emission=56 # in degrees
 rho=0.013  # in radians
 rho2=0.36  # in radians
 phaseshift=0.0 # this is used when comparing with data
-temp=0.231139 # in keV (Surface temperature)
+temp=0.0967 # in keV (Surface temperature)
 deltatheta=7.78
 #deltatheta=0
 distance=0.1563 # distance in kpc
@@ -52,21 +52,28 @@ if test ! -d "$out_dir"
 fi
 
 # TEST 1: McPHAC
-out_file="$out_dir/jun29_mcphacc_obl_j0437_agn_ism_instru_10theta.txt"
+out_file="$out_dir/jul4_mcphacc_obl_partial_agn_ism_instru_10theta.txt"
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -2 -a "$attenuation" -A "$nh" -B "$phase_2" -C "$temp_2" -d "$rho2" -j "$dsback" -J "agnback"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -a "$attenuation" -A "$nh" -j "$dsback" -J "agnback"
 times
 
 # TEST 2: NSX Hydrogen
-out_file="$out_dir/jun29_nsxh_obl_j0437_agn_ism_instru_10theta.txt"
+out_file="$out_dir/jul4_nsxh_obl_partial_agn_ism_instru_10theta.txt"
 ## RUNNING THE CODE
 beaming=11     # NSXH
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -2 -a "$attenuation" -A "$nh" -B "$phase_2" -C "$temp_2" -d "$rho2" -j "$dsback" -J "agnback"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -a "$attenuation" -A "$nh" -j "$dsback" -J "agnback"
 times
 
 # TEST 3: NSX Helium
-out_file="$out_dir/jun29_nsxhe_obl_j0437_agn_ism_instru_10theta.txt"
+out_file="$out_dir/jul4_nsxhe_obl_partial_agn_ism_instru_10theta.txt"
 ## RUNNING THE CODE
 beaming=15     # NSXHe
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -2 -a "$attenuation" -A "$nh" -B "$phase_2" -C "$temp_2" -d "$rho2" -j "$dsback" -J "agnback"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -a "$attenuation" -A "$nh" -j "$dsback" -J "agnback"
+times
+
+# TEST 4: NSX Hydrogen Partial Ionization
+out_file="$out_dir/jul4_nsxhpi_obl_partial_agn_ism_instru_10theta.txt"
+## RUNNING THE CODE
+beaming=16     # NSXH pi
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime" -k "$back" -R "$inst_res" -a "$attenuation" -A "$nh" -j "$dsback" -J "agnback"
 times
