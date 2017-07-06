@@ -273,6 +273,7 @@ double McPHACC3new(double E, double cos_theta, double T, double lgrav, class Lig
 
   
     //  cout << L << endl;
+    if (cos_theta < 0.015629) L = 0;
     
     if (isnan(L)) {
     	cout << cos_theta << " " << mexmcc.mccangl[i_mu] << " " << mexmcc.mccangl[n_mu] << endl;
