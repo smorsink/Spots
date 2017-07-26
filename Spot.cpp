@@ -87,7 +87,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mu_1(1.0),                  // = cos(theta_1), unitless
     mu_2(1.0),                  // = cos(theta_2), unitless
     cosgamma,                   // Cos of the angle between the radial vector and the vector normal to the surface; defined in equation 13, MLCB
-    Flux[NCURVES][MAX_NUMBINS], // Array of fluxes; Each curve gets its own vector of fluxes based on photons in bins.
+    //Flux[NCURVES][MAX_NUMBINS], // Array of fluxes; Each curve gets its own vector of fluxes based on photons in bins.
     Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
@@ -155,7 +155,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 out_file1_is_set(false);	 // True to produce second output file with alternate format
 		
   // Create LightCurve data structure
-  class LightCurve curve, normcurve, tempcurve;  // variables curve and normalized curve, of type LightCurve
+  class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
+  class LightCurve *flxcurve;
   class DataStruct obsdata;           // observational data as read in from a file
 
 
@@ -231,8 +232,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			// 12 = Blackbody Test
 			// 13 = Hopf function Test
 			// 14 = BB + Hopf Test
-	                // 15 = NSX Helium (New version by Wynn Ho)
-	                // 16 = NSX Hydrogen w/ Partial Ionization
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (degrees)
@@ -566,7 +565,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
 
+    std::cout << "Spin Frequency = " << omega << " Hz" << std::endl;
+    std::cout << "Mass = " << mass << " MSUN" << std::endl;
+    std::cout << "R_eq = " << req << " km" << std::endl;
+
+
     mass_over_req = mass/(req) * Units::GMC2;
+    std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
+ 
     incl_1 *= (Units::PI / 180.0);  // radians
     d_incl_2 *= (Units::PI / 180.0);  // radians
     //if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
@@ -582,9 +588,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
+
+    //std::cout << "(Omega_bar)^2 = " << rot_par << std::endl;
 	
-    std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
-    std::cout << "v/c = " << omega*req << std::endl;
+    //std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
+    //std::cout << "v/c = " << omega*req << std::endl;
+
+    // std::cout << "Observer's Inclination = " << incl_1 << " radians" << std::endl;
+    //std::cout << "Spot Centre = " << theta_1 << " radians" << std::endl;
+
+   
+
 
     /**********************************/
     /* PASS VALUES INTO THE STRUCTURE */
@@ -625,6 +639,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.numbands = numbands;
     curve.flags.spotshape = spotshape;
 
+    std::cout << "ints_curve = " << curve.flags.inst_curve << std::endl;
+
 
    // Define the Observer's Spectral Model
 
@@ -644,7 +660,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     }
 
-    if (curve.flags.beaming_model == 3){ // NSATMOS Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
         Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
@@ -652,7 +668,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
-    if (curve.flags.beaming_model == 5){ // *old* NSX Hydrogen Atmosphere
+    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
         Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
     }
 
@@ -730,12 +746,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       fclose(Hspecttable);
       chdir(cwd);
       std::cout << "finished reading Cole's McPHAC" << std::endl;
-      std::cout << curve.mccangl[0] << std::endl;
-      std::cout << curve.mccinte[51] << std::endl;
+      //std::cout << curve.mccangl[0] << std::endl;
+      //std::cout << curve.mccinte[51] << std::endl;
     } // End Spectrum Option 10
 
       if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
-	std::cout << "Start Reading Wynn Ho's NSX-H" << std::endl;
 	char atmodir[1024], cwd[1024];
 	getcwd(cwd, sizeof(cwd));
     	sprintf(atmodir,"%s/atmosphere",cwd);
@@ -912,8 +927,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     } // End Spectrum Option 14
 
-
-     if (curve.flags.beaming_model == 15){ // Wynn Ho's full NSX Helium atmosphere
+ if (curve.flags.beaming_model == 15){ // Wynn Ho's full NSX Helium atmosphere
 	std::cout << "Start Reading Wynn Ho's NSX Helium" << std::endl;
 	char atmodir[1024], cwd[1024];
 	getcwd(cwd, sizeof(cwd));
@@ -1039,20 +1053,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
-   // Force energy band settings into NICER specified bands
-/*
-   	if (curve.flags.attenuation >= 1){
-   		  
-    	std::cout << "You are using attenuation files for NICER, specified for each NS target." << std::endl;
-    	std::cout << "Please check if your object info, ex. distance and spin frequency, are correct for the NS." << std::endl;
-		E_band_lower_1 = 0.05;
-   		E_band_upper_1 = 3.05;
-   		numbands = 30;
-    	curve.para.E_band_lower_1 = E_band_lower_1;
-    	curve.para.E_band_upper_1 = E_band_upper_1;
-   		curve.numbands = numbands;
-   	} 
-*/
+
     /*************************/
     /* OPENING THE DATA FILE */
     /*************************/
@@ -1081,28 +1082,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       /* READING IN FLUXES FROM THE DATA FILE */
       /****************************************/
     
-    /*	
-      while ( data.getline(line,265) ) {
-	i = numLines;
-	double get_t;
-	double get_f1;
-	double get_err1;
-	double get_f2;
-	double get_err2;
-			
-	sscanf( line, "%lf %lf %lf %lf %lf", &get_t, &get_f1, &get_err1, &get_f2, &get_err2 );
-	//std::cout << "allocate to matrix" << std::endl;	
-	obsdata.t[i] = get_t;	
-	obsdata.f[0][i] = get_f1;
-	obsdata.err[0][i] = get_err1;
-	obsdata.f[1][i] = get_f2;
-	obsdata.err[1][i] = get_err2;
-	// PG1808 data has 2 sigma error bars -- divide by 2!
-	//obsdata.err[1][i] *= 2.0; // to account for systematic errors
-	//obsdata.err[2][i] *= 2.0; // to account for systematic errors
-	numLines++;
-      }
-	*/
 
     if (data.is_open()){
       std::cout << "reading data" << std::endl;
@@ -1189,13 +1168,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /****************************/
 
     //std::cout << numbins << " " << numbands << std::endl;
+    flxcurve = &normcurve;
+
     for ( unsigned int i(0); i < numbins; i++ ) {
         curve.t[i] = i / (1.0 * numbins);// + ts;  // defining the time used in the lightcurves
-        for ( unsigned int p(0); p < numbands; p++ ) {
-            Flux[p][i] = 0.0;                   // initializing flux to 0
+        for ( unsigned int p(0); p < NCURVES; p++ ) {
+	  //Flux[p][i] = 0.0;                   // initializing flux to 0
             curve.f[p][i] = 0.0;
-        }
+	    //	    flxcurve->f[p][i] = 0.0;
+	}
     } 
+
+  
 
 	/*********************************/
 	/* FIRST HOT SPOT - STANDARD CASE*/
@@ -1218,6 +1202,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     // If spot is in 2 pieces, p=0 is the crescent; p=1 is the symmetric part over the pole
 
+    numbands = NCURVES;
 
 
     for (unsigned int p(0);p<pieces;p++){
@@ -1225,145 +1210,144 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
 
-    // Looping through the mesh of the spot
+	// Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-	//		for (unsigned int k(16); k < 18; k++) { // Loop through the circles
+	  //   		for (unsigned int k(9); k < 10; k++) { // Loop through the circles
 	 
-	  		deltatheta = curve.para.dtheta[k];
+	  deltatheta = curve.para.dtheta[k];
 
-	  		double thetak = curve.para.theta_k[k];
-	  		/*
-	  		 std::cout << "k = " << k 
-	  			    << " theta = " << thetak
-	  			    << std::endl;
-			*/
-	  		double phi_edge = curve.para.phi_k[k];
+	  double thetak = curve.para.theta_k[k];
+	  	
+	  double phi_edge = curve.para.phi_k[k];
 
-	  		dphi = 2.0*Units::PI/(numbins*1.0);
+	  dphi = 2.0*Units::PI/(numbins*1.0);
 
-	  		mu_1 = cos(thetak);
-	  		if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
+	  mu_1 = cos(thetak);
+	  if (fabs(mu_1) < DBL_EPSILON) mu_1 = 0.0;
 
-	  		//if ( mu_1 < 0.0){
-	    		//std::cout << "Southern Hemisphere! mu=" << mu_1 << std::endl;
-			  		//mu_1 = fabs(mu_1);
-			  		//thetak = Units::PI - thetak;
-			  		//curve.para.incl = Units::PI - incl_1;
-	  		//}
+	  if (NS_model != 3)
+	    rspot = model->R_at_costheta(mu_1);
+	  else
+	    rspot = req;
 
-	  		if (NS_model != 3)
-	    		rspot = model->R_at_costheta(mu_1);
-	  		else
-	    		rspot = req;
+	  // Values we need in some of the formulas.
+	  cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
+	  curve.para.cosgamma = cosgamma;
 
-	  		// Values we need in some of the formulas.
-	  		cosgamma = model->cos_gamma(mu_1);   // model is pointing to the function cos_gamma
-	  		curve.para.cosgamma = cosgamma;
+	  curve.para.radius = rspot; // load rspot into structure
+	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  		curve.para.radius = rspot; // load rspot into structure
-	  		curve.para.mass_over_r = mass_over_req * req/rspot;
+	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
+	  //std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
+	  curve = Bend(&curve,defltoa);
+	  //std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
 
-			std::cout << "Redshift = " << 1.0/sqrt(1.0-2.0*curve.para.mass_over_r) << std::endl;
+	  numphi = 2.0*phi_edge/dphi;
+	  //std::cout << "k=" << k << " numphi=" << numphi << "initial Flux=" << curve.f[0][0] << std::endl;
+	  phishift = 2.0*phi_edge - numphi*dphi;
+	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
 
+	  if (numphi==0){
+	    //std::cout << "numphi=0!" << std::endl;
+	    numphi = 1;
+	    phishift = 0.0;
+	    curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
+	    //std::cout << curve.para.dS << std::endl;
+	  }
 
-	  		//std::cout << " Entering defltoa M/R = " << curve.para.mass_over_r << std::endl; 
-	  		OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
-	  		//std::cout << " Entering bend M/R = " << curve.para.mass_over_r << std::endl; 
-	  		curve = Bend(&curve,defltoa);
-	  		//std::cout << " Max b/R = " << curve.defl.b_R_max << curve.defl.b_psi[3*NN] << std::endl; 
+	  if (spotshape!=2)
+	    curve.para.dS *= curve.para.gamma_k[k];
 
+	  curve.para.theta = thetak;
+	  //std::cout << curve.para.dS << " " << rspot << " " << sin(thetak) << " " << deltatheta << " " << dphi << std::endl;
 
-	  		numphi = 2.0*phi_edge/dphi;
-	  		//std::cout << numphi << " " << phi_edge << " " << dphi << std::endl;
-	  		phishift = 2.0*phi_edge - numphi*dphi;
-	  		curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
+	  SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
 
-	  		if (numphi==0){
-	    		std::cout << "numphi=0!" << std::endl;
-	    		numphi = 1;
-	    		phishift = 0.0;
-	    		curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
-	    		//std::cout << curve.para.dS << std::endl;
-	  		}
-
-	  		if (spotshape!=2)
-	    		curve.para.dS *= curve.para.gamma_k[k];
-
-	  		curve.para.theta = thetak;
-	  		//std::cout << curve.para.dS << " " << rspot << " " << sin(thetak) << " " << deltatheta << " " << dphi << std::endl;
-
-	  		SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
-
-	  		if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
-	    		numphi=1;
-	    		phi_edge=0.0;
-	    		dphi=0.0;
-	    		phishift = 0.0;
-	    		curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
-	    		if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
-	    		if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
-	    		//std::cout << curve.para.dS << std::endl;
-	  		}
+	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
+	    numphi=1;
+	    phi_edge=0.0;
+	    dphi=0.0;
+	    phishift = 0.0;
+	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
+	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
+	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
+	    //std::cout << curve.para.dS << std::endl;
+	  }
        
-	  		//std::cout << " numphi=" << numphi << " " 
-	  		//	    << " phi_edge=" << phi_edge << " " 
-	  		//	    << " dphi=" << dphi << " " 
-	  		//	    << " phishift=" << phishift << " " << curve.para.dS << std::endl;
+	  //std::cout << " numphi=" << numphi << " " 
+	  //	    << " phi_edge=" << phi_edge << " " 
+	  //	    << " dphi=" << dphi << " " 
+	  //	    << " phishift=" << phishift << " " << curve.para.dS << std::endl;
      
-	  		if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
+	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
-	  		for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
 	    
-	    		curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
+	    curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
-	    		//Heart of spot, calculate curve for the first phi bin - otherwise just shift
-	    		if ( j==0){
-	    			//std::cout << "starting ComputeAngles" << std::endl;
-	      			curve = ComputeAngles(&curve, defltoa); 	      
-	      			curve = ComputeCurve(&curve);
-				curve = TimeDelays(&curve);
-	    		}
+	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
+	    if ( j==0){
+	      //std::cout << "starting ComputeAngles" << std::endl;
+	      //std::cout << "First Time: flux[0][0] =" << curve.f[0][0] << std::endl;
+
+	      curve = ComputeAngles(&curve, defltoa); 	      
+	      curve = ComputeCurve(&curve);
+	      curve = TimeDelays(&curve);
+	      //std::cout << "delta( flux[0][0]) =" << curve.f[0][0] << std::endl;
+	      //std::cout << "SEcond Time: flx[0][0] =" << flxcurve->f[0][0] << std::endl;
+
+	    }
 	
-	    		if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
-	      			for ( unsigned int i(0); i < numbins; i++ ) {
-						for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
-	      			}
-	    		}
+	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
+	      for ( unsigned int i(0); i < numbins; i++ ) {
+		for ( unsigned int p(0); p < numbands; p++ ) curve.f[p][i] = 0.0;
+	      }
+	    }
 
-	    		// Add curves, load into Flux array
-	    		for ( unsigned int i(0); i < numbins; i++ ) {
-	      			int q(i+j);
-	      			if (q>=numbins) q+=-numbins;
-	      			for ( unsigned int p(0); p < numbands; p++ ) {
-						Flux[p][i] += curve.f[p][q];
-	      			}
-	    		} // ending Add curves
-	  		} // end for-j-loop
+	    // Add curves, load into Flux array
+	    for ( unsigned int i(0); i < numbins; i++ ) {
+	      int q(i+j);
+	      if (q>=numbins) q+=-numbins;
+	      for ( unsigned int p(0); p < numbands; p++ ) {
+		//Flux[p][i] += curve.f[p][q];
+		//if (p==0 && i==0) std::cout << "before adding: flux[0][0] =" << curve.f[0][0] << std::endl;
 
-	  		// Add in the missing bit.      
-	  		if (phishift != 0.0){ // Add light from last bin, which requires shifting
-	    		for ( unsigned int i(0); i < numbins; i++ ) {
-	      			int q(i+numphi-1);
-	      		if (q>=numbins) q+=-numbins;
-	      		for ( unsigned int pp(0); pp < numbands; pp++ ) {
-					Temp[pp][i] = curve.f[pp][q];
-	      		}
-	    	}
-	    	for (unsigned int pp(0); pp < numbands; pp++ )
-	      		for ( unsigned int i(0); i < numbins; i++ ) curve.f[pp][i] = Temp[pp][i];	  
+		flxcurve->f[p][i] += curve.f[p][q];
+		//if (p==0 && i==0) std::cout << "after adding j=" << j << ": flux[0][0] =" << flxcurve->f[0][0] << std::endl;
+	      }
+	    } // ending Add curves
+	  } // end for-j-loop
+
+	  // Add in the missing bit.      
+	  if (phishift != 0.0){ // Add light from last bin, which requires shifting
+	    for ( unsigned int i(0); i < numbins; i++ ) {
+	      int q(i+numphi-1);
+	      if (q>=numbins) q+=-numbins;
+	      for ( unsigned int pp(0); pp < numbands; pp++ ) {
+		Temp[pp][i] = curve.f[pp][q];
+	      }
+	    }
+	    for (unsigned int pp(0); pp < numbands; pp++ )
+	      for ( unsigned int i(0); i < numbins; i++ ) 
+		curve.f[pp][i] = Temp[pp][i];	  	
+    
+	    curve = ShiftCurve(&curve,phishift);
 	    
-	    			curve = ShiftCurve(&curve,phishift);
-       
-	    		for( unsigned int pp(0); pp < numbands; pp++ )
-	      			for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
-	 		} //end of last bin  
-	  	delete defltoa;
-
-	  	//insert free memory here
-        free_dvector(curve.defl.psi_b,0,301);
-        free_dvector(curve.defl.b_psi,0,301);
-        free_dvector(curve.defl.dcosa_dcosp_b,0,301);
-       	free_dvector(curve.defl.toa_b,0,301);
+	    for( unsigned int pp(0); pp < numbands; pp++ )
+	      for ( unsigned int i(0); i < numbins; i++ ) {
+		//Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+		//	if (pp==0 && i==0) std::cout << "before fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
+		flxcurve->f[pp][i] +=  curve.f[pp][i]*phishift/dphi ;
+		//if (pp==0 && i==0) std::cout << "fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
+	      }
+	  } //end of last bin  
+	  delete defltoa;
+	  
+	  //free memory here
+	  free_dvector(curve.defl.psi_b,0,301);
+	  free_dvector(curve.defl.b_psi,0,301);
+	  free_dvector(curve.defl.dcosa_dcosp_b,0,301);
+	  free_dvector(curve.defl.toa_b,0,301);
       	} // closing for loop through theta divisions
     } // End Standard Case of first spot
 
@@ -1498,7 +1482,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      			int q(i+j);
 	      			if (q>=numbins) q+=-numbins;
 	      			for ( unsigned int p(0); p < numbands; p++ ) {
-						Flux[p][i] += curve.f[p][q];
+				  //Flux[p][i] += curve.f[p][q];
+				  flxcurve->f[p][i] += curve.f[p][q];
 	      			}
 	    		} // ending Add curves
 	  		} // end for-j-loop
@@ -1518,7 +1503,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    		curve = ShiftCurve(&curve,phishift);
        
 	    		for( unsigned int pp(0); pp < numbands; pp++ )
-	      		for ( unsigned int i(0); i < numbins; i++ ) Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+			  for ( unsigned int i(0); i < numbins; i++ ) {
+			    //Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
+			  flxcurve->f[p][i] += curve.f[pp][i]*phishift/dphi      ;
+			  }
 	  		} //end of last bin  
 	  		delete defltoa;
 
@@ -1534,160 +1522,130 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // You need to be so super sure that ignore_time_delays is set equal to false.
     // It took almost a month to figure out that that was the reason it was messing up.
 
-	/***************************************/
-	/* START OF INSTRUMENT EFFECT ROUTINES */
-	/***************************************/
+    /***************************************/
+    /* START OF INSTRUMENT EFFECT ROUTINES */
+    /***************************************/
 
-	tempcurve.numbins = numbins;
-	tempcurve.numbands = numbands;
+    //tempcurve.numbins = numbins;
+    //tempcurve.numbands = numbands;
 
-	for (unsigned int p = 0; p < numbands; p++){
-        for (unsigned int i = 0; i < numbins; i++){
-        	tempcurve.f[p][i] = Flux[p][i];
-        	//std::cout << tempcurve.f[p][i] << std::endl;
-        }
-	}
+ 
+    
+    for (unsigned int p = 0; p < NCURVES; p++){
+      //if (p==0) std::cout << "flux[0][0] =" << flxcurve->f[0][0] << std::endl;
+      for (unsigned int i = 0; i < numbins; i++){
+	curve.f[p][i] = flxcurve->f[p][i];
+	//		if (p==0 && i==0) std::cout << "curve.flux[0][0] =" << curve.f[0][0] << std::endl;
+	//std::cout << tempcurve.f[p][i] << std::endl;
+      }
+      }
+    
+    //curve = EquateCurve(flxcurve);
 
-	/**********************************/
-	/*       APPLYING ATTENUATION     */
-	/**********************************/
+    /**********************************/
+    /*       APPLYING ATTENUATION     */
+    /**********************************/
 
-	if (curve.flags.attenuation != 0){
-		std::cout << "ISM" << std::endl;
-		tempcurve = Attenuate(&tempcurve,curve.flags.attenuation,nh);
-
-	}
+    if (curve.flags.attenuation != 0){
+      std::cout << "ISM" << std::endl;
+      curve = Attenuate(&curve,curve.flags.attenuation,nh);
+    }
     
     /******************************************/
     /*         ADDING BACKGROUND              */
     /******************************************/
 
-	if (background_file_is_set){
-		/*
-		for (unsigned int p = 0; p < numbands; p++){
-        	//std::cout << "band " << p << std::endl; 
-        	for (unsigned int i = 0; i < numbins; i++){
-            	//std::cout << Flux[p][i] << std::endl;
-				Flux[p][i] = Background_list(p,Flux[p][i],background_file);
-			}
-		}
-		*/
+    if (background_file_is_set){
+      curve = Background_list(&curve, background_file);      
+    } 
 
-		tempcurve = Background_list(&tempcurve, background_file);
-
-	} 
-
-	else {
-	  // Add a constant background in all bands
-	  for (unsigned int p = 0; p < numbands; p++){
-	   
-	    for (unsigned int i = 0; i < numbins; i++){
-	     
-	      tempcurve.f[p][i] += background;
-	      //if (p==0)
-	      //std::cout << "Added background: i="<<i << " flux = " << tempcurve.f[p][i] << std::endl;
-	    }
+    else {
+      if (background != 0)
+	// Add a constant background in all bands
+	for (unsigned int p = 0; p < numbands; p++){	   
+	  for (unsigned int i = 0; i < numbins; i++){	     
+	    curve.f[p][i] += background;
+	    //	    if (p==0)
+	    //std::cout << "Added background: i="<<i << " flux = " << curve.f[p][i] << std::endl;
 	  }
 	}
+    }
 	
-	if (agnbackground > 0){
-		std::cout << "AGN Background" << std::endl;		
-		tempcurve = AGN_Background(&tempcurve, agnbackground, nh);
-	}
+    if (agnbackground > 0){
+      std::cout << "AGN Background" << std::endl;		
+      curve = AGN_Background(&curve, agnbackground, nh);
+    }
 
-	if (dsbackground > 0){
-		std::cout << "Sky Background" << std::endl;
-		tempcurve = Sky_Background(&tempcurve, dsbackground);
-	}
+    if (dsbackground > 0){
+      std::cout << "Sky Background" << std::endl;
+      curve = Sky_Background(&curve, dsbackground);
+    }
 	
 
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
-    if (curve.flags.inst_curve >= 1){
-    	/*
-    	for (unsigned int p = 0; p < numbands; p++){
-        	for (unsigned int i = 0; i < numbins; i++){
-        		Flux[p][i] = Inst_Res(p,Flux[p][i],curve.flags.inst_curve);
-        	}
-		}
-		*/
-		std::cout << "Instrument Response" << std::endl;
-		tempcurve = Inst_Res(&tempcurve, curve.flags.inst_curve);
-	}
-
-	/*************************************/
-	/* POURING TEMPCURVE BACK TO FLUX    */
-	/*************************************/
-
-	for (unsigned int p = 0; p < numbands; p++){
-        for (unsigned int i = 0; i < numbins; i++){
-        	Flux[p][i] = tempcurve.f[p][i];
-        }
-	} 
-
-    /******************************************/
-    /*     MULTIPLYING OBSERVATION TIME       */
-    /******************************************/
-
-    for (unsigned int p = 0; p < numbands; p++){
-        //std::cout << "band " << p << std::endl; 
-        for (unsigned int i = 0; i < numbins; i++){
-          
-	  Flux[p][i] *= obstime/(databins);  
-	    //if(p==0)
-	    //std::cout <<"Mult by time: i=" <<i << " flux=" << Flux[p][i] << std::endl;
-
-        }
+    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
+    if (curve.flags.inst_curve > 0){
+      std::cout << "Applying Instrument Response" << std::endl;
+      curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
-    
-    /*******************************/
-    /* NORMALIZING THE FLUXES TO 1 */
-    /*******************************/
-	    
-    // Normalizing the flux to 1 in low energy band. 
-    if ( normalize_flux ) {
-      normcurve = Normalize1( Flux, numbins );
 
-      // Add background to normalized flux
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	for ( unsigned int p(0); p < numbands; p++ ) {
-	  Flux[p][i] = normcurve.f[p][i] + background;
-	}
-      } 
-      
-      // Renormalize to 1.0
-      normcurve = Normalize1( Flux, numbins );
-
-      // fun little way around declaring the Chi.cpp method Normalize as returning a matrix! so that we can still print out Flux
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	for ( unsigned int p(0); p < numbands; p++ ) {
-	  curve.f[p][i] = normcurve.f[p][i];
-	}
-      }  
-    } // Finished Normalizing
-
-    else{ // Curves are not normalized
-
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	for ( unsigned int p(0); p < numbands; p++ ) {
-	  curve.f[p][i] = Flux[p][i];
-	}
-      }  
+    /* Create Phase-independent Powerlaw Background */
+    (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
+    if (curve.flags.inst_curve > 0){
+      std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
+      (*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
     }
-     
+
+   
+
+
     // If databins < numbins then rebin the theoretical curve down 
-
     //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
     //std::cout << " Rebin the data? " << std::endl;
-
-	if (databins < numbins) {
+    if (databins < numbins) {
         obsdata.numbins = databins;
         std::cout << " Rebin the data! " << std::endl;
         curve = ReBinCurve(&obsdata,&curve);
+	(*flxcurve) = ReBinCurve(&obsdata,flxcurve);
         numbins = databins;
     }
+
+    numbands = curve.numbands;
+    std::cout << "numbands = " << numbands << std::endl;
+    // Count the photons!
+    double spotcounts = 0.0;
+    double bkgcounts = 0.0;
+    /******************************************/
+    /*     MULTIPLYING OBSERVATION TIME       */
+    /******************************************/
+    for (unsigned int p = 0; p < numbands-1; p++){
+        //std::cout << "band " << p << std::endl; 
+        for (unsigned int i = 0; i < numbins; i++){          
+	  curve.f[p][i] *= obstime/(databins);  
+	  spotcounts += curve.f[p][i];
+	  bkgcounts += flxcurve->f[p][i];
+        }
+    }
+    std::cout << "Spot Counts = " << spotcounts << std::endl;
+    std::cout << "Background Counts = " << bkgcounts << std::endl;
+   
+    
+    
+    double totalcounts = 0.0;
+    for (unsigned int p = 0; p < numbands-1; p++){ 
+        for (unsigned int i = 0; i < numbins; i++){           
+	  curve.f[p][i] *= 1e6/spotcounts;
+	  //	  curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
+	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
+	  totalcounts += curve.f[p][i];
+        }
+    }
+    std::cout << "Total Counts = " << totalcounts << std::endl;
+    
+           
 
 
     /************************************************************/
@@ -1725,65 +1683,20 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //numbins = obsdata.numbins;
 
     if ( rho == 0.0 ) rho = Units::PI/180.0;
-    /*
-    out << "% Photon Flux for hotspot on a NS. \n"
-        << "% R_sp = " << Units::nounits_to_cgs(rspot, Units::LENGTH )*1.0e-5 << " km; "
-        << "% R_eq = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 << " km; "
-        << "% M = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN << " Msun; "
-        << "% Spin = " << Units::nounits_to_cgs(omega, Units::INVTIME)/(2.0*Units::PI) << " Hz \n"
-        << "% Gravitational redshift 1+z = " << 1.0/sqrt(1.0 - 2*mass/rspot) << "\n"
-        << "% Inclination angle = " << incl_1 * 180.0/Units::PI << " degrees \n"
-        << "% Emission angle = " << theta_1 * 180.0/Units::PI << " degrees \n"
-        << "% Angular radius of spot = " << rho << " radians \n"
-        << "% Number of spot bins = " << numtheta << " \n"
-        << "% Distance to NS = " << Units::nounits_to_cgs(distance, Units::LENGTH)*.01 << " m \n" 
-        << "% Phase shift or time lag = " << ts << " \n"
-      //        << "# Pulse fractions: bolo = " << curve.pulseFraction[0] <<", mono = " << curve.pulseFraction[1] << ", \n"
-      //<< "#                  low E band = " << curve.pulseFraction[2] << ", high E band = " << curve.pulseFraction[3] << " \n"
-      //<< "# Rise/Fall Asymm: bolo = " << curve.asym[0] <<", mono = " << curve.asym[1] << ", \n"
-      //<< "#                  low E band = " << curve.asym[2] << ", high E band = " << curve.asym[3] << " \n"
-      //<< "# B = " << B << " \n"
-      //<< "# B/(1+z) = " << B * sqrt(1.0 - 2*mass/rspot) << "\n"
-      //<< "# U = " << U << " \n"
-      //<< "# Q = " << Q << " \n"
-      //<< "# A = U/Q = " << A << " \n"
-      //<< "# %(Amp-Bolo) = " << (A - curve.pulseFraction[0])/A * 100.0 << " \n"
-      //<< "# %(Bolo-low) = " << (curve.pulseFraction[0]-curve.pulseFraction[2])/curve.pulseFraction[0] * 100.0 << " \n"
-        << std::endl;
-    */
-    /* 
-    if (datafile_is_set)
-    	out << "% Data file " << data_file << ", chisquared = " << chisquared << std::endl;
-
-    if ( T_mesh_in )
-    	out << "% Temperature mesh input: "<< T_mesh_file << std::endl;
-    else
-    	out << "% Spot temperature, (star's frame) kT = " << spot_temperature << " keV " << std::endl;
-	if ( NS_model == 1)
-    	out << "% Oblate NS model " << std::endl;
-    else if (NS_model == 3)
-    	out << "% Spherical NS model " << std::endl;
-    if ( beaming_model == 0 )
-        out << "% Isotropic Emission " << std::endl;
-    else
-        out << "% Limb Darkening for Gray Atmosphere (Hopf Function) " << std::endl;
-    if ( normalize_flux )
-    	out << "% Flux normalized to 1 " << std::endl;
-    else
-    	out << "% Flux not normalized " << std::endl;
-    */
+  
+  
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
   
     //out << "%\n"
     //	<< "% Column 1: phase bins (0 to 1)\n";
-    if (curve.flags.spectral_model==0){
+    /*    if (curve.flags.spectral_model==0){
 
         double E_diff;
 		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
     	for (unsigned int k(0); k < numbands; k++){
-	  //      		out << "% Column " << k+2 << ": Monochromatic Number flux (photons/keV) measured at energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
+	   		
     	}
       	//out << "%" << std::endl;
       	for ( unsigned int i(0); i < numbins; i++ ) {
@@ -1794,7 +1707,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         	out << std::endl;
       	}
     }
-
+    */
     if (curve.flags.spectral_model==1){
       //      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
       //out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
@@ -1833,20 +1746,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	out << std::endl;
       }
       //std::cout << "Total Counts = " << counts << std::endl;
-
-
-      // for ( unsigned int p(0); p < numbands; p++ ) { 
-      //	for ( unsigned int i(0); i < numbins; i++ ) {
-      //  out << curve.t[i]<< "\t" ;
-      //  out << E_band_lower_1 + (p+0.5)*E_diff << "\t";
-      //  out << curve.f[p][i] << "\t" << std::endl;
-	  //out << i;
-	  //out << std::endl;
-      //}
-      //}
-    
-
-
     }
 
 
@@ -1892,15 +1791,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
 			//out1 << "%Column 3: Counts/keV. " << std::endl;
 
-	  for ( unsigned int p(0); p < numbands; p++ ) {
+	  for ( unsigned int p(0); p < numbands-1; p++ ) {
 	    Eobs = curve.para.E_band_lower_1+p*E_diff+E_diff/2;
 	    for ( unsigned int i(0); i < numbins; i++ ) { 
-	      Eem = Eobs *redshift/curve.eta[i];
+	      //Eem = Eobs *redshift/curve.eta[i];
 	      out1 << curve.t[i]<< "\t";
 	      out1 << Eobs << "\t";
+	      //out1 << p << "\t";
 	      out1 << curve.f[p][i] << "\t";
-	      out1 << Eem << "\t"
-	      << std::endl;
+	      //out1 << Eem << "\t";
+	      //out1 << Eem/curve.para.temperature << "\t"
+	      out1 << std::endl;
 	    }
 	  }
     	}
@@ -1917,6 +1818,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 				for ( unsigned int i(0); i < numbins; i++ ) { 
             		out1 << curve.t[i]<< "\t";
             		out1 << curve.para.E_band_lower_1+p*E_diff+E_diff/2 << "\t";
+			//out1 << p << "\t";
             		out1 << curve.f[p][i] << std::endl;
         		}
       		}
@@ -1932,22 +1834,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model == 12 || curve.flags.beaming_model == 13 || curve.flags.beaming_model == 14 ){ // *cole* McPHAC Hydrogen Atmosphere        
+     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
        free_dvector(curve.mccangl,0,51);
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);
      }
-     if (curve.flags.beaming_model == 11 || curve.flags.beaming_model == 15){ // New NSX-H model
+     if (curve.flags.beaming_model == 11){ // New NSX-H model
 	free_dvector(curve.mclogTeff,0,NlogTeff);
 	free_dvector(curve.mclogg,0,Nlogg);
 	free_dvector(curve.mcloget,0,NlogE);
 	free_dvector(curve.mccangl,0,Nmu);
 	free_dvector(curve.mccinte,0,Npts*Nmu);
-     }
-     if (curve.flags.beaming_model == 16){
-     	free_dvector(curve.mccangl,0,257);
-     	free_dvector(curve.mcloget,0,101);
-     	free_dvector(curve.mccinte,0,25601);
      }
 
 

@@ -12,11 +12,12 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-#define NCURVES 301      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
+#define MAX_NUMBINS 512 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define NCURVES 351      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
 
 
 
+class LightCurve EquateCurve ( class LightCurve* angles);
 
 
 // Calculates the light curve, when given all the angles
@@ -97,10 +98,6 @@ double McPHACC2(int E_dex, double cos_theta);
 
 double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
-double NSXHenew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
-
-double NSXHpi(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc);
-
 
 // Cole's McPHAC in spotMex
 double McPHACC4(int E_dex, double cos_theta, double T, double M, double R, class LightCurve mexmcc);
@@ -118,6 +115,7 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 // flux from a specific energy band, for helium model at log-spaced energy points
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
-double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc);
 
+double NSXHenew(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc);
 
+double NSXHpi(double E, double cos_theta, double T, double lgrav, class LightCurve mexmcc);

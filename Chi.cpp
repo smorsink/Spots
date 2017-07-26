@@ -407,6 +407,8 @@ class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve
     //std::cout << "OBS_BINS = " << obsdata->numbins << std::endl;
     //std::cout << "ratio = " << jj << std::endl;
 
+    std::cout << "ReBinCurve: numbands = " << numbands << std::endl;
+
     for (unsigned int p(0); p<numbands; p++){
       for (unsigned int i(0); i<obsdata->numbins; i++){
 
@@ -542,18 +544,25 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     // Check to see if this is an oblate star
     // If it is oblate compute the values of b_min, psi_max_in
     if (curve.flags.ns_model != 3){
+
+      //      std::cout << "Chi: Oblate Star " << std::endl;
+      //std::cout << "Outgoing: b_max/R = " << curve.defl.b_R_max << " psi_max = " << curve.defl.psi_max << std::endl;
+
+
       b_R_min = defltoa->b_R_min_ingoing(radius, cos(theta_0));
       psimin = defltoa->psi_ingoing(b_R_min,curve.defl.b_R_max, curve.defl.psi_max, radius,&curve.problem);
 
+      //      std::cout << "Ingoing: b_max/R = " << b_R_min << " psi_min = " << psimin << std::endl;
+
       b_R_in[0] = b_R_min;
       psi_in[0] = psimin;
+      //std::cout << "b_R[" <<0 << "]=" << b_R_in[0] 
+      //	<< "psi = " << psi_in[0] << std::endl;
 
       //std::cout << "db = " << (curve.defl.b_R_max-b_R_min) << std::endl;
       if (  (curve.defl.b_R_max-b_R_min) < 1e-5) num_in=1;
-      else num_in=1;
-
-      //std::cout << "b[" <<0 << "]=" << b_R_in[0] 
-      //	<< "psi = " << psi_in[0] << std::endl;
+      else num_in=2;
+ 
       
       for (unsigned int j(1); j<= num_in; j++){
 	b_R_in[j] = b_R_min + (curve.defl.b_R_max-b_R_min)/(1.0*num_in) * j;
@@ -588,7 +597,9 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	psi = curve.psi[i];
 
 	//	std::cout << "Compute Angles: i = " << i 
-	//	  << " psi = " << curve.psi[i] << std::endl; 
+	//	  << " psi = " << curve.psi[i] 
+	//	  << " psi_max=" << curve.defl.psi_max
+	//	  << std::endl; 
 
 	//std::cout << " Before: j= " << j << std::endl;
 
@@ -623,7 +634,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
 
 	    b_guess =  polint(&curve.defl.psi_b[k], &curve.defl.b_psi[k], 4, psi, &err);
-	    //std::cout << "b = " << b_guess << " err = " << err << std::endl;
+	    //	    std::cout << "b = " << b_guess << " err = " << err << std::endl;
 
 	    curve.dcosalpha_dcospsi[i] = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
 	    //std::cout << "dcosa = " << curve.dcosalpha_dcospsi[i] << " err = " << err << std::endl;
@@ -648,6 +659,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 				      curve.defl.psi_max, b_R_min*radius,psimin, b_guess,
 				      b_R_in,psi_in,
 				      &curve.problem );
+	//	std::cout << "b_R = " << b_R_val << " psi = " << curve.psi[i] << std::endl;
 
         if ( result == false && i == 0) { 
             curve.visible[i] = false;
@@ -668,7 +680,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
             if ( sign < 0 ) { // if the photon is initially ingoing (only a problem in oblate models)
 	            ingoing = true;
 	            curve.ingoing = true;
-	            //std::cout << "ingoing!"<< std::endl;
+		    //	            std::cout << "ingoing!"<< std::endl;
+		    //std::cout << "b_R = " << b_R << "psi = " << curve.psi[i] << std::endl;
             }
             else if ( sign > 0 ) {
 	            ingoing = false;
@@ -780,15 +793,16 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            	std::cout << "speed = " << speed << " at i = " << i << std::endl;
 
 	            if ( ingoing ) {
-		      //std::cout << "Chi: b/r = " << b_R <<std::endl;
+		      //	      std::cout << "Chi: b/r = " << b_R <<std::endl;
 		      //std::cout << "radius = " << radius << std::endl;
 		      b = b_R * radius;
 		      toa_val = defltoa->toa_ingoing( b, radius, mu, &curve.problem );
+		      //std::cout << "toa = " << toa_val << std::endl;
 	            }
                 
 		    toa_val += (req/radius - 1.0);
 		    toa_val += -  2.0 * mass_over_r * log( (radius/req) * (1.0 - 2.0 * mass_over_r)/(1.0 - 2.0 * mass_over_r*radius/req)) ;
-
+		    //		    std::cout << "toa = " << toa_val << " Proper Dimensions!" << std::endl;
 		    //Change toa_val so it is dimensionless. Then multiply by radius to give correct dimensions!!!!		    
 		    // Correct for emission from location different from equator.
 

@@ -87,12 +87,9 @@ class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation,
 
 	for (unsigned int p = 0; p < numbands; p++){
         for (unsigned int i = 0; i < numbins; i++){
-        	if (p >= atten_size){
-        		newcurve.f[p][i] = curve.f[p][i];
-        	} 
-        	else {
-        		newcurve.f[p][i] = curve.f[p][i] * pow(atten_factors[p],nh);
-        	}
+        
+	  newcurve.f[p][i] = curve.f[p][i] * pow(atten_factors[p],nh);
+        	
 
         	/*
         	if (newcurve.f[p][i] > incurve.f[p][i]){
@@ -106,7 +103,7 @@ class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation,
 
 class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve){
 
-	class LightCurve newcurve, curve;
+	class LightCurve curve;
 	unsigned int response_size(0), numbands, numbins;
 	double temp;
 	char cwd[1024], resdir[1024];
@@ -116,8 +113,8 @@ class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve){
 	curve = (*incurve);
 	numbands = curve.numbands;
 	numbins = curve.numbins;
-	newcurve.numbands = numbands;
-	newcurve.numbins = numbins;
+	//newcurve.numbands = numbands;
+	//newcurve.numbins = numbins;
 
 	getcwd(cwd, sizeof(cwd));
 	sprintf(resdir,"%s/Area",cwd);
@@ -136,20 +133,103 @@ class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve){
         throw( Exception( "instrument response curve file is not found" ));
     }
     file.close();
-	chdir(cwd);
+    chdir(cwd);
+    
+    for (unsigned int p = 0; p < numbands; p++){
 
-	for (unsigned int p = 0; p < numbands; p++){
-        for (unsigned int i = 0; i < numbins; i++){
-        	if (p >= response_size){
-		 		throw( Exception( "instrument response curve doesn't have this band" ));
-        	} 
-        	else {
-        		newcurve.f[p][i] = curve.f[p][i] * response_list[p];
-        	}
-        }
+      //std::cout << "resp_size=" << response_size << " p=" << p << " area[p] = " << response_list[p] << std::endl;
+
+      
+	for (unsigned int i = 0; i < numbins; i++){   
+	  //std::cout << "curve.f[p][i] = "<< curve.f[p][i] ;
+	  curve.f[p][i] *= response_list[p];
+	  //std::cout << "curve.f[p][i] = "<< curve.f[p][i] << std::endl;
 	}
-	return newcurve;
+    
+    }
+    return curve;
 }
+
+class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve){
+
+  class LightCurve curve, newcurve;
+	unsigned int  numbands, numbins;
+	double temp;
+	char cwd[1024], resdir[1024];
+	std::vector<double> response_list;
+	
+	int start[NCURVES];
+	double response[NCURVES][77];
+       
+
+	//Pour numbands and numbins into newcurve
+	curve = (*incurve);
+	
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
+	
+
+	getcwd(cwd, sizeof(cwd));
+	sprintf(resdir,"%s/Area",cwd);
+	chdir(resdir);
+
+	ifstream file;
+	file.open("NICER_May2014_rsp.txt");
+	double elow,ehigh;
+	
+
+	if(file.is_open()) {
+	  for (unsigned int p(0);p<NCURVES;p++){
+	    file >> elow;
+	    file >> ehigh;
+	    file >> start[p];
+	    //std::cout << "p="<<p << " elow=" << elow << " ehigh=" << ehigh << " starti=" << start[p] << std::endl;
+	    for (unsigned int j(0); j<=76; j++){
+	      file >> response[p][j]; 
+	    }
+	  }
+	    std::cout << "response[299][0] = " << response[299][0] << std::endl;
+	
+	}else{
+        throw( Exception( "instrument response curve file is not found" ));
+    }
+    file.close();
+    chdir(cwd);
+    
+    std::cout << "numbands = " << NCURVES << "numbins = " << numbins << std::endl;
+    int newindex;
+
+    for (unsigned int p = 0; p < NCURVES; p++){
+      if (p==299) std::cout << "p=" << p << "start[p] = " << start[p] << " curve[p][0]=" << curve.f[p][0] << std::endl;
+      for (unsigned int j=0; j<=76; j++){   
+	newindex = j + start[p] - 1;   
+	//std::cout << "j="<< j << " newindex=" << newindex << std::endl;
+	if ( newindex < NCURVES)
+	  for (unsigned int i = 0; i < numbins; i++){
+	    newcurve.f[newindex][i] += curve.f[p][i] * response[p][j];
+	    if (newindex==299 && i==0) std::cout << " j=" << j << " newindex=" << newindex 
+					       << " f["<<p<<"]=" << curve.f[p][i] 
+					       << " response["<<p<<"]=" << response[p][j]  
+					       << " flux = " << newcurve.f[newindex][i] << std::endl;
+	  }
+      }
+
+    }
+
+    for(unsigned int p=0; p<NCURVES; p++){
+      for (unsigned int i=0; i<numbins; i++){
+	curve.f[p][i] = newcurve.f[p][i];
+      }
+      //std::cout << "p="<< p << "curve.f[p][0]=" << curve.f[p][0] << std::endl;
+    }
+    int p=299;
+      std::cout << "p="<< p << "curve.f[p][0]=" << curve.f[p][0] << std::endl;
+
+    return curve;
+}
+
 
 class LightCurve Background_list (class LightCurve* incurve, char *background_file){
 
@@ -279,6 +359,30 @@ class LightCurve AGN_Background (class LightCurve* incurve, double agnbackground
 
     return newcurve;
 }
+
+/* Phase-independent power law background */
+
+class LightCurve PowerLaw_Background (class LightCurve* incurve, double normalization, double power){
+
+  class LightCurve curve;
+  curve = (*incurve);
+	 
+  double E_diff = (curve.para.E_band_upper_1 - curve.para.E_band_lower_1)/curve.numbands;
+
+  // Apply Background
+  for (unsigned int p = 0; p < NCURVES; p++){
+    double  E0 = (curve.para.E_band_lower_1+(p+0.5)*E_diff);
+    for (unsigned int i = 0; i < curve.numbins; i++){
+      curve.f[p][i] = normalization * pow(E0,power);        	
+    }
+  }
+
+  std::cout << "Background flux[0][0] = " << curve.f[0][0] << std::endl;
+
+  return curve;
+}
+
+
 
 
 class LightCurve Sky_Background (class LightCurve* incurve, double skybackground){

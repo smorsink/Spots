@@ -128,7 +128,7 @@ double McPHACC3new(double E, double cos_theta, int theta_index, double T, double
 	  I_int[k+1] = polint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1);
 	 
 	  // logarithmic interpolation
-	  //I_int[k+1] = pow(10.0,polint(evec,ivec[r][q][k],npt,log10(E/T),&err1));	
+	  //I_int[k+1] = pow(10.0,polint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1));	
 	}
 	// Intepolate over mu for fixed Teff, gravity
 	J[q+1] = polint(&mexmcc.mccangl[ii_mu-1],I_int,3,cos_theta,&err);
@@ -140,7 +140,7 @@ double McPHACC3new(double E, double cos_theta, int theta_index, double T, double
     // Interpolate over log(Teff)
     L = polint(tvec,K,3,lt,&err)*pow(10.0,lt*3.0);
 
-    if (cos_theta < 0.015629) L = 0;
+    //if (cos_theta < 0.015629) L = 0;
     
     return L;
 }
@@ -153,14 +153,14 @@ double McPHACC3new(double E, double cos_theta, int theta_index, double T, double
 
 
 // This is version makes use of Cole's version of McPhac
-double AtmosEBandFlux3new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc){
+double AtmosEBandFlux3new( unsigned int model, double cos_theta, int theta_index, double T, double lgrav, double gvec[4], double E1, double E2, class LightCurve mexmcc){
 
     int e1_dex(0);              // largest energy index that's smaller than E1
     int e2_dex(0);              // largest energy index that's smaller than E2
     int n_steps(0);             // number of energy points within band
     double flux(0.0);           // total integrated flux
 
-    double gvec[4];
+    //double gvec[4];
 
 
     double ener_spacing = pow(10.0,0.0338);
@@ -172,8 +172,8 @@ double AtmosEBandFlux3new( unsigned int model, double cos_theta, double T, doubl
 
     n_steps = 1* (e2_dex - e1_dex);
 
-    int theta_index = th_index(cos_theta,&mexmcc);
-    // n_steps = 4;
+    // int theta_index = th_index(cos_theta,&mexmcc);
+    n_steps = 4;
 
 
     if (n_steps == 0){ // zero energy points within bandwidth: (4.1.3) one trapzoid

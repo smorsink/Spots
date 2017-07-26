@@ -102,7 +102,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       /* LOOP THROUGH THE LIGHTCURVES */
       /********************************/
        
-      for (unsigned int p(0); p < numbands; p++) {
+      for (unsigned int p(0); p < NCURVES; p++) {
       // for (unsigned int p(1); p < 2; p++) {
 
 	/*********************/
