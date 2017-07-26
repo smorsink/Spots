@@ -1,11 +1,9 @@
+
 /***************************************************************************************/
 /*                                      Atmo.h
-
     This is the header file for Atmo.cpp, which holds ComputeCurve and atmosphere routines
     called in Spot.cpp and probably elsewhere.
-
     Was split from Chi.h
-
 */
 /***************************************************************************************/
 
@@ -119,5 +117,3 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
 double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc);
-
-
