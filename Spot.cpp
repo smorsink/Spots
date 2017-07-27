@@ -1017,12 +1017,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       char atmodir[1024], cwd[1024];
       getcwd(cwd, sizeof(cwd));
 		
-      std::cout << "Reading in McPhac Binary File " << std::endl;
+      std::cout << "Reading in NSX Hydrogen Partially Ionized " << std::endl;
 
       sprintf(atmodir,"%s/atmosphere",cwd);
       chdir(atmodir);
 	  std::ifstream Hspecttable; 
 	  Hspecttable.open("nsx_spint0_6.05g1425pi_nrp11.out" );  // opening the file with observational data
+      if ( Hspecttable.fail() || Hspecttable.bad() || !Hspecttable ) {
+      std::cout << "fail in loading Hspecttable" << std::endl;
+      }
       curve.mccangl = dvector(0,257);
       curve.mcloget = dvector(0,101);
       curve.mccinte = dvector(0,25601);
@@ -1042,6 +1045,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      curve.mccangl[i] = junk;
 	    }	  	
 	  	Hspecttable >> curve.mccinte[i];
+	  	//std::cout << curve.mccinte[i] << std::endl;
 	  }
 
 	  chdir(cwd);
