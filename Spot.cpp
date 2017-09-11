@@ -156,6 +156,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
+  //class LightCurve curve;
   class LightCurve *flxcurve;
   class DataStruct obsdata;           // observational data as read in from a file
 
@@ -495,46 +496,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     
    
-    /***************************************************************/
-    /* READING TEMPERATURE VALUES FROM AN INPUT FILE, IF SPECIFIED */
-    /***************************************************************/
-	
-    if ( T_mesh_in ) {
-    	std::ifstream inStream(T_mesh_file);
-    	std::cout << "** Tmeshfile name = " << T_mesh_file << std::endl;
-    	unsigned int n(0);
-
-    	if ( !inStream ) {
-        	throw( Exception( "Temperature mesh input file could not be opened. \nCheck that the actual input file name is the same as the -z flag parameter value. \nExiting.\n") );
-        	return -1;
-        }
-        std::string inLine;
-        while ( std::getline(inStream, inLine) )  // getting numtheta from the file
-        	n++;
-        if (n != numtheta) {
-        	throw( Exception( "Numtheta from mesh file does not match numtheta from command line input. \nExiting.\n") );
-        	return -1;
-        }
-        numtheta = numphi = n;
-        // go back to the beginning of the file
-        inStream.clear();
-        inStream.seekg (0, std::ios::beg);
-        for ( unsigned int k(0); k < numtheta; k++ ) {
-    		for ( unsigned int j(0); j < numphi; j++ ) {
-    			inStream >> T_mesh[k][j];
-    		}
-    	}
-    	inStream.close();
-    	
-    	// Printing the temperature mesh, for checking that it was read in correctly
-    	std::cout << "Temperature Mesh of Spot:" << std::endl;
-    	for ( unsigned int i(0); i < numtheta; i++ ) {
-    		for ( unsigned int j(0); j < numphi; j++ ) {
-    	    	std::cout << T_mesh[i][j] << "  ";
-    		}
-    		std::cout << std::endl;
-    	}
-    }
     
     /******************************************/
     /* SENSIBILITY CHECKS ON INPUT PARAMETERS */
@@ -1017,15 +978,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       char atmodir[1024], cwd[1024];
       getcwd(cwd, sizeof(cwd));
 		
-      std::cout << "Reading in NSX Hydrogen Partially Ionized " << std::endl;
+      std::cout << "Reading in McPhac Binary File " << std::endl;
 
       sprintf(atmodir,"%s/atmosphere",cwd);
       chdir(atmodir);
 	  std::ifstream Hspecttable; 
 	  Hspecttable.open("nsx_spint0_6.05g1425pi_nrp11.out" );  // opening the file with observational data
-      if ( Hspecttable.fail() || Hspecttable.bad() || !Hspecttable ) {
-      std::cout << "fail in loading Hspecttable" << std::endl;
-      }
       curve.mccangl = dvector(0,257);
       curve.mcloget = dvector(0,101);
       curve.mccinte = dvector(0,25601);
@@ -1045,7 +1003,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      curve.mccangl[i] = junk;
 	    }	  	
 	  	Hspecttable >> curve.mccinte[i];
-	  	//std::cout << curve.mccinte[i] << std::endl;
 	  }
 
 	  chdir(cwd);
@@ -1211,6 +1168,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     for (unsigned int p(0);p<pieces;p++){
 
+      //std::cout << "p = " << p << std::endl;
+
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
 
@@ -1291,11 +1250,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){
-	      //std::cout << "starting ComputeAngles" << std::endl;
+	      std::cout << "starting ComputeAngles" << std::endl;
 	      //std::cout << "First Time: flux[0][0] =" << curve.f[0][0] << std::endl;
 
-	      curve = ComputeAngles(&curve, defltoa); 	      
+	      curve = ComputeAngles(&curve, defltoa); 	
+	      std::cout << "starting ComputeCurve " << std::endl;
 	      curve = ComputeCurve(&curve);
+	      std::cout << "starting TimeDelays" << std::endl;
 	      curve = TimeDelays(&curve);
 	      //std::cout << "delta( flux[0][0]) =" << curve.f[0][0] << std::endl;
 	      //std::cout << "SEcond Time: flx[0][0] =" << flxcurve->f[0][0] << std::endl;
@@ -1628,7 +1589,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for (unsigned int p = 0; p < numbands-1; p++){
         //std::cout << "band " << p << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){          
-	  curve.f[p][i] *= obstime/(databins);  
+	  //curve.f[p][i] *= obstime/(databins);  
+	  curve.f[p][i] *= obstime;  
 	  spotcounts += curve.f[p][i];
 	  bkgcounts += flxcurve->f[p][i];
         }
@@ -1642,7 +1604,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for (unsigned int p = 0; p < numbands-1; p++){ 
         for (unsigned int i = 0; i < numbins; i++){           
 	  curve.f[p][i] *= 1e6/spotcounts;
-	  //	  curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
+	  curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  totalcounts += curve.f[p][i];
         }
@@ -1799,10 +1761,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    Eobs = curve.para.E_band_lower_1+p*E_diff+E_diff/2;
 	    for ( unsigned int i(0); i < numbins; i++ ) { 
 	      //Eem = Eobs *redshift/curve.eta[i];
+	      out1 << p+1 << "\t";
 	      out1 << curve.t[i]<< "\t";
-	      out1 << Eobs << "\t";
+	      //out1 << Eobs << "\t";
 	      //out1 << p << "\t";
 	      out1 << curve.f[p][i] << "\t";
+	      //out1 << Eobs << "\t";
 	      //out1 << Eem << "\t";
 	      //out1 << Eem/curve.para.temperature << "\t"
 	      out1 << std::endl;

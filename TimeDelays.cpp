@@ -31,6 +31,9 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
   int numbins = curve.numbins;
   int numbands = curve.numbands;
 
+  double tvec[4], fvec[4], err;
+
+  std::ofstream ttt;
 
     /***********************************************************/
     /* DEALING WITH THE TIME DELAYS, REBINNING THE LIGHT CURVE */
@@ -44,7 +47,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       // but time delays mean that j isn't always i-1
       // used in the linear interpolation
         
-      //std::cout << "Taking care of time delays!" << std::endl;
+      std::cout << "Taking care of time delays!" << std::endl;
 
 
       int ecl1(0), ecl2(0), j1, j2, k1, k2;
@@ -103,7 +106,9 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       /********************************/
        
       for (unsigned int p(0); p < NCURVES; p++) {
-      // for (unsigned int p(1); p < 2; p++) {
+      //for (unsigned int p(0); p < 1; p++) {
+
+	//std::cout << "TimeDelays: p=" << p << std::endl;
 
 	/*********************/
 	/* MORE DECLARATIONS */
@@ -130,6 +135,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 	  /********************************************************/
     		
 	  for ( unsigned int i(0); i < numbins; i++ ) {
+
 	    if ( curve.f[p][i] > max_discrete_flux ) { // tells you where the maximum is
 	      imax = i;  
 	      max_discrete_flux = curve.f[p][i];
@@ -316,6 +322,8 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 	  /**************************************************************/
 
 	  for ( unsigned int i(0); i < numbins; i++ ) {  // for-i-loop, looping through the phase bins
+
+	    // std::cout << "TimeDelays: i=" << i <<std::endl;
             
 	    k = i + 1;
 	    j = i;		 
@@ -397,18 +405,72 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 
 		}	
 
-		newflux.at(i) = curve.f[p][j] + (curve.f[p][k]-curve.f[p][j])/(t2-t1) * (curve.t[i]-t1); // linear interpolation!
+		int npt=3;
+		int start=0;
+		int index=0;
+		j -= 1;
+
+		for (int m=1; m<=npt; m++){
+		  start=0;
+		  
+		  if (j+m+start >= numbins)
+		    start -= numbins;
+		  if (j+m+start < 0)
+		    start += numbins;
+
+		  tvec[m] = curve.t_o[j+m+start];
+		  if (start < 0) tvec[m] += 1.0;
+		  
+		  if (curve.t[i] == 0.0){
+		    tvec[m] -= 1.0;
+		  }
+
+		  fvec[m] = curve.f[p][j+m+start];
+		  //std::cout << " START = " << start << " " 
+		  //	    << "m=" << m << " t=" << tvec[m] << " f=" << fvec[m] << std::endl;
+
+		}
+
+		j+=1;
+
+		//newflux.at(i) = curve.f[p][j] + (curve.f[p][k]-curve.f[p][j])/(t2-t1) * (curve.t[i]-t1); // linear interpolation!
+		
+		//double oldflux = newflux.at(i);
+
+		//std::cout << "Old Interpolation time = " << curve.t[i] << "flux = " << newflux.at(i) << std::endl; 
+
+		//std::cout << "do new interpolation!" << std::endl;
+		newflux.at(i) = polint(tvec,fvec,npt,curve.t[i],&err);
+		//std::cout << "New Interpolation time = " << curve.t[i] << "flux = " << newflux.at(i) << std::endl; 
+
+		/*	if (p==0)
+		  std::cout << "i = " << i  
+			    << " time = " << curve.t[i]
+		    << " ********* Flux diff = " << (oldflux - newflux.at(i)) 
+			  << " oldflux = " << oldflux 
+			    << " newflux = " << newflux.at(i)
+			    << " percent diff = " << (oldflux-newflux.at(i))/oldflux * 100 
+			  << std::endl;
+		*/
+	
 
 		if (curve.eclipse){
 		  if (curve.t[i] < te1 && curve.t[i] > te1 - 1.0/numbins){
-		    //std::cout << "time just before eclipse at te1=" << te1 <<"! i=" << i << " t = " << curve.t[i] << std::endl;
+		    /* if (p==0){
+		      std::cout << "time just before eclipse at te1=" << te1 <<"! i=" << i 
+				<< " t = " << curve.t[i] << std::endl;
+		      std::cout << "before correction, flux= " << newflux.at(i) << std::endl;
+		      }*/
 		    newflux.at(i) = slope1 * (curve.t[i] - te1);
+		    /*if (p==0) 
+		      std::cout << "after correction, flux= " << newflux.at(i) << std::endl;*/
 		  }
 		  if (curve.t[i] < te1 + 1.0/numbins && curve.t[i] > te1)
 		    newflux.at(i) = 0.0;
 
 		  if (curve.t[i] > te2 && curve.t[i] < te2 + 1.0/numbins){
-		    // std::cout << "eclipse ends at te2=" << te2 <<"! i=" << i << " t = " << curve.t[i] << std::endl;
+		    /* if (p==0)
+		       std::cout << "eclipse ends at te2=" << te2 <<"! i=" << i << " t = " << curve.t[i] << std::endl;*/
 		    newflux.at(i) = slope2 * (curve.t[i] - te2);
 		  }
 
@@ -444,15 +506,18 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 	  // for ( unsigned int i(0); i < numbins; i++ ) {
 	  //totflux.at(i) += newflux.at(i);   // setting totflux = newflux
 	  //}
-	  //if (p==0)
-	  //ttt.open("newtime.txt", std::ios_base::trunc);
+	  /*if (p==0) {
 
+	    std::cout << "Opening newtime.txt for export " << std::endl;
+
+	    ttt.open("newtime512-3.txt", std::ios_base::trunc);
+	    }*/
 	  for ( unsigned int i(0); i < numbins; i++ ) {
-	    //if ( p==0 ) 
-	    //ttt << curve.t_o[i] << " " 
-	    //	  << curve.f[p][i] << " " << curve.t[i] << " " << totflux.at(i) 
-	    //	  << " " << i
-	    //	  << std::endl;
+	    /*if ( p==0 ) 
+	      ttt << curve.t_o[i] << " " 
+	    	  << curve.f[p][i] << " " << curve.t[i] << " " << newflux.at(i) 
+	    	  << " " << i
+	    	  << std::endl;*/
 	    
 	    //            curve.f[p][i] = totflux.at(i);
             curve.f[p][i] = newflux.at(i);

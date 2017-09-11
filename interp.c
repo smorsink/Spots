@@ -92,7 +92,7 @@ double printpolint(double *xp, double *yp, int order, double xb, double *err){
   d = (double *) malloc((order+1)*sizeof(double));
   diff = fabs(xb-xp[1]);
   for (i=1; i<=order; i++){
-    printf("xp[%d]=%lf  yp[%d]=%lf \n", i, xp[i],i, yp[i]);
+    printf("xp[%d]=%g  yp[%d]=%g \n", i, xp[i],i, yp[i]);
     if ( (tmp=fabs(xb-xp[i])) < diff ){
       ns=i;
       diff = tmp;
@@ -126,7 +126,7 @@ double printpolint(double *xp, double *yp, int order, double xb, double *err){
   free(c);
   free(d);
 
-  printf("Interpolated Value = %lf  error = %lf \n", yb,*err);
+  printf("Interpolated Value = %g  error = %g \n", yb,*err);
 
   return yb;
 }

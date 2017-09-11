@@ -1,16 +1,18 @@
-
 /***************************************************************************************/
 /*                                      Atmo.h
+
     This is the header file for Atmo.cpp, which holds ComputeCurve and atmosphere routines
     called in Spot.cpp and probably elsewhere.
+
     Was split from Chi.h
+
 */
 /***************************************************************************************/
 
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define MAX_NUMBINS 512 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
 #define NCURVES 351      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
 
 
@@ -117,3 +119,5 @@ double AtmosEBandFlux( unsigned int model, double cos_theta, double E1, double E
 double AtmosEBandFlux2( unsigned int model, double cos_theta, double E1, double E2 );
 
 double AtmosEBandFlux4new( unsigned int model, double cos_theta, double T, double lgrav, double E1, double E2, class LightCurve mexmcc);
+
+
