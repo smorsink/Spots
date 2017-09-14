@@ -29,9 +29,11 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
   curve = (*angles);
 
   int numbins = curve.numbins;
-  int numbands = curve.numbands;
+  int numbands = curve.cbands;
 
-  double tvec[4], fvec[4], err;
+  std::cout << "TIMEDELAYS: number of energy bands = " << numbands << std::endl;
+
+  double tvec[6], fvec[6], err;
 
   std::ofstream ttt;
 
@@ -105,10 +107,10 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       /* LOOP THROUGH THE LIGHTCURVES */
       /********************************/
        
-      for (unsigned int p(0); p < NCURVES; p++) {
+      for (unsigned int p(0); p < numbands; p++) {
       //for (unsigned int p(0); p < 1; p++) {
 
-	//std::cout << "TimeDelays: p=" << p << std::endl;
+	//	std::cout << "TimeDelays: p=" << p << std::endl;
 
 	/*********************/
 	/* MORE DECLARATIONS */
@@ -405,7 +407,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 
 		}	
 
-		int npt=3;
+		int npt=4;
 		int start=0;
 		int index=0;
 		j -= 1;

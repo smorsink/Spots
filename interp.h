@@ -11,6 +11,9 @@
 
 double polint(double *xp, double *yp, int order, double xb, double *err);
 
+double polint2(double *xp, double *yp, int order, double xb, double *err);
+
+
 double printpolint(double *xp, double *yp, int order, double xb, double *err);
 
 double interp1(double *xp, double **yp, int first, int np, double xb, int *x_nearest_pt);

@@ -68,6 +68,9 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
         
   //  std::vector< double > totflux(MAX_NUMBINS, 0.0); // integrated flux
 
+
+
+
   /*********************/
   /* SETTING THINGS UP */
   /*********************/
@@ -128,12 +131,22 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   // the e9 in the beginning is for changing T^3 from keV to eV
   // 2.404 comes from evaluating Bradt equation 6.17 (modified, for photon number count units), using the Riemann zeta function for z=3
 
+  std::cout << "ATMO: Number of Energy bands = " << numbands << std::endl;
+  double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+  std::cout << "Final Energy band width = " << E_diff << std::endl;
+
+  // Compute new energy band width
+
+  numbands = curve.cbands;
+  std::cout << "Number of bands to be computed = " << numbands << std::endl;
+  // E_diff *= (curve.tbands*1.0)/(numbands*1.0);
+  //std::cout << "New Energy band width = " << E_diff << std::endl;
+
+
+
+
    
   for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
-
-    //std::cout << "i = " << i << std::endl;
-    //std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
-
 
     if ( curve.dOmega_s[i] != 0.0 ) {
 
@@ -142,10 +155,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
       // Calculate Beaming for Modified Blackbodies
 
-      //	if (curve.flags.beaming_model == 1)  // Deprecated Option
-      //  gray = Gray(curve.cosbeta[i]*curve.eta[i]); // Chandrasekhar limb-darkening	  
-      //if (curve.flags.beaming_model == 5)
-      //    gray = pow( curve.cosbeta[i]*curve.eta[i], 2.0);
       if (curve.flags.beaming_model == 6)
 	gray = 1.0 - pow( curve.cosbeta[i]*curve.eta[i], 2.0);
       if (curve.flags.beaming_model == 7) // Hopf Function
@@ -159,7 +168,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 
       if (curve.flags.spectral_model == 0){ // Monochromatic Observation of a modified blackbody
-	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+
 
 	if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
 
@@ -219,11 +228,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  int theta_index = th_index( cos_theta, &curve);
 	  double solidangle = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3);
 
-	  for (unsigned int p = 0; p<NCURVES; p++){
-	    E0 = (E_band_lower_1+(p+0.5)*E_diff);
+	  for (unsigned int p = 0; p<numbands; p++){
+	    E0 = (E_band_lower_1+(p*curve.tbands/curve.cbands+0.5)*E_diff);
+	    //std::cout << "p = " << p << " E = " << E0 << " E_diff=" << E_diff << std::endl;
 	    curve.f[p][i] = solidangle
 	      * McPHACC3new(E0*redshift/curve.eta[i], 
-			    cos_theta, theta_index, curve.para.temperature, lgrav, gvec, &curve);
+			    cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
 	    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); 
 	    curve.f[p][i] *= E_diff; // Fake Integration
 		   
@@ -299,19 +309,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
       } // Spectral_model == 0 
 
-	/***********************/
-	/* FUNNY LINE EMISSION */
-	/***********************/
-      if (curve.flags.spectral_model == 1){ // Funny Line Emission for NICER
 
-	for (unsigned int p=0; p<numbands; p++){
-	    
-	  E_obs = E0 + p*DeltaE;
-	  curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) * LineBandFlux(temperature, (E_obs-0.5*DeltaE)*redshift/curve.eta[i], (E_obs+0.5*DeltaE)*redshift/curve.eta[i], E1, E2); // Units: photon/(s cm^2)
-
-
-	}
-      }
 
       /*******************************************************************/
       /* COMPUTING BLACKBODY LIGHT CURVE FOR INTEGRATED FLUX             */
@@ -344,7 +342,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  if (curve.flags.beaming_model == 10){ // Cole's McPhac File
 	    curve.f[p][i] = solidangle
 	      * AtmosEBandFlux3new(curve.flags.beaming_model,cos_theta, theta_index,
-				   curve.para.temperature,lgrav, gvec,
+				   curve.para.temperature,lgrav, i_lgrav, gvec,
 				   (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i], curve); // Units: photon/(s cm^2)    
 	  }
 	  if (curve.flags.beaming_model == 11){ // NSXHnew integration            

@@ -21,9 +21,14 @@
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 512  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 512   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 351        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define NCURVES 400        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define FBANDS 300        // Final number of energy channels
+#define CBANDS 20         // Number of energy bands computed
 #define MR 1000             // Maximum number of m/r values
+
+
+
 
 struct Parameters {      // local bit of spot information
   double theta;          // Angle between the NS spin axis and the spot bin; in radians
@@ -52,9 +57,9 @@ struct Parameters {      // local bit of spot information
   double E_band_lower_2; // Lower bound of energy band for flux calculation; in keV
   double E_band_upper_2; // Upper bound of energy band for flux calculation; in keV
   double distance;       // Distance from earth to NS; in meters
-  double rsc;            // Scattering radius; adds scattering junk; in meters
-  double Isc;            // Scattering intensity; adds scattering junk
-  double bmodel;         // who knows?
+  //  double rsc;            // Scattering radius; adds scattering junk; in meters
+  //double Isc;            // Scattering intensity; adds scattering junk
+  //double bmodel;         // who knows?
   double E0; // NICER
   double L1; // NICER
   double L2; // NICER
@@ -130,23 +135,15 @@ class LightCurve {                     // Stores all the data about the light cu
 	int Npts;
 	unsigned int numbins;                  // Number of time or phase bins for one spin period; Also the number of flux data points
 	unsigned int numbands;
+	unsigned int fbands; // The Final Number of energy bands. Value = 300 right now
+	unsigned int tbands; // The Total Number of energy bands that are required by the response matrix = 350 right now
+	unsigned int cbands; // The Computed Number of energy bands in approximation. Either using 350 for no approx or 35. 
 	bool eclipse;                          // True if an eclipse occurs
 	bool ingoing;                          // True if one or more photons are ingoing
 	bool problem;                          // True if a problem occurs
-	//	double maxFlux[NCURVES];               // true (continuous) maximum flux values for each light curve
-	//double minFlux[NCURVES];               // true (continuous) minimum flux values for each light curve
-	//double pulseFraction[NCURVES];         // Pulse fraction of the light curve
-	//double norm[NCURVES];                  // The average flux value of a light curve, used to normalize a light curve to 1
-	//double asym[NCURVES];                  // Asymmetry between the rise and fall times for the light curve. =0 is rise=fall
 	unsigned int count;                    // for outputting command line args in Chisquare, chi.cpp
 };
 
-// Need to have t, f, and err defined as pointers to arrays in this way:
-/*for (unsigned int y(0); y < NCURVES; y++) {
- 	obsdata.t = new double[numbins];
- 	obsdata.f[y] = new double[numbins];
- 	obsdata.err[y] = new double[numbins];
- }*/
 
 class DataStruct {             // if reading in data, this would be the experimental data
 	public:
@@ -162,17 +159,5 @@ class DataStruct {             // if reading in data, this would be the experime
 };
 
 
-// Shouldn't be needed anymore, but leaving in just in case
-/*
-class DataStruct {             // if reading in data, this would be the experimental data; needed for reading in in Spot
-	public:
-	double t[MAX_NUMBINS];             // time
-	double f[NCURVES][MAX_NUMBINS];    // flux
-	double err[NCURVES][MAX_NUMBINS];  // error bars
-	double chisquare;                  // chi squared
-	double shift;                      // if we need it; unused
-	unsigned int numbins;              // Number of time or phase bins for one spin period; Also the number of flux data points
-};
-*/
 
 #endif // STRUCT_H
