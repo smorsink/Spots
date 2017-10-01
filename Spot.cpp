@@ -36,7 +36,7 @@
 #include "Chi.h"
 #include "Atmo.h"
 #include "TimeDelays.h"
-#include "Instru.h"    
+#include "instru.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
