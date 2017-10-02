@@ -136,7 +136,7 @@ McPhac.o: \
 
 BlackBody.o: \
 	BlackBody.h \
-	Blackbody.cpp \
+	BlackBody.cpp \
 	interp.h \
 	Units.h \
 	matpack.h
