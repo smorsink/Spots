@@ -131,14 +131,14 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   // the e9 in the beginning is for changing T^3 from keV to eV
   // 2.404 comes from evaluating Bradt equation 6.17 (modified, for photon number count units), using the Riemann zeta function for z=3
 
-  std::cout << "ATMO: Number of Energy bands = " << numbands << std::endl;
+  //std::cout << "ATMO: Number of Energy bands = " << numbands << std::endl;
   double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-  std::cout << "Final Energy band width = " << E_diff << std::endl;
+  //std::cout << "Final Energy band width = " << E_diff << std::endl;
 
   // Compute new energy band width
 
   numbands = curve.cbands;
-  std::cout << "Number of bands to be computed = " << numbands << std::endl;
+  //std::cout << "Number of bands to be computed = " << numbands << std::endl;
   // E_diff *= (curve.tbands*1.0)/(numbands*1.0);
   //std::cout << "New Energy band width = " << E_diff << std::endl;
 

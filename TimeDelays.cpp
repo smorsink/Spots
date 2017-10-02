@@ -31,7 +31,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
   int numbins = curve.numbins;
   int numbands = curve.cbands;
 
-  std::cout << "TIMEDELAYS: number of energy bands = " << numbands << std::endl;
+  //std::cout << "TIMEDELAYS: number of energy bands = " << numbands << std::endl;
 
   double tvec[6], fvec[6], err;
 
@@ -49,7 +49,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       // but time delays mean that j isn't always i-1
       // used in the linear interpolation
         
-      std::cout << "Taking care of time delays!" << std::endl;
+      //std::cout << "Taking care of time delays!" << std::endl;
 
 
       int ecl1(0), ecl2(0), j1, j2, k1, k2;

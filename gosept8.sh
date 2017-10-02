@@ -4,7 +4,7 @@
 times
 #base="/Users/kitung/Desktop/thesis_material"
 base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-26"
+exe_dir="$base/Spot-master-28"
 #pwd
 make spot
 times
@@ -49,23 +49,24 @@ spectraltype=0
 beaming=10
 numtheta=6
 out_file="$out_dir/intspot.txt"
+data_file="Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt"
 
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "output.txt" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_file" -R "$inst_res"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "output.txt" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_file" -R "$inst_res" -I "$data_file"
 times
 
 
-cd "$out_dir"
+#cd "$out_dir"
 
 
 
-    slavko="CU_highAccuracy_1spot.txt"
-    approx="intspot.txt"
-    poisson="Slavko/CU_highAccuracy_1spot_pl_poisson_sampled_01.txt"
+#   slavko="CU_highAccuracy_1spot.txt"
+#    approx="intspot.txt"
+#    poisson="Slavko/CU_highAccuracy_1spot_pl_poisson_sampled_01.txt"
 
 
 
-    DiffLogLikely -i "$poisson" -j "$approx" -k "$slavko" -o "slavdiff$n.txt"
+#    DiffLogLikely -i "$poisson" -j "$approx" -k "$slavko" -o "slavdiff$n.txt"
 
 
 

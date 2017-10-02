@@ -111,7 +111,13 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 	for ( unsigned int j(0); j<numbands; j++){
 	  obsdata->chi[j] = 0.0;
 	  for ( unsigned int i(0); i < numbins; i++ ) {
-	    obsdata->chi[j] += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
+	    //Chi^2 value
+	    //obsdata->chi[j] += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
+
+	    // Log(likelyhood)
+	    obsdata->chi[j] += obsdata->f[j][i] * log(curve->f[j][i]) - curve->f[j][i];
+
+
             //chisquare += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
 	    
 	    /*if (j==0){

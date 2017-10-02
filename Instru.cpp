@@ -201,30 +201,19 @@ class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve){
     
     std::cout << "numbands = " << NCURVES << "numbins = " << numbins << std::endl;
     int newindex;
-for (unsigned int p=0; p<NCURVES; p++){
-	for (unsigned int i=0; i< numbins; i++){
-	  newcurve.f[p][i] = 0.0;
-	}
-}
-
 
     for (unsigned int p = 0; p < NCURVES; p++){
-      //if (p==0) std::cout << "p=" << p << "start[p] = " << start[p] << " curve[p][0]=" << curve.f[p][0] << std::endl;
-	
-	
-
-
+      //if (p==299) std::cout << "p=" << p << "start[p] = " << start[p] << " curve[p][0]=" << curve.f[p][0] << std::endl;
       for (unsigned int j=0; j<=76; j++){   
 	newindex = j + start[p] - 1;   
 	//std::cout << "j="<< j << " newindex=" << newindex << std::endl;
 	if ( newindex < NCURVES)
 	  for (unsigned int i = 0; i < numbins; i++){
 	    newcurve.f[newindex][i] += curve.f[p][i] * response[p][j];
-	     /*if (newindex==1 && i==6) std::cout << " j=" << j << " newindex=" << newindex 
-		<< " i = " << i 
-					       << " f["<<p<<"][i]=" << curve.f[p][i] 
-					       << " response["<<p<<"]=" << response[p][j]  
-					       << " flux = " << newcurve.f[newindex][i] << std::endl;*/
+	    /*if (newindex==1 && i==6) std::cout << " j=" << j << " newindex=" << newindex 
+	    				       << " f["<<p<<"]=" << curve.f[p][i] 
+	    				       << " response["<<p<<"]=" << response[p][j]  
+	    				       << " flux = " << newcurve.f[newindex][i] << std::endl;*/
 	  }
       }
 
@@ -234,8 +223,7 @@ for (unsigned int p=0; p<NCURVES; p++){
       for (unsigned int i=0; i<numbins; i++){
 	curve.f[p][i] = newcurve.f[p][i];
       }
-	//if (p==0)
-      //std::cout << "Inst Resp: "p="<< p << "curve.f[p][0]=" << curve.f[p][0] << std::endl;
+      //std::cout << "p="<< p << "curve.f[p][0]=" << curve.f[p][0] << std::endl;
     }
     //int p=299;
     //std::cout << "p="<< p << "curve.f[p][0]=" << curve.f[p][0] << std::endl;

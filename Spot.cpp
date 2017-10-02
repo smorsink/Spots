@@ -1036,19 +1036,23 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       std::cout << "reading data" << std::endl;
       std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
     	double temp;
-    	for (unsigned int j = 0; j < databins; j++){
-    		data >> temp;
-    		obsdata.t[j] = temp;
-			//std::cout << "data t["<<j <<"] = " << obsdata.t[j] << std::endl;
-    		for (unsigned int k = 0; k < numbands; k++){
-    			data >> temp;
-    			obsdata.f[k][j] = temp;
-				//std::cout << " f[k][j] = " << temp ;
-    			data >> temp;
-    			obsdata.err[k][j] = temp;
-    			//std::cout << " err[k][j] = " << temp << std::endl;
-    		}
-    		//data >> temp;
+	for (unsigned int k = 0; k < numbands; k++){
+	  for (unsigned int j = 0; j < databins; j++){
+	    data >> temp;
+    		
+	    //std::cout << "band = " << k; 
+	    data >> temp;
+	    obsdata.t[j] = temp;
+	    //	std::cout << "data t["<<j <<"] = " << obsdata.t[j] ;
+
+		data >> temp;
+		obsdata.f[k][j] = temp;
+		//	std::cout << " f[k][j] = " << temp << std::endl;
+		//data >> temp;
+		obsdata.err[k][j] = sqrt(temp);
+		//std::cout << " err[k][j] = " << temp << std::endl;
+	  }
+	  //data >> temp;
     	}
     	data.close();
     }
@@ -1116,8 +1120,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* Initialize time and flux */
     /****************************/
 
-    std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << numbands << std::endl;
-    std::cout << "NCURVES=" << NCURVES << std::endl;
+    //std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << numbands << std::endl;
+    //std::cout << "NCURVES=" << NCURVES << std::endl;
     flxcurve = &normcurve;
 
     for ( unsigned int i(0); i < numbins; i++ ) {
@@ -1224,12 +1228,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){
-	      std::cout << "starting ComputeAngles" << std::endl;
+	      //	      std::cout << "starting ComputeAngles" << std::endl;
 
 	      curve = ComputeAngles(&curve, defltoa); 	
-	      std::cout << "starting ComputeCurve " << std::endl;
+	      //std::cout << "starting ComputeCurve " << std::endl;
 	      curve = ComputeCurve(&curve);
-	      std::cout << "starting TimeDelays" << std::endl;
+	      //std::cout << "starting TimeDelays" << std::endl;
 	      curve = TimeDelays(&curve);
 
 	    }
@@ -1493,9 +1497,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.f[p][i] = printpolint(tvec,fvec,npt,p,&err);
 	  */
 	}
-		//if (i==0)
-		//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
-		//<< " After: flux = " << curve.f[p][i] << std::endl;
+	//if (i==0)
+	//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
+	//<< " After: flux = " << curve.f[p][i] << std::endl;
        
 
       }
@@ -1548,26 +1552,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
-	/*std::cout << "Before Inst Responseflux[0][0]=" << curve.f[0][0] << std::endl;
-       for (unsigned int i = 0; i < numbins; i++){   
-
-	std::cout << "i = " << i << " f[0][i]= " << curve.f[0][i] << std::endl;
-
-	} */
-
-
-   std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
+    //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
-	/*std::cout << "After Inst Responseflux[1][0]=" << curve.f[1][0] << std::endl;
-	
-       for (unsigned int i = 0; i < numbins; i++){   
 
-	std::cout << "i = " << i << " f[1][i]= " << curve.f[1][i] << std::endl;
+    //for (unsigned int i=0; i<numbins; i++){
+    //std::cout << "After response i=" << i << " flux= " << curve.f[1][i] << std::endl;
+    //}
 
-	} */
 
     /* Create Phase-independent Powerlaw Background */
     (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
@@ -1579,46 +1573,36 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
 
 
- 
-
     // If databins < numbins then rebin the theoretical curve down 
     //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
     //std::cout << " Rebin the data? " << std::endl;
     if (databins < numbins) {
         obsdata.numbins = databins;
-        std::cout << " Rebin the data! " << std::endl;
+	//  std::cout << " Rebin the data! " << std::endl;
         curve = ReBinCurve(&obsdata,&curve);
 	(*flxcurve) = ReBinCurve(&obsdata,flxcurve);
         numbins = databins;
     }
-	//std::cout << "After Rebinning flux[0][0]=" << curve.f[0][0] << std::endl;
-       /*for (unsigned int i = 0; i < numbins; i++){   
 
-	std::cout << "i = " << i << " f[1][i]= " << curve.f[1][i] << std::endl;
+    //for (unsigned int i=0; i<numbins; i++){
+    //std::cout << "After rebinning i=" << i << " flux= " << curve.f[1][i] << std::endl;
+    //}
 
-	} 
-	std::cout << "After Inst Response bkg[0][0]=" << flxcurve->f[0][0] << std::endl;*/
     numbands = curve.fbands;
-    std::cout << "numbands = " << numbands << std::endl;
+    //std::cout << "numbands = " << numbands << std::endl;
     // Count the photons!
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
-
-	std::cout << "numbins = " << numbins << std::endl;
-	std::cout << "obstime = " << obstime << std::endl;
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
- for (unsigned int p = 0; p < numbands; p++){
-	//for (unsigned int p = 0; p < 1; p++){
-        //std::cout << "band " << p << std::endl; 
-	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl; 
+    for (unsigned int p = 0; p < numbands; p++){
+      //std::cout << "band " << p << std::endl; 
+      //std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl;
         for (unsigned int i = 0; i < numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
 	  spotcounts += curve.f[p][i];
-	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][i] << std::endl; 
-	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][i] << std::endl; 
 	  bkgcounts += flxcurve->f[p][i];
         }
     }
@@ -1629,7 +1613,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numbands = curve.tbands;
 
     double totalcounts = 0.0;
-    for (unsigned int p = 0; p < numbands; p++){ 
+    for (unsigned int p = 0; p < numbands; p++){  
         for (unsigned int i = 0; i < numbins; i++){           
 	  curve.f[p][i] *= 1e4/spotcounts;
 	  curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
