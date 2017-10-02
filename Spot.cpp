@@ -1493,9 +1493,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.f[p][i] = printpolint(tvec,fvec,npt,p,&err);
 	  */
 	}
-	//if (i==0)
-	//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
-	//<< " After: flux = " << curve.f[p][i] << std::endl;
+		//if (i==0)
+		//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
+		//<< " After: flux = " << curve.f[p][i] << std::endl;
        
 
       }
@@ -1548,11 +1548,26 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
-    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
+	/*std::cout << "Before Inst Responseflux[0][0]=" << curve.f[0][0] << std::endl;
+       for (unsigned int i = 0; i < numbins; i++){   
+
+	std::cout << "i = " << i << " f[0][i]= " << curve.f[0][i] << std::endl;
+
+	} */
+
+
+   std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
+	/*std::cout << "After Inst Responseflux[1][0]=" << curve.f[1][0] << std::endl;
+	
+       for (unsigned int i = 0; i < numbins; i++){   
+
+	std::cout << "i = " << i << " f[1][i]= " << curve.f[1][i] << std::endl;
+
+	} */
 
     /* Create Phase-independent Powerlaw Background */
     (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
@@ -1564,6 +1579,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
 
 
+ 
+
     // If databins < numbins then rebin the theoretical curve down 
     //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
     //std::cout << " Rebin the data? " << std::endl;
@@ -1574,21 +1591,34 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	(*flxcurve) = ReBinCurve(&obsdata,flxcurve);
         numbins = databins;
     }
+	//std::cout << "After Rebinning flux[0][0]=" << curve.f[0][0] << std::endl;
+       /*for (unsigned int i = 0; i < numbins; i++){   
 
+	std::cout << "i = " << i << " f[1][i]= " << curve.f[1][i] << std::endl;
+
+	} 
+	std::cout << "After Inst Response bkg[0][0]=" << flxcurve->f[0][0] << std::endl;*/
     numbands = curve.fbands;
     std::cout << "numbands = " << numbands << std::endl;
     // Count the photons!
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
+
+	std::cout << "numbins = " << numbins << std::endl;
+	std::cout << "obstime = " << obstime << std::endl;
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
-    for (unsigned int p = 0; p < numbands; p++){
+ for (unsigned int p = 0; p < numbands; p++){
+	//for (unsigned int p = 0; p < 1; p++){
         //std::cout << "band " << p << std::endl; 
+	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl; 
         for (unsigned int i = 0; i < numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
 	  spotcounts += curve.f[p][i];
+	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][i] << std::endl; 
+	//std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][i] << std::endl; 
 	  bkgcounts += flxcurve->f[p][i];
         }
     }
@@ -1601,8 +1631,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     double totalcounts = 0.0;
     for (unsigned int p = 0; p < numbands; p++){ 
         for (unsigned int i = 0; i < numbins; i++){           
-	  curve.f[p][i] *= 1e6/spotcounts;
-	  curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
+	  curve.f[p][i] *= 1e4/spotcounts;
+	  curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
 	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  totalcounts += curve.f[p][i];
         }
