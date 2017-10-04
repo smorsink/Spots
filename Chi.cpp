@@ -61,7 +61,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
          tempflux[NCURVES][MAX_NUMBINS],  // Temporary array to store the flux
          min_location;                    // 
     
-    cout << "starting chi squared calculation" << endl;
+    //cout << "starting chi squared calculation" << endl;
     numbins = obsdata->numbins;
     numbands = curve->numbands;
     ts = curve->para.ts;
@@ -85,7 +85,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             if (k > static_cast<int>(numbins)-1) k -= numbins;
             if (k < 0) k += numbins;
             
-	    for (unsigned int p(0);p<numbands;p++){
+	    for (unsigned int p(0);p<numbands-1;p++){
           if (std::isinf(curve->f[p][k]))
               std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 	      tempflux[p][i] = curve->f[p][k]; // putting things from curve->f's k bin into tempflux's i bin           
@@ -99,7 +99,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
             // n = i+1;
             if ( n > static_cast<int>(numbins) - 1 ) n -= numbins;
             
-	    for (unsigned int p(0); p < numbands; p++){
+	    for (unsigned int p(0); p < numbands-1; p++){
 	      curve->f[p][i] = tempflux[p][i] + (tempflux[p][n]-tempflux[p][i]) * new_shift * numbins;         
 	    }
         }
@@ -108,7 +108,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         // Compute chisquare for shifted data
         
 	chisquare = 0.0;
-	for ( unsigned int j(0); j<numbands; j++){
+	for ( unsigned int j(0); j<numbands-1; j++){
 	  obsdata->chi[j] = 0.0;
 	  for ( unsigned int i(0); i < numbins; i++ ) {
 	    //Chi^2 value
@@ -413,7 +413,7 @@ class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve
     //std::cout << "OBS_BINS = " << obsdata->numbins << std::endl;
     //std::cout << "ratio = " << jj << std::endl;
 
-    std::cout << "ReBinCurve: numbands = " << numbands << std::endl;
+    //std::cout << "ReBinCurve: numbands = " << numbands << std::endl;
 
     for (unsigned int p(0); p<numbands; p++){
       for (unsigned int i(0); i<obsdata->numbins; i++){

@@ -1,5 +1,5 @@
 /***************************************************************************************/
-/*                                   Spot.cpp
+/*                                   SpotMex_new.cpp
 
     This code produces a pulse profile once a set of parameter describing the star, 
     spectrum, and hot spot have been inputed.
@@ -45,14 +45,17 @@
 #include "Exception.h"
 #include "Struct.h"
 #include "time.h"
+#include "io64.h"
+#include "mex.h"
 #include "interp.h"
 #include "nrutil.h"
 #include <unistd.h>
 #include <string.h>
 
 // MAIN
-int main ( int argc, char** argv ) try {  // argc, number of cmd line args; 
-                                          // argv, actual character strings of cmd line args
+void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mxArray *theInput[]) {
+
+//std::cout << "Hello World!" << std::endl;
 
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -94,7 +97,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
     E_band_lower_2(5.0),        // Lower bound of second energy band to calculate flux over, in keV.
     E_band_upper_2(6.0),        // Upper bound of second energy band to calculate flux over, in keV.
-    background(0.0),	        // One background value for all bands.
+    background[NCURVES],	        // One background value for all bands.
     dsbackground(0.0),			// Diffuse sky background normalization
     agnbackground(0.0),			// AGN background normalization
     plbackground(0.0),			// Phase-dependent power law background normalization
@@ -163,387 +166,198 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   class DataStruct obsdata;           // observational data as read in from a file
 
 
-  /*********************************************************/
-  /* READING IN PARAMETERS FROM THE COMMAND LINE ARGUMENTS */
-  /*********************************************************/
-    
-    for ( int i(1); i < argc; i++ ) {
-        if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
-            switch ( argv[i][1] ) {
+	double *curveOut, *chiOut;
 
-        case 'a': // Attenuation flag, corresponds to four attenuation files for NICER targets
-        			sscanf(argv[i+1], "%u", &attenuation);
-        			// 0 = nothing happens, light curve produced as normal
-        			// 1 = NICER J0030 WABS
-        			// 2 = NICER J0030 TBABS
-        			// 3 = NICER J0437 WABS
-        			// 4 = NICER J0437 TBABS
-        			// 5 = NICER J0437 TBnew (with fine bands)
-        			break;
+    // Setting up the output parameters
+    int dimSize[2];
+    dimSize[0] = 1;
+    dimSize[1] = 1;
 
-        case 'A': // ISM column density, in multiples of 4e19
-        			sscanf(argv[i+1], "%lf", &nh);
-        			break;
-	            
-	    case 'b': // Bending Angle File
-	            	sscanf(argv[i+1], "%s", bend_file);	
-					bend_file_is_set = true;
-	            	break;
+    // output needs to be an array so set it up as a [1,1] array holding one value
+    theOutput[0] = mxCreateNumericArray(2, dimSize, mxDOUBLE_CLASS, mxREAL);
 
-	    case 'B': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
-	    			sscanf(argv[i+1], "%lf", &phase_2);
-				phase_2 *= -1.0;
-	    			break;
+    chiOut = mxGetPr(theOutput[0]);
 
-	    case 'C': // Temperature of second spot
-	    			sscanf(argv[i+1], "%lf", &spot2_temperature);
-	    			break;
-
-	    case 'd': // Size of second spot
-	    			sscanf(argv[i+1], "%lf", &rho2);
-	    			break;	
-	            
-	    case 'D':  // Distance to NS in kpc
-	            	sscanf(argv[i+1], "%lf", &distance);
-					distance *= 3.0857e19; // Convert to metres
-	            	break;
-	                
-	    case 'e':  // Emission angle of the spot (degrees), latitude
-	                sscanf(argv[i+1], "%lf", &theta_1);
-	                theta_is_set = true;
-	                break;
-
-		case 'E':  // Offset emission angle of the second spot (degrees), latitude
-	                sscanf(argv[i+1], "%lf", &d_theta_2);
-	                break;      
-
-	    case 'f':  // Spin frequency (Hz)
-	                sscanf(argv[i+1], "%lf", &omega);
-	                omega_is_set = true;
-	                break;
-
-	    case 'g':  // Spectral Model, beaming (graybody factor)
-	                sscanf(argv[i+1],"%u", &beaming_model);
-	                // 0 = BB, no beaming
-	                // 2 = Fake Spectral Line
-	                // 3 = NSATMOS Hydrogen
-	                // 4 = NSX Helium
-	                // 5 = NSX Hydrogen
-					// 7 = Hopf Function
-			// 10 = McPhac 
-			// 11 = NSX Hydrogen (New version by Wynn Ho)
-			// 12 = Blackbody Test
-			// 13 = Hopf function Test
-			// 14 = BB + Hopf Test
-	                break;
-	                
-	    case 'i':  // Inclination angle of the observer (degrees)
-	                sscanf(argv[i+1], "%lf", &incl_1);
-	                incl_is_set = true;
-	                break;
-	            
-	    case 'I': // Name of input file
-	            	sscanf(argv[i+1], "%s", data_file);
-	            	datafile_is_set = true;
-	            	break;
-	                
-	    case 'j': // Diffuse Sky Background
-	                sscanf(argv[i+1], "%lf", &dsbackground);
-	                break;
-
-	    case 'J': // AGN Background
-	    	        sscanf(argv[i+1], "%lf", &agnbackground);
-	    	        break;
-	          	          
-	    case 'l':  // Time shift, phase shift.
-	                sscanf(argv[i+1], "%lf", &ts);
-	                //ts *= -1;
-	                break;
-
-	    case 'L':  // Offset inclination angle of the observer (degrees)
-	                sscanf(argv[i+1], "%lf", &d_incl_2);
-	                break;
-
-	    case 'k': // Background in low energy band (between 0 and 1)
-	      			sscanf(argv[i+1], "%lf", &background);
-	      			break;
-
-	    case 'K': // Background file specified for each band (between 0 and 1)
-	      			sscanf(argv[i+1], "%s", background_file);
-	      			background_file_is_set = true;
-	      			break;
-	          	          
-	    case 'm':  // Mass of the star (solar mass units)
-	                sscanf(argv[i+1], "%lf", &mass);
-	                mass_is_set = true;
-	                break;
-	          
-	    case 'n':  // Number of phase or time bins
-	                sscanf(argv[i+1], "%u", &databins);
-					if ( databins < MIN_NUMBINS) {
-			  			numbins = MIN_NUMBINS;
-					}
-					else
-			  			numbins = databins;		 
-	                break;
-	                
-	    case 'N': // Flag for not normalizing the flux output
-	            	normalize_flux = true;
-	            	break;
-
-	    case 'o':  // Name of output file
-	                sscanf(argv[i+1], "%s", out_file);
-	                break;
-
-	    case 'O':  // Name of *alternate form* output file
-	                sscanf(argv[i+1], "%s", out_file1);
-	                out_file1_is_set = true;
-	                break;
-	          
-	    case 'p':  // Angular Radius of spot (radians)
-	                sscanf(argv[i+1], "%lf", &rho);
-	                break;
-
-	    case 'P':  // Spot shape model 0=default=standard; 1=circular in rotating frame; 2=other
-	                sscanf(argv[i+1], "%u", &spotshape);
-	                break;	          
-
-	    case 'q':  // Oblateness model (default is 1)
-	                sscanf(argv[i+1], "%u", &NS_model);
-	                model_is_set = true;
-	                break;
-
-	    case 'R':  // Instrument Response Curve
-	    			sscanf(argv[i+1], "%u", &inst_curve);
-	    			break;
-	      	          
-	    case 'r':  // Radius of the star at the equator(km)
-	                sscanf(argv[i+1], "%lf", &req);
-	                rspot_is_set = true;
-	                break;
-
-	    case 's':  // Spectral Model
-	                sscanf(argv[i+1], "%u", &spectral_model);
-					// 0 = blackbody
-					// 1 = thin line for nicer
-	        		// 2 = *slow and old* integrated flux for energy bands
-	        		// 3 = *fast and correct* integrated flux for energy bands
-					break;
-			
-	    case 'S': // Number of Energy bands
-	      			sscanf(argv[i+1], "%u", &numbands);
-	      			break;
-
-	    case 't':  // Number of theta bins 
-	                sscanf(argv[i+1], "%u", &numtheta);
-	                break;
-	          
-	    case 'T':  // Temperature of the spot, in the star's frame, in keV
-	                sscanf(argv[i+1], "%lf", &spot_temperature);
-	                break;
-	            
-	    case 'u': // Lower limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_lower_1);
-	            	//E_band_lower_1_set = true;
-	            	break;
-	            
-	    case 'U': // Upper limit of first energy band, in keV
-	            	sscanf(argv[i+1], "%lf", &E_band_upper_1);
-	            	//E_band_upper_1_set = true;
-	            	break;
-	                
-	    case 'v': // NICER funny line E1
-	            	sscanf(argv[i+1], "%lf", &L1);
-	            	break;
-	            	
-	    case 'V': // NICER funny line E2
-	            	sscanf(argv[i+1], "%lf", &L2);
-	            	break;
-	            
-	    case 'x': // Part of funny NICER line
-	            	sscanf(argv[i+1], "%lf", &E0);
-	            	break;
-	            
-	    case 'X': // Part of funny NICER line
-	            	sscanf(argv[i+1], "%lf", &DeltaE);
-	            	break;
-	            	
-	    case 'z': // Input file for temperature mesh
-	            	sscanf(argv[i+1], "%s", T_mesh_file);
-	            	T_mesh_in = true;
-	            	break;
-			
-	    case 'Z': // Observation time (in seconds)
-	      			sscanf(argv[i+1], "%lf", &obstime);
-	      			break;
-
-	            	
-	    case '2': // If the user want two spots
-	            	two_spots = true;
-	            	break;
-	            	
-	            case '3': // Header for file name
-	            	sscanf(argv[i+1],"%s", filenameheader);
-	            	break;
-	            
-	            case '8': // Param_degen gave a negative solution
-	            	pd_neg_soln = true;
-	            	break;
-	            
-                case 'h': default: // Prints help
-      	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
-       	            		  
-                              << "-a Attenuation Flag [0]:" << std::endl
-                              << "      1 for NICER J0030 WABS model" << std::endl
-                              << "      2 for NICER J0030 TBABS model" << std::endl
-                              << "      3 for NICER J0437 WABS model" << std::endl
-                              << "      4 for NICER J0437 TBABS model" << std::endl
-                              << "      5 for NICER J0437 'fine channels' TBnew model" << std::endl
-                              << "-A ISM column density, in multiples of base value [0]" << std::endl
-                              << "      base value is 4e19 for J0437 and 1.8e20 for J0030" << std::endl
-                              << "-b Bending Angle File" << std::endl
-                              << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
-                              << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
-                              << "-d Size of second spot. [0.0]" << std::endl
-                              << "-D Distance from earth to star, in kpc. [10]" << std::endl
-                              << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
-                              << "-E Offset latitudinal angle of second spot (from antipodal), in degrees [0.0]" << std::endl
-                              << "-f * Spin frequency of star, in Hz." << std::endl
-                              << "-g Atmosphere beaming model [0]:" << std::endl
-                              << "      0 for BB, no beaming" << std::endl
-                              << "      1 for BB + graybody" << std::endl
-                              << "      2 for NICER fake spectral lines" << std::endl
-                              << "      3 for NSATMOS (Khaled's)" << std::endl
-                              << "      4 for *Old* NSX Helium" << std::endl
-                              << "      5 for *limited T/g* NSXH" << std::endl
-                              << "      6 for BB * (1 - cosbeta*coseta^2)" << std::endl
-                              << "      7 for BB Hopf Function" << std::endl
-                              << "      8 for *limited T/g* Slavko's McPHAC" << std::endl
-                              << "      9 for *limited T/g* NSX Helium" << std::endl
-                              << "      10 for Cole's McPHAC correct E/T version" << std::endl
-                              << "      11 for Wynn's full NSXH table" << std::endl
-		                      << "-i * Inclination of observer, in degrees, between 0 and 90." << std::endl
-                              << "-I Input filename." << std::endl
-		                      << "-j Diffuse Sky Background, normalized to expected counts/second in NICER [0.0]" << std::endl
-		                      << "-J AGN Background, normalized to expected counts/second in NICER [0.0]" << std::endl
-		                      << "-k Constant background for all bands" << std::endl
-		                      << "-K Listed backgrounds for each band" << std::endl
-		                      << "-l Time shift (or phase shift), in seconds." << std::endl
-		                      << "-L Offset inclination of observer, in degrees, between 0 and 90." << std::endl
-		                      << "-m * Mass of star in Msun." << std::endl          
-      	  	                  << "-n Number of phase or time bins. [128]" << std::endl
-      	  	                  << "-N Flag for normalizing the flux. Using this sets it to true. [false]" << std::endl
-		                      << "-o Output filename." << std::endl
-		                      << "-O Name for second output file, file has alternative format" << std::endl
-		                      << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
-		                      << "-P Hot spot shape model [0]:" << std::endl
-		                      << "      0 for standard circular" << std::endl
-		                      << "      1 for circular in rotating frame" << std::endl
-		                      << "-q * Oblateness Model of star: [1]" << std::endl
-		                      << "      1 for Neutron/Hybrid quark star poly model" << std::endl
-		                      << "      2 for CFL quark star poly model" << std::endl
-		                      << "      3 for spherical model" << std::endl
-		                      << "-R Instrument response curve [0]:" << std::endl
-		                      << "      0 nothing's done as if all channels are 1 cm^2" << std::endl
-		                      << "      1 NICER 2014 'fine channels' effective areas" << std::endl
-		                      << "-r * Radius of star (at the equator), in km." << std::endl
-		                      << "-s Spectral model of radiation: [0]" << std::endl
-		                      << "      0 for monochromatic." << std::endl
-		                      << "      1 for NICER fake lines" << std::endl
-		                      << "      2 for BB integrated" << std::endl
-		                      << "      3 for Atmosphere integrated" << std::endl
-		                      << "-S Number of energy bands: [NCURVES]" << std::endl
-		                      << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
-		                      << "-T Temperature of the spot, in keV. [0]" << std::endl
-		                      << "-u Energy bands' lower limit, in keV. [2]" << std::endl
-		                      << "-U Energy bands' upper limit, in keV. [3]" << std::endl
-		                      << "-v NICER funny line L1" << std::endl
-		                      << "-V NICER funny line L2" << std::endl
-		                      << "-x NICER funny line E0" << std::endl
-		                      << "-X NICER funny line DeltaE" << std::endl
-		                      << "-z Input file name for temperature mesh." << std::endl
-		                      << "-Z Observation time in seconds [1.0]" << std::endl
-		                      << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
-		                      << "-3 File name header, for use with Ferret and param_degen." << std::endl
-		                      << "-8 Sets a flag to indicate that param_degen gave a negative solution." << std::endl
-		                      << " Note: '*' next to description means required input parameter." << std::endl
-		                      << std::endl;
-	                return 0;
-            } // end switch	
-        } // end if
-    } // end for
-
-	
-    if (bend_file_is_set){ // Read in table of bending angles for all M/R
-
-      // ReadBend allocates memory for the look up tables
-      // Reads in tables for b, psi, d(cosalpha)/d(cospsi), toa
-      // All depend on M/R
-      // Memory must be freed at the end of the program!!!!
-
-      curve = ReadBend(&curve,bend_file); 
-
-    }
-
-    /***********************************************/
-    /* CHECKING THAT THE NECESSARY VALUES WERE SET */
-    /***********************************************/
-    
-    if( !( incl_is_set && theta_is_set
-	    && mass_is_set && rspot_is_set
-	    && omega_is_set && model_is_set ) ) {
-        throw( Exception(" Not all required parameters were specified. Exiting.\n") );
-        return -1;
-    }
-    
+	/********************************************************/
+    /* READ INFORMATION PASSED BY MEX FUNCTION              */
+    /* MAKE SURE CORRECT NUMBER OF PARAMETERS ARE PASSED IN */
+    /********************************************************/
    
+    //std::cout << "number of inputs is " << numInputs << std::endl;
+	mass = mxGetScalar(theInput[0]); // double
+	req = mxGetScalar(theInput[1]); // radius at the equator; double
+	omega = mxGetScalar(theInput[2]); // spin frequency; double	
+	incl_1 = mxGetScalar(theInput[3]); // inclination angle; double
+	theta_1 = mxGetScalar(theInput[4]); // emission angle; double
+	ts = mxGetScalar(theInput[5]); // phase shift/time shift; double
+	databins = mxGetScalar(theInput[6]); // int
+    if (databins < MIN_NUMBINS){
+        numbins = MIN_NUMBINS;
+    }
+    else{
+        numbins = databins;
+    }
+	NS_model = mxGetScalar(theInput[7]); // int
+	rho = mxGetScalar(theInput[8]); // spot size in radian; double 
+    spot_temperature = mxGetScalar(theInput[9]); // keV; double
+	distance = mxGetScalar(theInput[10]); // in kpc; double
+    distance *= 3.0857e19; // convert distance to meters
+	numtheta = mxGetScalar(theInput[11]); // int
+	spectral_model = mxGetScalar(theInput[12]); // 3 for new integrated atmosphere scheme; int
+	numbands = mxGetScalar(theInput[13]); // int
+	E_band_lower_1 = mxGetScalar(theInput[14]); // keV; double 
+	E_band_upper_1 = mxGetScalar(theInput[15]); // keV; double
+	beaming_model = mxGetScalar(theInput[16]); // 3 for hydrogen, 4 for helium; int			
+	int spots_2 = mxGetScalar(theInput[17]); // int
+	if (spots_2 == 1){
+		two_spots = false;
+        //std::cout << "one spot" << std::endl;
+	}
+    if (spots_2 == 2){ 
+		two_spots = true;
+        std::cout << "two_spots" << std::endl;
+	}
     
-    /******************************************/
-    /* SENSIBILITY CHECKS ON INPUT PARAMETERS */
-    /******************************************/
     
-    if ( numtheta < 1 ) {
-        throw( Exception(" Illegal number of theta bins. Must be positive. Exiting.\n") );
-        return -1;
-    }
-    if ( spot_temperature < 0.0 || rho < 0.0 || mass < 0.0 || rspot < 0.0 || omega < 0.0 ) {
-        throw( Exception(" Cannot have a negative temperature, spot size, NS mass, NS radius, spin frequency. Exiting.\n") );
-        return -1;
-    }
-    if ( rho == 0.0 && numtheta != 1 ) {
-        std::cout << "\nWarning: Setting theta bin to 1 for a trivially sized spot.\n" << std::endl;
-        numtheta = 1;
-    }
-   
-    if ( numbins > MAX_NUMBINS || numbins <= 0 ) {
-    	throw( Exception(" Illegal number of phase bins. Must be between 1 and MAX_NUMBINS, inclusive. Exiting.\n") );
-    	return -1;
-    }
+    std::cout << "Spot: m = " << mass
+	      << " Msun, r = " << req
+	      << " km, f = " << omega 
+	      << " Hz, i = " << incl_1 
+	      << ", e = " << theta_1  
+	      << ", ts = " << ts
+                << ", rho = " << rho
+                << ", T = " << spot_temperature
+               << ", ObsTime = " << obstime << "s" 
+            << ", Distance = " << distance
+	      << std::endl;   
     
+
+	//double *datatime = mxGetPr(theInput[18]);
+    //std::cout << "Read in the time vector! " << std::endl;
+    
+    obsdata.t = mxGetPr(theInput[18]); // array of double
+	//for (int i=0;i<databins;i++){
+	//obsdata.t[i] = datatime[i];
+	//std::cout << "i = " << i << " time = " << obsdata.t[i] << std::endl;
+	//}
+
+
+
+	int bend_file_is = mxGetScalar(theInput[19]);
+
+    if (bend_file_is == 1){
+        bend_file_is_set = true;
+        curve.flags.bend_file = true;
+        curve.defl.mr = mxGetPr(theInput[20]);
+        curve.defl.num_mr = 1000;
+        double *bend_data_b = mxGetPr(theInput[21]);
+        double *bend_data_psi = mxGetPr(theInput[22]);
+        double *bend_data_dcosa = mxGetPr(theInput[23]);
+        double *bend_data_toa = mxGetPr(theInput[24]);
+
+        curve.defl.psi = dmatrix(0,1001,0,301);
+        curve.defl.b = dmatrix(0,1001,0,301);
+        curve.defl.dcosa = dmatrix(0,1001,0,301);
+        curve.defl.toa = dmatrix(0,1001,0,301);
+              
+        for (int j = 0; j < 1001; j++){
+            for (int i = 0; i < 301; i++){
+                curve.defl.b[j][i] = bend_data_b[j*301+i];
+                curve.defl.psi[j][i] = bend_data_psi[j*301+i];
+                curve.defl.dcosa[j][i] = bend_data_dcosa[j*301+i];
+                curve.defl.toa[j][i] = bend_data_toa[j*301+i];
+            }
+        }
+       
+    }
+
+    //std::cout << "Successfully read in the Bend file " << std::endl;
+
+
+    spotshape = mxGetScalar(theInput[25]);
+        //std::cout << "spotshape = " << spotshape << std::endl;
+    
+    obstime = mxGetScalar(theInput[26]); // in Mega-seconds
+    //obstime *= 1e6; // convert to seconds
+        //std::cout << "ObsTime = " << obstime << std::endl;
+    
+       
+       
+    inst_curve = mxGetScalar(theInput[27]);
+    attenuation = mxGetScalar(theInput[28]);
+	//std::cout << "Fetching the Atmosphere energy grid " << std::endl;
+    double *atmodata_mccinte = mxGetPr(theInput[29]);
+    curve.mccinte = dvector(0,1595001);
+    for (int i = 0; i < 1595001; i++){
+        curve.mccinte[i] = atmodata_mccinte[i];
+        //if (i < 10)
+               // std::cout << "curve.mccinte[i] = " << curve.mccinte[i] << " i = " << i << std::endl;
+    }
+
+//std::cout << "Fetching the Atmosphere angles " << std::endl;
+    double *atmodata_mccangl = mxGetPr(theInput[30]);
+    curve.mccangl = dvector(0,51);
+    for (int i = 0; i < 51; i++){
+        curve.mccangl[i] = atmodata_mccangl[i];
+    }
+    curve.mcloget = dvector(0,101);
+    curve.mcloget = mxGetPr(theInput[31]);
+    //for (int i = 0; i < 10; i++){
+        //curve.mcloget[i] = -1.30369 + i*0.03382;
+        //if (i<10)
+      //          std::cout << " i = " << i << "log(E/T) = " << curve.mcloget[i] << std::endl;
+    //}
+
+    
+    
+    //  std::cout << "Fetching the observed flux " << std::endl;
+   // double *observedflux = mxGetPr(theInput[31]);
  
+/*
+	for (int p=0; p < 1; p++){
+		for (int i=0; i < databins; i++){
+			obsdata.f[p][i] = obsflux[p*(databins+1) + i];
+	std::cout << "i = " << i << " obsflux = " << obsdata.f[p][i];
+			//obsdata.err[p][i] = sqrt(obsdata.f[p][i]);
+		}
+	}
+
+*/
+
+   // obsdata.t = mxGetPr(theInput[31]);
+   // std::cout << "Just did time wrong! "<< std::endl;
+   // std::cout << "flux = " << obsdata.t[0] << std::endl;
+    
+    //std::cout << "numbands = " << numbands << std::endl;
+    
+    for (int i = 0; i < numbands-1; i++){
+    obsdata.f[i] = mxGetPr(theInput[32+i]); // array of double
+        //std::cout << "i=" << i << " flux = " << obsdata.f[i][15] << std::endl;
+    //obsdata.f[i] = mxGetPr(theInput[31+3*i]); // array of double
+    //obsdata.err[i] = mxGetPr(theInput[32+3*i]); // array of double
+    //background[i] = mxGetScalar(theInput[33+3*i]);
+      //  std::cout << " bg["<<i<<"]=" << background[i] ;
+    }
+      // std::cout <<"We Read in the flux!!!" << std::endl;
+   
+    
 
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
 
-    std::cout << "Spin Frequency = " << omega << " Hz" << std::endl;
-    std::cout << "Mass = " << mass << " MSUN" << std::endl;
-    std::cout << "R_eq = " << req << " km" << std::endl;
-    std::cout << "Distance = " << distance << "m" << std::endl;
-
-
     mass_over_req = mass/(req) * Units::GMC2;
-    std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
+    //std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
  
     incl_1 *= (Units::PI / 180.0);  // radians
-    d_incl_2 *= (Units::PI / 180.0);  // radians
+    //d_incl_2 *= (Units::PI / 180.0);  // radians
     //if ( only_second_spot ) incl_1 = Units::PI - incl_1; // for doing just the 2nd hot spot
     theta_1 *= (Units::PI / 180.0); // radians
-    d_theta_2 *= (Units::PI / 180.0);  // radians
-    theta_2 = theta_1+d_theta_2; // radians
+    //d_theta_2 *= (Units::PI / 180.0);  // radians
+    //theta_2 = theta_1+d_theta_2; // radians
     //rho *= (Units::PI / 180.0);  // rho is input in radians
     mu_1 = cos( theta_1 );
-    mu_2 = mu_1; 
+    //mu_2 = mu_1; 
     mass = Units::cgs_to_nounits( mass*Units::MSUN, Units::MASS );
     req = Units::cgs_to_nounits( req*1.0e5, Units::LENGTH );
    
@@ -551,20 +365,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
 
-    //std::cout << "(Omega_bar)^2 = " << rot_par << std::endl;
-	
-    //std::cout << "Dimensionless: Mass/Radius = " << mass_over_req  << " M/R = " << mass/req << std::endl; 
-    //std::cout << "v/c = " << omega*req << std::endl;
 
-    // std::cout << "Observer's Inclination = " << incl_1 << " radians" << std::endl;
-    //std::cout << "Spot Centre = " << theta_1 << " radians" << std::endl;
-
-   
 
 
     /**********************************/
     /* PASS VALUES INTO THE STRUCTURE */
-    /**********************************/    	
+    /**********************************/  
+    
+   // std::cout << "Now load it all into the structure!" << std::endl;
     
     curve.para.mass = mass;
     curve.para.mass_over_r = mass_over_req;
@@ -602,479 +410,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     curve.flags.spotshape = spotshape;
 
-    std::cout << "ints_curve = " << curve.flags.inst_curve << std::endl;
+    //std::cout << "ints_curve = " << curve.flags.inst_curve << std::endl;
 
 
    // Define the Observer's Spectral Model
 
-
    
-
-  /*  if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-        Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 4){ // *old* NSX Helium Atmosphere
-        Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
-        Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 8){ // *slavko* McPHAC Hydrogen Atmosphere
-    	//Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        Read_McPHAC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
-        Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-*/
-
-    if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
-      //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
-      char atmodir[1024], cwd[1024];
-      getcwd(cwd, sizeof(cwd));
-		
-      std::cout << "Reading in McPhac Binary File " << std::endl;
-
-      sprintf(atmodir,"%s/atmosphere",cwd);
-      chdir(atmodir);
-      FILE *Hspecttable;
-      Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
-      curve.mccangl = dvector(0,51);
-      curve.mcloget = dvector(0,101);
-      curve.mccinte = dvector(0,1595001);
-      int e_index(0);
-      double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
-      for (int i = 0; i < 50; i++){
-	fread(&junk,sizeof(double),1,Hspecttable);
-	fread(&junk2,sizeof(double),1,Hspecttable);
-	fread(&junk3,sizeof(double),1,Hspecttable);
-	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
-	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
-
-	//setprecision(10);
-		
-	/*	std::cout << "i = " << i 
-		<< " junk = " << junk
-		<< " junk2 = " << junk2
-		<< " junk3 = " << junk3
-		<< " costheta=" << curve.mccangl[i]
-		<< " thing = " << curve.mccinte[i]
-		<< std::endl;*/
-		
-	if (i%50 == 0){
-	  curve.mcloget[e_index] = junk3;
-	  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-	  e_index ++;
-	}
-      }
-      double jjunk(junk3);
-      for (int i = 50; i < 1595001; i++){
-	fread(&junk,sizeof(double),1,Hspecttable);
-	fread(&junk2,sizeof(double),1,Hspecttable);
-	fread(&junk3,sizeof(double),1,Hspecttable);
-	fread(&junk4,sizeof(double),1,Hspecttable);    		
-	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
-	
-	if (i%50==0 && e_index < 100){
-	  curve.mcloget[e_index] = junk3;
-	  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-	  e_index ++;
-	}
-
-	/*if (junk == 6.15 && junk2 == 14.5 && junk3 > 0.96 && junk3 < 0.97)
-	  std::cout <<
-	  "junk = " << junk
-	  <<" junk2 = " << junk2
-	  <<" junk3 = " << junk3
-	  <<" junk4 = " << junk4
-	  <<" Intensity = " << curve.mccinte[i]
-	  << std::endl;*/
-      }
-      fclose(Hspecttable);
-      chdir(cwd);
-      std::cout << "finished reading Cole's McPHAC" << std::endl;
-      //std::cout << curve.mccangl[0] << std::endl;
-      //std::cout << curve.mccinte[51] << std::endl;
-    } // End Spectrum Option 10
-
-      if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
-	char atmodir[1024], cwd[1024];
-	getcwd(cwd, sizeof(cwd));
-    	sprintf(atmodir,"%s/atmosphere",cwd);
-    	chdir(atmodir);
-	std::ifstream Hspecttable; 
-	Hspecttable.open( "nsx_H_v170524.txt" );  // opening the file with observational data
-
-
-	Hspecttable >> NlogTeff;
-	//std::cout << "NlogTeff = " << NlogTeff << std::endl;
-	curve.mclogTeff = dvector(0,NlogTeff);
-	for (int i=0;i<NlogTeff;i++){
-	  Hspecttable >> curve.mclogTeff[i];
-	  //std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
-	}
-
-	Hspecttable >> Nlogg; 
-	//std::cout << "Nlogg = " << Nlogg << std::endl;
-	curve.mclogg = dvector(0,Nlogg);
-	for (int i=0;i<Nlogg;i++){
-	  Hspecttable >> curve.mclogg[i];
-	  //std::cout << "logg = " << curve.mclogg[i] << std::endl;
-	}
-
-	Hspecttable >> NlogE;
-	//std::cout << "NlogE = " << NlogE << std::endl;
-	curve.mcloget = dvector(0,NlogE);
-	for (int i=0;i<NlogE;i++){
-	  Hspecttable >> curve.mcloget[i];
-	  //std::cout << "logE = " << curve.mcloget[i] << std::endl;
-	}
-
-	Hspecttable >> Nmu;
-	//std::cout << "Nmu = " << Nmu << std::endl;
-	curve.mccangl = dvector(0,Nmu);
-	for (int i=0;i<Nmu;i++){
-	  Hspecttable >> curve.mccangl[i];
-	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
-	  	    //<< " theta = " << acos(curve.mccangl[i]) 
-	        //<< std::endl;
-	}
-
-	Npts =  (NlogTeff*Nlogg*NlogE);
-
-	curve.NlogTeff = NlogTeff;
-	curve.Nlogg = Nlogg;
-	curve.NlogE = NlogE;
-	curve.Nmu = Nmu;
-	curve.Npts = Npts;
-
-	//std::cout << "Npts = " << Npts << std::endl;
-
-	curve.mccinte = dvector(0,Npts*Nmu);
-
-	int e_index(0);
-    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
-	double jjunk(junk3);
-
-    	for (int i = 0; i < Npts*Nmu; i++){
-	 
-	  Hspecttable >> curve.mccinte[i];
-
-	  /*std::cout
-	    << " i = " << i
-	    << " i%(Nmu) = " << i%(Nmu)
-	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
-	    << " logg = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
-	    << " logE = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
-	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
-		    << " I = " << curve.mccinte[i]
-		    << std::endl;
-	  */
-	}
-       
-
-    	chdir(cwd);
-
-	Hspecttable.close();
-
-    	std::cout << "finished reading Wynn Ho's NSX-H" << std::endl;
-    	//std::cout << Npts << std::endl;
-    	//std::cout << curve.mccinte[51] << std::endl;
-      } // End Spectrum Option 11
-
-    if (curve.flags.beaming_model == 12){ // Tabulated BlackBody File
-
-      char atmodir[1024], cwd[1024];
-      getcwd(cwd, sizeof(cwd));
-		
-      std::cout << "Reading in Blackbody File " << std::endl;
-
-      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
-      chdir(atmodir);
-
-      FILE *BBtable;
-      BBtable=fopen("logEtable.txt","r");
-      curve.mccangl = dvector(0,51);
-      curve.mcloget = dvector(0,101);
-      curve.mccinte = dvector(0,1595001);
-
-      for (int i = 0; i < 100; i++){
-	fscanf(BBtable,"%lf %lf\n",&curve.mcloget[i], &curve.mccinte[i]);	
-	/*std::cout << "i = " << i 
-		  << " E/T = " << curve.mcloget[i]
-		  << " I = " << curve.mccinte[i]
-		  << std::endl;*/
-      }      
-      fclose(BBtable);
-      chdir(cwd);
-      std::cout << "finished reading Tabulated Blackbody" << std::endl;
-
-    } // End Spectrum Option 12
-
-    if (curve.flags.beaming_model == 13){ // Tabulated Hopf Function
-
-      char atmodir[1024], cwd[1024];
-      getcwd(cwd, sizeof(cwd));
-		
-      std::cout << "Reading in Hopf Function File " << std::endl;
-
-      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
-      chdir(atmodir);
-
-      FILE *BBtable;
-      BBtable=fopen("cosalphatable.txt","r");
-      curve.mccangl = dvector(0,51);
-      curve.mcloget = dvector(0,101);
-      curve.mccinte = dvector(0,1595001);
-
-      for (int i = 0; i < 50; i++){
-
-	fscanf(BBtable,"%lf %lf\n",&curve.mccangl[i], &curve.mccinte[i]);	
-	/*std::cout << "i = " << i 
-		  << " cosalpha = " << curve.mccangl[i]
-		  << " I = " << curve.mccinte[i]
-		  << std::endl;*/
-      }      
-      fclose(BBtable);
-      chdir(cwd);
-      std::cout << "finished reading Tabulated Hopf" << std::endl;
-
-    } // End Spectrum Option 13
-
-
-    if (curve.flags.beaming_model == 14){ // Tabulated BlackBody with Limb Darkening File
-
-      char atmodir[1024], cwd[1024];
-      getcwd(cwd, sizeof(cwd));
-		
-      std::cout << "Reading in Blackbody + Hopf File " << std::endl;
-
-      sprintf(atmodir,"%s/atmosphere/BBHopf",cwd);
-      chdir(atmodir);
-
-      FILE *BBtable;
-      BBtable=fopen("logEcosalphatable.txt","r");
-      curve.mccangl = dvector(0,51);
-      curve.mcloget = dvector(0,101);
-      curve.mccinte = dvector(0,1595001);
-
-      for (int i = 0; i < 100; i++){
-	for (int j = 0; j< 50; j++){
-	  fscanf(BBtable,"%lf %lf %lf\n",&curve.mcloget[i], &curve.mccangl[j],&curve.mccinte[i*50+j]);	
-	  /* std::cout << "i = " << i << " j=" << j << " i+j=" << i+j << " i*50 + j " << i*50+j
-		    << " E/T = " << curve.mcloget[i]
-		    << " cosalpha = " << curve.mccangl[j]
-		    << " I = " << curve.mccinte[i+j]
-		    << std::endl;*/
-	}      
-      }
-      fclose(BBtable);
-      chdir(cwd);
-      std::cout << "finished reading Tabulated Blackbody + Hopf" << std::endl;
-
-    } // End Spectrum Option 14
-
- if (curve.flags.beaming_model == 15){ // Wynn Ho's full NSX Helium atmosphere
-	std::cout << "Start Reading Wynn Ho's NSX Helium" << std::endl;
-	char atmodir[1024], cwd[1024];
-	getcwd(cwd, sizeof(cwd));
-    	sprintf(atmodir,"%s/atmosphere",cwd);
-    	chdir(atmodir);
-	std::ifstream Hspecttable; 
-	Hspecttable.open( "nsx_He_v170628.out" );  // opening the file with observational data
-
-
-	Hspecttable >> NlogTeff;
-	//std::cout << "NlogTeff = " << NlogTeff << std::endl;
-	curve.mclogTeff = dvector(0,NlogTeff);
-	for (int i=0;i<NlogTeff;i++){
-	  Hspecttable >> curve.mclogTeff[i];
-	  //std::cout << "teff = " << curve.mclogTeff[i] << std::endl;
-	}
-
-	Hspecttable >> Nlogg; 
-	//std::cout << "Nlogg = " << Nlogg << std::endl;
-	curve.mclogg = dvector(0,Nlogg);
-	for (int i=0;i<Nlogg;i++){
-	  Hspecttable >> curve.mclogg[i];
-	  //std::cout << "logg = " << curve.mclogg[i] << std::endl;
-	}
-
-	Hspecttable >> NlogE;
-	//std::cout << "NlogE = " << NlogE << std::endl;
-	curve.mcloget = dvector(0,NlogE);
-	for (int i=0;i<NlogE;i++){
-	  Hspecttable >> curve.mcloget[i];
-	  //std::cout << "logE = " << curve.mcloget[i] << std::endl;
-	}
-
-	Hspecttable >> Nmu;
-	//std::cout << "Nmu = " << Nmu << std::endl;
-	curve.mccangl = dvector(0,Nmu);
-	for (int i=0;i<Nmu;i++){
-	  Hspecttable >> curve.mccangl[i];
-	  //std::cout << "cos(theat) = " << curve.mccangl[i] 
-	  	    //<< " theta = " << acos(curve.mccangl[i]) 
-	        //<< std::endl;
-	}
-
-	Npts =  (NlogTeff*Nlogg*NlogE);
-
-	curve.NlogTeff = NlogTeff;
-	curve.Nlogg = Nlogg;
-	curve.NlogE = NlogE;
-	curve.Nmu = Nmu;
-	curve.Npts = Npts;
-
-	//std::cout << "Npts = " << Npts << std::endl;
-
-	curve.mccinte = dvector(0,Npts*Nmu);
-
-	int e_index(0);
-    	double junk(0.0), junk2(0.0), junk3(0.0), junk4(0.0);
-	double jjunk(junk3);
-
-    	for (int i = 0; i < Npts*Nmu; i++){
-	 
-	  Hspecttable >> curve.mccinte[i];
-
-	  /*std::cout
-	    << " i = " << i
-	    << " i%(Nmu) = " << i%(Nmu)
-	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
-	    << " logg = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
-	    << " logE = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
-	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
-		    << " I = " << curve.mccinte[i]
-		    << std::endl;
-	  */
-	}
-       
-
-    	chdir(cwd);
-
-	Hspecttable.close();
-
-    	std::cout << "finished reading Wynn Ho's NSX Helium" << std::endl;
-    	//std::cout << Npts << std::endl;
-    	//std::cout << curve.mccinte[51] << std::endl;
-      } // End Spectrum Option 15
-
-    if (curve.flags.beaming_model == 16){ // NSX Hydrogen Partially Ionized
-      char atmodir[1024], cwd[1024];
-      getcwd(cwd, sizeof(cwd));
-		
-      std::cout << "Reading in McPhac Binary File " << std::endl;
-
-      sprintf(atmodir,"%s/atmosphere",cwd);
-      chdir(atmodir);
-	  std::ifstream Hspecttable; 
-	  Hspecttable.open("nsx_spint0_6.05g1425pi_nrp11.out" );  // opening the file with observational data
-      curve.mccangl = dvector(0,257);
-      curve.mcloget = dvector(0,101);
-      curve.mccinte = dvector(0,25601);
-      double junk(0.0);
-      int e_index(0);
-
-	  for (int i = 0; i < 25600; i++){
-	  	Hspecttable >> junk;
-	  	//std::cout << "f = " << junk << std::endl;
-	  	if (i % 256 == 0){
-	      curve.mcloget[e_index] = junk*Units::H_PLANCK/1000/Units::EV;
-	      //std::cout << "f = " << junk << " e = " << curve.mcloget[e_index] << std::endl;
-	      e_index++;
-	    }
-	  	Hspecttable >> junk;
-	  	if (i < 256){
-	      curve.mccangl[i] = junk;
-	    }	  	
-	  	Hspecttable >> curve.mccinte[i];
-	  }
-
-	  chdir(cwd);
-
-	  Hspecttable.close();
-
-      std::cout << "finished reading NSX Hydrogen Paritially Ionized." << std::endl;
-
-    }
-
-
-
-    /*************************/
-    /* OPENING THE DATA FILE */
-    /*************************/
-   
-    if ( datafile_is_set ) {
-      std::cout << "setting data file" << std::endl;	
-      std::ifstream data; //(data_file);      // the data input stream
-      std::cout << "opening data file" << std::endl;
-      data.open( data_file );  // opening the file with observational data
-      //char line[265]; // line of the data file being read in
-      //unsigned int numLines(0), i(0);
-      if ( data.fail() || data.bad() || !data ) {
-      std::cout << "fail in loading data" << std::endl;
-	throw( Exception("Couldn't open data file."));
-	return -1;
-      }
-      // need to do the following to use arrays of pointers (as defined in Struct)
-      for (unsigned int y(0); y < numbands; y++) {
-      	//std::cout << "setting pointers" << std::endl;
-	obsdata.t = new double[databins];
-	obsdata.f[y] = new double[databins];
-	obsdata.err[y] = new double[databins];
-      }
- 
-      /****************************************/
-      /* READING IN FLUXES FROM THE DATA FILE */
-      /****************************************/
-    
-
-    if (data.is_open()){
-      std::cout << "reading data" << std::endl;
-      std::cout << "number of data bins " << databins << " number of bands " << numbands << std::endl;
-    	double temp;
-	for (unsigned int k = 0; k < numbands; k++){
-	  for (unsigned int j = 0; j < databins; j++){
-	    data >> temp;
-    		
-	    //std::cout << "band = " << k; 
-	    data >> temp;
-	    obsdata.t[j] = temp;
-	    //	std::cout << "data t["<<j <<"] = " << obsdata.t[j] ;
-
-		data >> temp;
-		obsdata.f[k][j] = temp;
-		//	std::cout << " f[k][j] = " << temp << std::endl;
-		//data >> temp;
-		obsdata.err[k][j] = sqrt(temp);
-		//std::cout << " err[k][j] = " << temp << std::endl;
-	  }
-	  //data >> temp;
-    	}
-    	data.close();
-    }
-
-  
-       
-      // Read in data file to structure "obsdata" (observed data)
-      // f[1][i] flux in low energy band
-      // f[2][i] flux in high energy band
-      obsdata.numbins = databins;
-      obsdata.numbands = numbands;
-
-      data.close();
-      //ts = obsdata.t[0]; // Don't do this if you want manually setting ts to do anything!!
-      //obsdata.shift = obsdata.t[0];
-      obsdata.shift = ts;
-
-      //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
-    } // Finished reading in the data file
-	
     /***************************/
     /* START SETTING THINGS UP */
     /***************************/ 
@@ -1089,12 +430,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
 
-      std::cout << " Oblate Neutron Star" << std::endl;
+      //std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
 
-      std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
+      //std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
 
        
     }
@@ -1112,10 +453,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         model = new SphericalOblModel( rspot );
         std::cout << "Spherical Model. " << std::endl;
     }
-    else {
-        throw(Exception("\nInvalid NS_model parameter. Exiting.\n"));
-        return -1;
-    }
+    
 
    
     /****************************/
@@ -1130,6 +468,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         curve.t[i] = i / (1.0 * numbins);// + ts;  // defining the time used in the lightcurves
         for ( unsigned int p(0); p < curve.tbands; p++ ) {
             curve.f[p][i] = 0.0;
+            flxcurve->f[p][i] = 0.0;
 	}
     } 
 
@@ -1138,12 +477,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*********************************/
     /* FIRST HOT SPOT - STANDARD CASE*/
     /*********************************/
-
-		
-    if ( T_mesh_in ) {
-    	std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
-    	spot_temperature = 2;
-    }
+    
     curve.para.temperature = spot_temperature;
 
     int pieces;
@@ -1230,7 +564,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){
-	      //	      std::cout << "starting ComputeAngles" << std::endl;
+	      	      //std::cout << "starting ComputeAngles" << std::endl;
 
 	      curve = ComputeAngles(&curve, defltoa); 	
 	      //std::cout << "starting ComputeCurve " << std::endl;
@@ -1457,13 +791,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     } // closing second spot
 
     
-std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl;
-
-
     /***************************************/
     /* START OF INSTRUMENT EFFECT ROUTINES */
     /***************************************/
 
+    std::cout << "Before Energy interpolation f=" << flxcurve->f[0][0] << std::endl;
+    
     //tempcurve.numbins = numbins;
     //tempcurve.numbands = numbands;
 
@@ -1525,7 +858,7 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     /******************************************/
     /*         ADDING BACKGROUND              */
     /******************************************/
-
+/*
     if (background_file_is_set){
       curve = Background_list(&curve, background_file);      
     } 
@@ -1552,15 +885,15 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
       curve = Sky_Background(&curve, dsbackground);
     }
 	
-    std::cout << "BEfore response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
-
+*/
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
+    std::cout << "Before response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
 
     //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response" << std::endl;
+      //std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
 
@@ -1572,7 +905,7 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     /* Create Phase-independent Powerlaw Background */
     (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
     if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
+      //std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
       (*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
     }
 
@@ -1591,11 +924,12 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     }
 
     //for (unsigned int i=0; i<numbins; i++){
-    std::cout << "After rebinning i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
+    std::cout << "After rebinning i=" << 0<< " flux= " << curve.f[0][0] << std::endl;
     //}
 
     numbands = curve.fbands;
-    //std::cout << "numbands = " << numbands << std::endl;
+    std::cout << "numbands = " << numbands << std::endl;
+    std::cout << "obstime = " << obstime << std::endl;
     // Count the photons!
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
@@ -1617,8 +951,8 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
    
     
     numbands = curve.tbands;
+        std::cout << "BEfore normalizing flux[0][0] = " << curve.f[0][0] << std::endl;
 
-	std::cout << "Before normalizing Flux[0][0] = " << curve.f[0][0] << std::endl;
 
     double totalcounts = 0.0;
     for (unsigned int p = 0; p < numbands; p++){  
@@ -1629,7 +963,7 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
 	  totalcounts += curve.f[p][i];
         }
     }
-    std::cout << "Total Counts = " << totalcounts << std::endl;
+    //std::cout << "Total Counts = " << totalcounts << std::endl;
     
            
 
@@ -1638,10 +972,10 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
 	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
-    if ( datafile_is_set ) {
+    //if ( datafile_is_set ) {
     	//std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
-    }
+    //}
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
 	      << " Msun, r = " << Units::nounits_to_cgs(req, Units::LENGTH )*1.0e-5 
@@ -1652,20 +986,28 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
 	      << std::endl;    
 
 
-    std::cout << "Chi^2[0] = " << obsdata.chi[0] << std::endl;
+    //std::cout << "Chi^2[0] = " << obsdata.chi[0] << std::endl;
 
-	std::cout << "Final value of Flux[0][0] = " << curve.f[0][0] << std::endl;
-
+	if (std::isnan(chisquared)||std::isinf(chisquared)) {
+		mexPrintf("Chisquared is nan! Setting it to 10^11.\n");
+		chisquared = 100000000000.0;
+	}
+	else {
+		mexPrintf("X^2 = %f\n\n", chisquared);
+	}
+	
+	if (ts > 1.0) ts -= 1.0; // to make sure ts is in [0:1], for printing out
+    //std::cout << "Pre printing to everything." << std::endl;
+    
+    
+    std::cout << "Final value of flux[0][0] = " << curve.f[0][0] << std::endl;
  
     /********************************************/
     /* WRITING THE SIMULATION TO AN OUTPUT FILE */
     /********************************************/ 
     	
     out.open(out_file, std::ios_base::trunc);
-    if ( out.bad() || out.fail() ) {
-        std::cerr << "Couldn't open output file. Exiting." << std::endl;
-        return -1;
-    }
+
 
     
     //numbins = obsdata.numbins;
@@ -1759,6 +1101,8 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
 
     out.close();
 
+	out_file1_is_set = true;
+	//out_file1="testspot.txt";
 
     if (out_file1_is_set){
       std::ofstream out1;
@@ -1766,7 +1110,7 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
       out1.precision(10);
       if ( out1.bad() || out1.fail() ) {
 	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
-	return -1;
+	//return -1;
       }
       else
 	std::cout << "Opening "<< out_file1 << " for printing " << std::endl;
@@ -1825,8 +1169,9 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
-       free_dvector(curve.mccangl,0,51);
+   /*  if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
+       std::cout << "Free mccangle!" << std::endl;
+         free_dvector(curve.mccangl,0,51);
        free_dvector(curve.mcloget,0,101);
        free_dvector(curve.mccinte,0,1595001);
      }
@@ -1836,16 +1181,40 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
 	free_dvector(curve.mcloget,0,NlogE);
 	free_dvector(curve.mccangl,0,Nmu);
 	free_dvector(curve.mccinte,0,Npts*Nmu);
-     }
+     }*/
 
+	/*****************************************************************/
+    /* DUMPING DATA INTO MATLAB OUTPUT                               */
+    /* For filewriting, need to use fopen, fprintf, and fclose (etc) */
+    /*****************************************************************/
+    //std::cout << "Pre output." << std::endl;
+	
+    chiOut[0] = chisquared; // saved this to theOutput[0] at top just after declarations
+   // std::cout << "Output 1." << std::endl;
+    dimSize[1] = 3; // number of columns (1: time, 2: flux in 1st energy band, 3: flux in 2nd energy band)
+    //std::cout << "Output 2." << std::endl;
 
+    dimSize[0] = (int)numbins; // number of rows ( = numbins)
+    //std::cout << "Output 3." << std::endl;
 
-    delete model;
-    return 0;
-} 
+    theOutput[1] = mxCreateNumericArray(2, dimSize, mxDOUBLE_CLASS, mxREAL); // formatting/setting up the output
+    //std::cout << "Output 4." << std::endl;
 
-catch(std::exception& e) {
-       std::cerr << "\nERROR: Exception thrown. " << std::endl
-	             << e.what() << std::endl;
-       return -1;
+    //curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
+	
+        /*free_dmatrix(curve.defl.psi,0,1001,0,301);
+        free_dmatrix(curve.defl.b,0,1001,0,301);
+        free_dmatrix(curve.defl.dcosa,0,1001,0,301);
+        free_dmatrix(curve.defl.toa,0,1001,0,301);
+        
+
+	free_dvector(curve.mccinte,0,1595001);*/
+	//std::cout << "Freed the memory" << std::endl;
+    
+    //delete model;
+
+  
 }
+
+
+

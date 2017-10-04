@@ -160,8 +160,8 @@ Units.o: \
 interp.o: \
 	interp.h \
 	nrutil.h \
-	interp.c
-	$(CC) $(CCFLAGS) -c interp.c
+	interp.cpp
+	$(CC) $(CCFLAGS) -c interp.cpp
 
 nrutil.o: \
 	nrutil.h \

@@ -58,6 +58,7 @@ int th_index(double cos_theta, class LightCurve* mexmcc){
 // This "new" version takes into account that the energy is really the ratio: E/kT
 double McPHACC3new(double E, double cos_theta, int theta_index, double T, double lgrav, int i_lgrav, double gvec[4], class LightCurve* curve){
 
+        //std::cout << "Welcome to McPhac! E=" << E << std::endl;
 
   class LightCurve mexmcc;
   mexmcc = (*curve);
@@ -106,7 +107,7 @@ double McPHACC3new(double E, double cos_theta, int theta_index, double T, double
     if (npt==2 || npt==4) i_f +=1;
     if (i_f < 1) i_f = 1;
     if (i_f > 95) i_f=95;
-
+    //std::cout << "i_f = " << i_f << std::endl;
     // int ii_mu = th_index( cos_theta, &mexmcc);
 
     for (int r(0); r<tpt; r++){
@@ -118,17 +119,21 @@ double McPHACC3new(double E, double cos_theta, int theta_index, double T, double
 	    first_inte = ((i_lt-1+r)*11 + i_lgrav-1+q) * 5000 + (i_f-1+j) * 50 + (ii_mu + k);
 
 	    // linear interpolation
-	    //ivec[r][q][k][j+1] = mexmcc.mccinte[first_inte];
+	    ivec[r][q][k][j+1] = mexmcc.mccinte[first_inte];
 
 	    // logarithmic interpolation
-	    ivec[r][q][k][j+1] = log10(mexmcc.mccinte[first_inte]);	    
+	    //ivec[r][q][k][j+1] = log10(mexmcc.mccinte[first_inte]);	  
+            //std::cout << "j = " << j 
+              //          << " evec = " << mexmcc.mcloget[i_f-2+j] 
+                //        << " ivec = " << ivec[r][q][k][j+1] << std::endl;
 	  }
 	  
 	  // linear interpolation
-	  //I_int[k+1] = polint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1);
+	  I_int[k+1] = polint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1);
+        //std::cout << "Interpolated value = " << I_int[k+1] << std::endl;
 	 
 	  // logarithmic interpolation
-	  I_int[k+1] = pow(10.0,polint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1));	
+	  //I_int[k+1] = pow(10.0,printpolint(&mexmcc.mcloget[i_f-2],ivec[r][q][k],npt,log10(E/T),&err1));	
 	}
 	// Intepolate over mu for fixed Teff, gravity
 	J[q+1] = polint(&mexmcc.mccangl[ii_mu-1],I_int,mpt,cos_theta,&err);

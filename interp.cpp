@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <iostream>
+
 #include "interp.h"
 #include "Struct.h"
 #include "nrutil.h"
@@ -38,10 +40,72 @@ double * interplin(double *xp, double **yp, int numangles, double xb, int *n_nea
  * through the points (xp[i],yp[i]), then polint returns P(xb) and err points
  * to an error estimate.  Note xp and yp are arrays indexed from 1 to n>=order.
  */
-double polint(double *xp, double *yp, int order, double xb, double *err){
-  int i, m, ns=1, j;
+double polint2(double *xp, double *yp, int order, double xb, double *err){
+
+  // 2 pt interpolation
+
+  int k=1;
+  double yb;
+
+  yb = yp[k] + (xb-xp[k])*(yp[k+1]-yp[k])/(xp[k+1]-xp[k]);
+
+  /*
+  int i, m, ns=1;
   double tmp, diff, den, dnum, cnum, yb;
   double *c, *d;
+
+  // printf("POLINT: xb = %lf \n", xb);
+
+  c = (double *) malloc((order+1)*sizeof(double));
+  d = (double *) malloc((order+1)*sizeof(double));
+  diff = fabs(xb-xp[1]);
+  for (i=1; i<=order; i++){
+    if ( (tmp=fabs(xb-xp[i])) < diff ){
+      ns=i;
+      diff = tmp;
+    }
+    c[i] = yp[i];
+    d[i] = yp[i];
+  }
+
+  yb = yp[ns--];
+  for (m=1; m<order; m++){
+    for (i=1; i<=order-m; i++){
+      cnum = xp[i]-xb;
+      dnum = xp[i+m]-xb;
+      if ( (den=cnum-dnum) == 0.0 ){
+       
+        printf("error in polint: xp[%d]==xp[%d]\n", i, i+m);
+	printf("xb=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf \n",
+	       xb, 1, xp[1], 2, xp[2], 3, xp[3], 4, xp[4]);
+        exit(1);
+      }
+      tmp = (c[i+1]-d[i])/den;
+      c[i] = cnum*tmp;
+      d[i] = dnum*tmp;
+    }
+    *err = 2*ns<order-m ? c[ns+1] : d[ns--];
+    yb += *err;
+  }
+  free(c);
+  free(d);
+*/
+  return yb;
+}
+
+
+
+/* Polynomial interpolation.  This is based on the interpolation routine in
+ * numerical recipes.  If P(x) is the polynomial of order order-1 passing 
+ * through the points (xp[i],yp[i]), then polint returns P(xb) and err points
+ * to an error estimate.  Note xp and yp are arrays indexed from 1 to n>=order.
+ */
+double polint(double *xp, double *yp, int order, double xb, double *err){
+  int i, m, ns=1;
+  double tmp, diff, den, dnum, cnum, yb;
+  double *c, *d;
+
+  // printf("POLINT: xb = %lf \n", xb);
 
   c = (double *) malloc((order+1)*sizeof(double));
   d = (double *) malloc((order+1)*sizeof(double));
@@ -63,11 +127,9 @@ double polint(double *xp, double *yp, int order, double xb, double *err){
       if ( (den=cnum-dnum) == 0.0 ){
         /*Two values of xp are equal:no polynomial passes through the points.*/
         printf("error in polint: xp[%d]==xp[%d]\n", i, i+m);
-	//printf(" xb = %lf ", xb); 
-	//for (j=1; j<=order; j++){	
-	//	printf(" xp[%d]=%lf",j,xp[j]);
-        //}			
-        //exit(1);
+	printf("xb=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf \n",
+	       xb, 1, xp[1], 2, xp[2], 3, xp[3], 4, xp[4]);
+        exit(1);
       }
       tmp = (c[i+1]-d[i])/den;
       c[i] = cnum*tmp;
@@ -78,6 +140,62 @@ double polint(double *xp, double *yp, int order, double xb, double *err){
   }
   free(c);
   free(d);
+  return yb;
+}
+
+double printpolint(double *xp, double *yp, int order, double xb, double *err){
+  int i, m, ns=1;
+  double tmp, diff, den, dnum, cnum, yb;
+  double *c, *d;
+
+  //printf("PRINTPOLINT: xb = %lf \n", xb);
+
+  std::cout << "PRINTPOLINT: xp[1] = " << xp[1] <<std::endl;
+  
+  
+  c = (double *) malloc((order+1)*sizeof(double));
+  d = (double *) malloc((order+1)*sizeof(double));
+    std::cout << "Allocated membory " << std::endl;
+  diff = fabs(xb-xp[1]);
+    std::cout << "diff = " << xb-xp[1] << std::endl;
+  for (i=1; i<=order; i++){
+    //printf("xp[%d]=%g  yp[%d]=%g \n", i, xp[i],i, yp[i]);
+    std::cout << "xp["<<i<<"]=" << xp[i] << " yp[i] = " << yp[i] << std::endl;
+    if ( (tmp=fabs(xb-xp[i])) < diff ){
+      ns=i;
+      diff = tmp;
+    }
+    c[i] = yp[i];
+    d[i] = yp[i];
+  }
+
+
+
+  yb = yp[ns--];
+  for (m=1; m<order; m++){
+    for (i=1; i<=order-m; i++){
+      cnum = xp[i]-xb;
+      dnum = xp[i+m]-xb;
+      if ( (den=cnum-dnum) == 0.0 ){
+        /*Two values of xp are equal:no polynomial passes through the points.*/
+        printf("error in printpolint: xp[%d]==xp[%d]\n", i, i+m);
+  printf("xb=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf xp[%d]=%lf \n",
+         xb, 1, xp[1], 2, xp[2], 3, xp[3], 4, xp[4]);
+
+        exit(1);
+      }
+      tmp = (c[i+1]-d[i])/den;
+      c[i] = cnum*tmp;
+      d[i] = dnum*tmp;
+    }
+    *err = 2*ns<order-m ? c[ns+1] : d[ns--];
+    yb += *err;
+  }
+  free(c);
+  free(d);
+
+  printf("Interpolated Value = %g  error = %g \n", yb,*err);
+
   return yb;
 }
 

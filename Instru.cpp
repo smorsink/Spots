@@ -199,11 +199,11 @@ class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve){
     file.close();
     chdir(cwd);
     
-    std::cout << "numbands = " << NCURVES << "numbins = " << numbins << std::endl;
+    //std::cout << "numbands = " << NCURVES << "numbins = " << numbins << std::endl;
     int newindex;
-    
-    for (unsigned int p = 0; p < NCURVES; p++)
-      for (unsigned int i = 0; i < numbins; i++)
+
+	for (unsigned int p =0; p<NCURVES; p++)
+	for (unsigned int i=0; i<numbins;i++)
 	newcurve.f[p][i] = 0.0;
 
 
