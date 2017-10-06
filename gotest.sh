@@ -33,14 +33,18 @@ temp=0.231139 # in keV (Surface temperature)
 distance=0.2 # distance in kpc
 elo=0.095
 ehi=3.105     
-obstime=1.0 #length of observation (in seconds)
+obstime=0.4117564708 #length of observation (in seconds)
 
 ## MAKING THE DATA FILE
 if test ! -d "$out_dir"
    	then mkdir -p "$out_dir"
 fi
 
-
+mass=1.27907
+radius=18.0
+inclination=70.0
+emission=100
+rho=1.0
 
 
 

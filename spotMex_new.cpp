@@ -55,7 +55,7 @@
 // MAIN
 void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mxArray *theInput[]) {
 
-//std::cout << "Hello World!" << std::endl;
+std::cout << "Hello World!" << std::endl;
 
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -275,73 +275,43 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
 
     spotshape = mxGetScalar(theInput[25]);
-        //std::cout << "spotshape = " << spotshape << std::endl;
     
     obstime = mxGetScalar(theInput[26]); // in Mega-seconds
     //obstime *= 1e6; // convert to seconds
-        //std::cout << "ObsTime = " << obstime << std::endl;
-    
+   
        
        
     inst_curve = mxGetScalar(theInput[27]);
     attenuation = mxGetScalar(theInput[28]);
-	//std::cout << "Fetching the Atmosphere energy grid " << std::endl;
     double *atmodata_mccinte = mxGetPr(theInput[29]);
     curve.mccinte = dvector(0,1595001);
     for (int i = 0; i < 1595001; i++){
         curve.mccinte[i] = atmodata_mccinte[i];
-        //if (i < 10)
-               // std::cout << "curve.mccinte[i] = " << curve.mccinte[i] << " i = " << i << std::endl;
     }
 
-//std::cout << "Fetching the Atmosphere angles " << std::endl;
-    double *atmodata_mccangl = mxGetPr(theInput[30]);
+   double *atmodata_mccangl = mxGetPr(theInput[30]);
     curve.mccangl = dvector(0,51);
     for (int i = 0; i < 51; i++){
         curve.mccangl[i] = atmodata_mccangl[i];
     }
     curve.mcloget = dvector(0,101);
     curve.mcloget = mxGetPr(theInput[31]);
-    //for (int i = 0; i < 10; i++){
-        //curve.mcloget[i] = -1.30369 + i*0.03382;
-        //if (i<10)
-      //          std::cout << " i = " << i << "log(E/T) = " << curve.mcloget[i] << std::endl;
-    //}
-
-    
-    
-    //  std::cout << "Fetching the observed flux " << std::endl;
-   // double *observedflux = mxGetPr(theInput[31]);
  
-/*
-	for (int p=0; p < 1; p++){
-		for (int i=0; i < databins; i++){
-			obsdata.f[p][i] = obsflux[p*(databins+1) + i];
-	std::cout << "i = " << i << " obsflux = " << obsdata.f[p][i];
-			//obsdata.err[p][i] = sqrt(obsdata.f[p][i]);
-		}
-	}
-
-*/
-
-   // obsdata.t = mxGetPr(theInput[31]);
-   // std::cout << "Just did time wrong! "<< std::endl;
-   // std::cout << "flux = " << obsdata.t[0] << std::endl;
     
-    //std::cout << "numbands = " << numbands << std::endl;
-    
+  
     for (int i = 0; i < numbands-1; i++){
-    obsdata.f[i] = mxGetPr(theInput[32+i]); // array of double
-        //std::cout << "i=" << i << " flux = " << obsdata.f[i][15] << std::endl;
+    obsdata.f[i] = mxGetPr(theInput[32+2*i]); // array of double
+    //std::cout << "i=" << i << " flux = " << obsdata.f[i][15] << std::endl;
     //obsdata.f[i] = mxGetPr(theInput[31+3*i]); // array of double
     //obsdata.err[i] = mxGetPr(theInput[32+3*i]); // array of double
-    //background[i] = mxGetScalar(theInput[33+3*i]);
-      //  std::cout << " bg["<<i<<"]=" << background[i] ;
+    background[i] = mxGetScalar(theInput[33+2*i]);
+       //std::cout << " bg["<<i<<"]=" << background[i] ;
     }
       // std::cout <<"We Read in the flux!!!" << std::endl;
-   
+    /*for( int i = 0; i < databins ; i++){   
+    std::cout << "i = " << i  << " Flux[0][i]  = " << obsdata.f[0][i] << " background = " << background[0] << std::endl;
+    }*/
     
-
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
@@ -795,11 +765,6 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /* START OF INSTRUMENT EFFECT ROUTINES */
     /***************************************/
 
-    std::cout << "Before Energy interpolation f=" << flxcurve->f[0][0] << std::endl;
-    
-    //tempcurve.numbins = numbins;
-    //tempcurve.numbands = numbands;
-
     // Interpolate to create all the other energy bands
     
     unsigned int q = 0;
@@ -811,40 +776,17 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     int zip=0;
 
     for (unsigned int p = 0; p < curve.tbands; p++){
-
       q = (p/factor);
       index = p - (q*factor);
-
-      // std::cout << "Energy Interpolation: p = " << p << " q = " << q << " index = " << index << " factor=" << factor << std::endl;
-
       for (unsigned int i = 0; i < numbins; i++){
-
 	if (index == 0)
 	  curve.f[p][i] = flxcurve->f[q][i];
 	else{
 	  // linear interp
 	  curve.f[p][i] = flxcurve->f[q][i] * (factor - index)/(factor*1.0) + flxcurve->f[q+1][i] * index/(factor*1.0); 
-	  /*
-	  if (q+npt > curve.tbands)
-	    q = curve.tbands - 4;
-
-	  for (unsigned int j=1;j<=npt;j++){
-	    tvec[j] = (q+j-1+zip); 
-	    fvec[j] = flxcurve->f[q+j-1+zip][i];
-	  }
-	  curve.f[p][i] = printpolint(tvec,fvec,npt,p,&err);
-	  */
-	}
-	//if (i==0)
-	//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
-	//<< " After: flux = " << curve.f[p][i] << std::endl;
-       
-
+	}      
       }
     }
-
-    
-    //curve = EquateCurve(flxcurve);
 
     /**********************************/
     /*       APPLYING ATTENUATION     */
@@ -889,20 +831,15 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
-    std::cout << "Before response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
-
-    //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
-      //std::cout << "Applying Instrument Response" << std::endl;
+      std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
 
-    //for (unsigned int i=0; i<numbins; i++){
-    std::cout << "After response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
-    //}
 
 
     /* Create Phase-independent Powerlaw Background */
+
     (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
     if (curve.flags.inst_curve > 0){
       //std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
@@ -919,17 +856,12 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
         obsdata.numbins = databins;
 	//  std::cout << " Rebin the data! " << std::endl;
         curve = ReBinCurve(&obsdata,&curve);
-	(*flxcurve) = ReBinCurve(&obsdata,flxcurve);
+	    (*flxcurve) = ReBinCurve(&obsdata,flxcurve);
         numbins = databins;
     }
 
-    //for (unsigned int i=0; i<numbins; i++){
-    std::cout << "After rebinning i=" << 0<< " flux= " << curve.f[0][0] << std::endl;
-    //}
 
     numbands = curve.fbands;
-    std::cout << "numbands = " << numbands << std::endl;
-    std::cout << "obstime = " << obstime << std::endl;
     // Count the photons!
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
@@ -937,30 +869,24 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
     for (unsigned int p = 0; p < numbands; p++){
-      //std::cout << "band " << p << std::endl; 
-      //std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl;
-        for (unsigned int i = 0; i < numbins; i++){          
+       for (unsigned int i = 0; i < numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
 	  spotcounts += curve.f[p][i];
 	  bkgcounts += flxcurve->f[p][i];
         }
     }
-    std::cout << "Spot Counts = " << spotcounts << std::endl;
-    std::cout << "Background Counts = " << bkgcounts << std::endl;
-   
     
     numbands = curve.tbands;
-        std::cout << "BEfore normalizing flux[0][0] = " << curve.f[0][0] << std::endl;
 
-
-    double totalcounts = 0.0;
+    //double totalcounts = 0.0;
     for (unsigned int p = 0; p < numbands; p++){  
         for (unsigned int i = 0; i < numbins; i++){           
-	  curve.f[p][i] *= 1e4/spotcounts;
+	  //curve.f[p][i] *= 1e4/spotcounts;
+	  //curve.f[p][i] += background[p];
 	  curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
 	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
-	  totalcounts += curve.f[p][i];
+	  //totalcounts += curve.f[p][i];
         }
     }
     //std::cout << "Total Counts = " << totalcounts << std::endl;
@@ -973,7 +899,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     /************************************************************/
 	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     //if ( datafile_is_set ) {
-    	//std::cout << "calculating chi squared" << std::endl;
+    	std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
     //}
     
@@ -1002,167 +928,8 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     
     std::cout << "Final value of flux[0][0] = " << curve.f[0][0] << std::endl;
  
-    /********************************************/
-    /* WRITING THE SIMULATION TO AN OUTPUT FILE */
-    /********************************************/ 
-    	
-    out.open(out_file, std::ios_base::trunc);
-
-
-    
-    //numbins = obsdata.numbins;
-
-    if ( rho == 0.0 ) rho = Units::PI/180.0;
   
-  
-    /***************************************************/
-    /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
-    /***************************************************/
-  
-    //out << "%\n"
-    //	<< "% Column 1: phase bins (0 to 1)\n";
-    /*    if (curve.flags.spectral_model==0){
-
-        double E_diff;
-		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-    	for (unsigned int k(0); k < numbands; k++){
-	   		
-    	}
-      	//out << "%" << std::endl;
-      	for ( unsigned int i(0); i < numbins; i++ ) {
-        	out << curve.t[i]<< "\t" ;
-			for ( unsigned int p(0); p < numbands; p++ ) { 
-            	out << curve.f[p][i] << "\t" ;
-        	}
-        	out << std::endl;
-      	}
-    }
-    */
-    if (curve.flags.spectral_model==1){
-      //      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
-      //out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
-      //out << "% " << std::endl;
-
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	for ( unsigned int p(0); p < numbands; p++ ) { 
-	  out << curve.t[i]<< "\t" ;
-	  out << curve.para.E0 + p*curve.para.DeltaE << "\t";
-	  out << curve.f[p][i] << "\t" << std::endl;
-	  //out << i;
-	  //out << std::endl;
-	}
-
-      }
-    }
-
-
-    if (curve.flags.spectral_model==2){
-      double E_diff;
-      double counts(0.0);
-      E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-      //std::cout << "numbins = " << numbins << ", numbands = " << numbands << std::endl;
-      //  for (unsigned int k(0); k < numbands; k++){
-      //out << "% Column" << k+2 << ": Integrated Number flux (photons/(cm^2 s) measured between energy (at infinity) of " 
-      //    << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-      //}
-      //  out << "%" << std::endl;
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	out << curve.t[i]<< "\t" ;
-	for ( unsigned int p(0); p < numbands; p++ ) { 
-	  out << curve.f[p][i] << "\t" ;
-	  //counts += curve.f[p][i];
-	}
-	out << i;
-	out << std::endl;
-      }
-      //std::cout << "Total Counts = " << counts << std::endl;
-    }
-
-
-    if (curve.flags.spectral_model==3){
-    	double E_diff;
-		E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-    	for (unsigned int k(0); k < numbands; k++){
-      		out << "% Column " << k+2 << ": Integrated Number flux (photons) measured between energy (at infinity) of " << curve.para.E_band_lower_1+k*E_diff << " keV and " << curve.para.E_band_lower_1+(k+1)*E_diff << " keV\n";    		
-    	}
-      	out << "%" << std::endl;
-      	for ( unsigned int i(0); i < numbins; i++ ) {
-
-        	out << curve.t[i]<< "\t" ;
-			for ( unsigned int p(0); p < numbands; p++ ) { 
-            	out << curve.f[p][i] << "\t" ;
-            	//out << 1e-6 << "\t" ; // Fake errors.  
-        	}
-			//out << i;
-        	out << std::endl;
-      	}
-    }
-
-
-    out.close();
-
-	out_file1_is_set = true;
-	//out_file1="testspot.txt";
-
-    if (out_file1_is_set){
-      std::ofstream out1;
-      out1.open(out_file1, std::ios_base::trunc);
-      out1.precision(10);
-      if ( out1.bad() || out1.fail() ) {
-	std::cerr << "Couldn't open second output file. Exiting." << std::endl;
-	//return -1;
-      }
-      else
-	std::cout << "Opening "<< out_file1 << " for printing " << std::endl;
-    	if (curve.flags.spectral_model==0){
-
-	  double E_diff, Eobs, Eem;
-	  //double redshift (1.0/sqrt(1 - 2.0*curve.para.mass_over_r));
-	  //E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-			//out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
-			//out1 << "%Column 3: Counts/keV. " << std::endl;
-
-	  numbands = curve.tbands;
-	  for ( unsigned int p(0); p < numbands; p++ ) {
-	    //Eobs = curve.para.E_band_lower_1+p*E_diff+E_diff/2;
-	    for ( unsigned int i(0); i < numbins; i++ ) { 
-	      //Eem = Eobs *redshift/curve.eta[i];
-	      out1 << p+1 << "\t";
-	      out1 << curve.t[i]<< "\t";
-	      //out1 << Eobs << "\t";
-	      //out1 << p << "\t";
-	      out1 << curve.f[p][i] << "\t";
-	      //out1 << Eobs << "\t";
-	      //out1 << Eem << "\t";
-	      //out1 << Eem/curve.para.temperature << "\t"
-	      out1 << std::endl;
-	    }
-	  }
-    	}
-
-    	if (curve.flags.spectral_model==2 || curve.flags.spectral_model==3){
-
-        	double E_diff;
-			E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-			//out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
-			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
-			//out1 << "%Column 3: Counts. " << std::endl;
-
-      		for ( unsigned int p(0); p < numbands; p++ ) {
-				for ( unsigned int i(0); i < numbins; i++ ) { 
-            		out1 << curve.t[i]<< "\t";
-            		out1 << curve.para.E_band_lower_1+p*E_diff+E_diff/2 << "\t";
-			//out1 << p << "\t";
-            		out1 << curve.f[p][i] << std::endl;
-        		}
-      		}
-    	}
-
-
-    
-    	out1.close();
-    }
+   
 
 
 
@@ -1202,14 +969,16 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
 
     //curveOut = mxGetPr(theOutput[1]); // matlab and mex love pointers
 	
-        /*free_dmatrix(curve.defl.psi,0,1001,0,301);
+        free_dmatrix(curve.defl.psi,0,1001,0,301);
         free_dmatrix(curve.defl.b,0,1001,0,301);
         free_dmatrix(curve.defl.dcosa,0,1001,0,301);
         free_dmatrix(curve.defl.toa,0,1001,0,301);
         
 
-	free_dvector(curve.mccinte,0,1595001);*/
-	//std::cout << "Freed the memory" << std::endl;
+	free_dvector(curve.mccinte,0,1595001);
+    //free_dvector(curve.mccangl,0,51);
+    //free_dvector(curve.mcloget,0,101);
+	std::cout << "Freed the memory" << std::endl;
     
     //delete model;
 

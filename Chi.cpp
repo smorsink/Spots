@@ -65,6 +65,14 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     numbins = obsdata->numbins;
     numbands = curve->numbands;
     ts = curve->para.ts;
+    
+    for (unsigned int i(0);i<numbins;i++)
+        for (unsigned int p(0);p<numbands;p++)
+                tempflux[p][i] = 0.0;
+    
+    //for (unsigned int i(0);i<numbins;i++)
+     //  std::cout << "First time: i = " << i << " f[0][i] = " << curve->f[0][i] << " obsflux = " << obsdata->f[0][i] << std::endl;
+    
 
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
 
@@ -108,6 +116,7 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
         // Compute chisquare for shifted data
         
 	chisquare = 0.0;
+    double xxx;
 	for ( unsigned int j(0); j<numbands-1; j++){
 	  obsdata->chi[j] = 0.0;
 	  for ( unsigned int i(0); i < numbins; i++ ) {
@@ -115,7 +124,15 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 	    //obsdata->chi[j] += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
 
 	    // Log(likelyhood)
-	    obsdata->chi[j] += obsdata->f[j][i] * log(curve->f[j][i]) - curve->f[j][i];
+          
+          if (obsdata->f[j][i] == 0.0)
+              obsdata->chi[j] +=  curve->f[j][i];
+          else{
+            xxx = curve->f[j][i]/obsdata->f[j][i];
+            obsdata->chi[j] += - obsdata->f[j][i] * ( log(xxx) + 1.0 - xxx);
+          }
+          
+	    //obsdata->chi[j] += obsdata->f[j][i] * log(curve->f[j][i]) - curve->f[j][i];
 
 
             //chisquare += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);

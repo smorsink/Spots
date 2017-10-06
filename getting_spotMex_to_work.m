@@ -61,7 +61,7 @@ psi = bendfile(:,3);
 dcosa = bendfile(:,4);
 toa = bendfile(:,5);
 spotshape = 0;
-obstime = 1.0;
+obstime = 0.411756;
 inst_curve = 1;
 attenuation = 0;
 inte = atmo;
@@ -74,17 +74,9 @@ dataflux = obsdata(:,3);
 obsdatatime = reshape(datatime,16,300);
 obsdatanew = reshape(dataflux,16,300);
 
-%{
-radius = 11.11;
-mass = 1.294;
-inclination = 78.52;
-emission = 77.71;
-timeShift = 0.9986;
-rho = 0.1218;
-spot_temperature = 0.1087;
-distance = 0.215;
-background = [0.002988; 0.001978; 0.001147; 0.0006499; 0.0003727; 0.0002242; 0.0001402; 8.603e-05; 5.226e-05; 2.946e-05; 1.804e-05; 1.445e-05; 8.978e-06; 6.023e-06; 4.472e-06];
-%}
+
+
+
 
 time=toc
 
@@ -92,7 +84,7 @@ cmd = '[Fspot,auxOutput{1}] = spotMex_new(mass, radius, freq, inclination, emiss
 for i = 1:numbands-1
     
     %cmd = [cmd,', obsdata(:,',num2str(i*2),'), obsdata(:,',num2str(i*2+1),'), background(',num2str(i),')'];
-    cmd = [cmd,', obsdatanew(:,',num2str(i),')'];
+    cmd = [cmd,', obsdatanew(:,',num2str(i),'),background(',num2str(i),')'];
 end
 cmd = [cmd,');'];
 

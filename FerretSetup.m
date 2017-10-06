@@ -42,17 +42,17 @@ par.history.saveFrac=0.1; % [0 - 1]: Save only the optimals --> [0], or a fracti
 % ====================================
 % General
 % multiple smaller populations is better than one very large population
-par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
+%par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
 %*************CAN BE VARIED**************************.
 par.general.NAggressive=1; % Number of populations that aggressively look for the minimum
 %*************CAN BE CHANGED***********************.
-%par.general.NPop=2;
+par.general.NPop=1;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
 par.general.popSize=100;
 %*************SMALL POPULATION FOR TESTING**********
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
-%par.general.NGen=10; % g [integer >= 1]: Maximum number of generations to run for.
-par.general.NGen=250;
+par.general.NGen=200; % g [integer >= 1]: Maximum number of generations to run for.
+%par.general.NGen=250;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
 par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or all fitness values: {'FA','FB',...}
@@ -68,18 +68,18 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 %*************ADD DISTANCE*****************
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature', 'distance'};
-par.general.min=[       10,            1.0,                60.0,                   60.0,            0.00,         0.1,        0.05,        0.1];
-par.general.max=[       18,            2.1,               120.0,                  120.0,            1.00,         0.5,        0.15,        0.5];
+par.general.min=[       10,            1.0,                80.0,                   70.0,            0.00,         0.1,        0.05,        0.1];
+par.general.max=[       18,            2.1,                95.0,                   95.0,            1.00,         1.05,        0.55,        0.5];
  
 par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
 
 
 % For Slavko's data require 15 energy bands
-for i = 1:15
+for i = 1:300
     name1 = strcat('background',num2str(i));
     par.general.XLabels{i+8} = name1;
     par.general.min(i+8) = 0;
-    par.general.max(i+8) = 0.006;
+    par.general.max(i+8) = 10.0;
 end
 
 % par.general.XLabels(7) = 'background1';

@@ -172,12 +172,12 @@ class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve){
 	newcurve.numbins = numbins;
 	
 
-	getcwd(cwd, sizeof(cwd));
-	sprintf(resdir,"%s/Area",cwd);
-	chdir(resdir);
+	//getcwd(cwd, sizeof(cwd));
+	//sprintf(resdir,"%s/Area",cwd);
+	//chdir(resdir);
 
 	ifstream file;
-	file.open("NICER_May2014_rsp.txt");
+	file.open("Area/NICER_May2014_rsp.txt");
 	double elow,ehigh;
 	
 

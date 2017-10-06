@@ -10,15 +10,20 @@ for i=size(X,2):-1:1  % we want to count backwards here
         tic;
         
         % Fixed Parameters
-       
+       %{
         ObsTime=extPar.fixed.obstime;
-        %mass=extPar.fixed.mass;
-        %radius=extPar.fixed.radius;
-        %inclination=extPar.fixed.inclination;
-        %emission=extPar.fixed.emission;
-        %timeShift=extPar.fixed.phaseshift;
-        %rho=extPar.fixed.rho;
-        %temperature=extPar.fixed.spot_temperature;
+        mass=extPar.fixed.mass;
+        radius=extPar.fixed.radius;
+        inclination=extPar.fixed.inclination;
+        emission=extPar.fixed.emission;
+        timeShift=extPar.fixed.phaseshift;
+        rho=extPar.fixed.rho;
+        temperature=extPar.fixed.spot_temperature;
+        distance=extPar.fixed.distance;
+        %}
+        %disp(mass);
+        
+        ObsTime=extPar.fixed.obstime;
         
         radius=X(1,i);
         mass=X(2,i);
@@ -28,7 +33,21 @@ for i=size(X,2):-1:1  % we want to count backwards here
         rho=X(6,i);
         temperature=X(7,i);
         distance=X(8,i);
+        
+        
+        %ObsTime=extPar.fixed.obstime;
+        %mass=extPar.fixed.mass;
+        %radius=extPar.fixed.radius;
+        %inclination=extPar.fixed.inclination;
+        %emission=extPar.fixed.emission;
+        %timeShift=extPar.fixed.phaseshift;
+        %rho=extPar.fixed.rho;
+        %temperature=extPar.fixed.spot_temperature;
+        %distance=extPar.fixed.distance;
+        
        
+        %display('RRRRadius = ')
+        %display(radius)
         
         % Initialize background
         %{
@@ -49,7 +68,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background15=extPar.fixed.background(15);
         %}
         
-        background1=X(9,i);
+   %{     background1=X(9,i);
         background2=X(10,i);
         background3=X(11,i);
         background4=X(12,i);
@@ -64,15 +83,40 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background13=X(21,i);
         background14=X(22,i);
         background15=X(23,i);
+   %}
+       
+        
+        for j = 1:300
+           par.back(j) = X(8+j,i);
+           %disp(par.back(j))
+        end
+        
         
      
-        disp(background1)
-       
+        %disp(background1)
+        time=toc
+
+        %NN=extPar.fixed.numbands-1;
+        
+cmd = '[Fspot(i),auxOutput{i}] = spotMex_new(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, rho, temperature, distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.fixed.obsdata.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime, extPar.fixed.inst_curve, extPar.fixed.attenuation, extPar.fixed.inte, extPar.fixed.angl, extPar.fixed.energy';
+for j = 1:300    
+    %cmd = [cmd,', obsdata(:,',num2str(i*2),'), obsdata(:,',num2str(i*2+1),'), background(',num2str(i),')'];
+    %cmd = [cmd,', extPar.fixed.obsdata.f(:,',num2str(j),'),extPar.fixed.background(',num2str(j),')'];
+     cmd = [cmd,', extPar.fixed.obsdata.f(:,',num2str(j),'),par.back(',num2str(j),')'];
+end
+cmd = [cmd,');'];
+disp('This is the command');
+disp(cmd)
+
+        
+        
+%{
         cmd = '[Fspot(i),auxOutput{i}] = spotMex_trial(mass, radius, extPar.fixed.freq, inclination, emission, timeShift, extPar.fixed.numbins, extPar.fixed.modelchoice, rho, temperature, distance, extPar.fixed.numtheta, extPar.fixed.spectral_model, extPar.fixed.numbands, extPar.fixed.E_band_lower_1, extPar.fixed.E_band_upper_1, extPar.fixed.beaming_model, extPar.fixed.spots_2, extPar.obsdata2.t, extPar.fixed.bend_file_is, extPar.fixed.mr, extPar.fixed.b, extPar.fixed.psi, extPar.fixed.dcosa, extPar.fixed.toa, extPar.fixed.spotshape, ObsTime, extPar.fixed.inst_curve, extPar.fixed.attenuation, extPar.fixed.inte, extPar.fixed.angl';
         for j = 1:extPar.fixed.numbands
             cmd = [cmd,', extPar.obsdata2.f(',num2str(j),',:), extPar.obsdata2.err(',num2str(j),',:), background',num2str(j),''];
         end
         cmd = [cmd,');'];
+%}
         disp(cmd)
         disp(i);
         %disp(timeShift);
