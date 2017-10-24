@@ -852,8 +852,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 			/**************************************************************/
       
             else { // not visible; we think that it shouldn't matter if it's not visible at i=0
-	      curve.t_o[i] = curve.t[i] + (curve.t_o[i-1] - curve.t[i-1]) ; // t_o is not defined properly, so we'll set it to emission time
-	      //curve.t_o[i] = curve.t[i] ;
+            if (i!=0)
+            curve.t_o[i] = curve.t[i] + (curve.t_o[i-1] - curve.t[i-1]) ; // t_o is not defined properly, so we'll set it to emission time
+            else 
+                curve.t_o[i] = curve.t[i] ;
 	      curve.dOmega_s[i] = 0.0;    // don't see the spot, so dOmega = 0
 	      curve.cosbeta[i] = 0.0;     // doesn't matter, doesn't enter into calculation
 	      curve.eta[i] = 1.0;	        // doesn't matter, doesn't enter into calculation

@@ -16,9 +16,13 @@ tic;
 obsdata = load('Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt');
 
 instru = load('Area/NICER_May2014_rsp.txt');
-%instru3 = instru(1,:);
-%disp(instru3);
+disp(instru);
 
+%start = instru(:,3);
+%instru2 = reshape(instru,80,1191);
+%for i = 1:77
+  % resp(i) = instru2(:,3+i);
+%end
 
 %bg = load('mcphacc_may12_bgnormalized.txt');
 
@@ -65,7 +69,7 @@ psi = bendfile(:,3);
 dcosa = bendfile(:,4);
 toa = bendfile(:,5);
 spotshape = 0;
-obstime = 0.4117564708;
+obstime = 0.411756;
 inst_curve = 1;
 attenuation = 0;
 inte = atmo;
@@ -89,14 +93,9 @@ for i = 1:numbands-1
     
     %cmd = [cmd,', obsdata(:,',num2str(i*2),'), obsdata(:,',num2str(i*2+1),'), background(',num2str(i),')'];
     cmd = [cmd,', obsdatanew(:,',num2str(i),'),background(',num2str(i),')'];
-    
 end
-
-for i = 1:400
-    cmd = [cmd,', instru(',num2str(i),',:)'];
-end
-
 cmd = [cmd,');'];
+
 
 %cmd = '[Fspot,auxOutput{1}] = spotMex_new(mass, radius, freq, inclination, emission, timeShift, numbins, modelchoice, rho, spot_temperature, distance, numtheta, spectral_model, numbands, E_band_lower_1, E_band_upper_1, beaming_model, spots_2, obsdata(:,2), bend_file_is, mr, b, psi, dcosa, toa, spotshape, obstime, inst_curve, attenuation, inte, angl, obsdata(:,3));';
 
@@ -104,7 +103,7 @@ cmd = [cmd,');'];
 
 disp(cmd)
 tic;
-eval(cmd);
+%eval(cmd);
 time=toc                   
 
 disp(Fspot)

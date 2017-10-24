@@ -68,23 +68,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         background15=extPar.fixed.background(15);
         %}
         
-   %{     background1=X(9,i);
-        background2=X(10,i);
-        background3=X(11,i);
-        background4=X(12,i);
-        background5=X(13,i);
-        background6=X(14,i);
-       	background7=X(15,i);
-        background8=X(16,i);
-        background9=X(17,i);
-        background10=X(18,i);
-        background11=X(19,i);
-        background12=X(20,i);
-        background13=X(21,i);
-        background14=X(22,i);
-        background15=X(23,i);
-   %}
-       
+  
         
         for j = 1:300
            par.back(j) = X(8+j,i);
@@ -104,9 +88,14 @@ for j = 1:300
     %cmd = [cmd,', extPar.fixed.obsdata.f(:,',num2str(j),'),extPar.fixed.background(',num2str(j),')'];
      cmd = [cmd,', extPar.fixed.obsdata.f(:,',num2str(j),'),par.back(',num2str(j),')'];
 end
+
+for j = 1:400
+    cmd = [cmd,', extPar.fixed.instru(',num2str(j),',:)'];
+end
+
 cmd = [cmd,');'];
-disp('This is the command');
-disp(cmd)
+%disp('This is the command');
+%disp(cmd)
 
         
         
@@ -150,5 +139,5 @@ mr_ratio=1.477*m/r;
 %thing=12.0/(5.0*(1.0-2.0*mr_ratio));
 %isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.203;
 %isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284 && tsquare<thing+0.1 && tsquare > thing-0.1;
-isPhysical=mr_ratio > 0.1 && mr_ratio < 0.284;
+isPhysical=mr_ratio > 0.11 && mr_ratio < 0.284;
 %isPhysical=mr_ratio > 0.0677 && mr_ratio < 0.175;

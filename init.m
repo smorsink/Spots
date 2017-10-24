@@ -71,6 +71,8 @@ else
 end
 extPar.fixed.spotshape=0;
 
+extPar.fixed.instru = load('Area/NICER_May2014_rsp.txt');
+
 
 %Load Atmosphere
 %cd /home/kitung/atmospheres/cole_mcphac

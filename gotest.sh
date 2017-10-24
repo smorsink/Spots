@@ -40,11 +40,11 @@ if test ! -d "$out_dir"
    	then mkdir -p "$out_dir"
 fi
 
-mass=1.27907
-radius=18.0
-inclination=70.0
-emission=100
-rho=1.0
+#mass=1.27907
+#radius=18.0
+#inclination=70.0
+#emission=100
+#rho=1.0
 
 
 

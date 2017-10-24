@@ -55,7 +55,7 @@
 // MAIN
 void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mxArray *theInput[]) {
 
-std::cout << "Hello World!" << std::endl;
+//std::cout << "Hello World!" << std::endl;
 
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -219,18 +219,7 @@ std::cout << "Hello World!" << std::endl;
 	}
     
     
-    std::cout << "Spot: m = " << mass
-	      << " Msun, r = " << req
-	      << " km, f = " << omega 
-	      << " Hz, i = " << incl_1 
-	      << ", e = " << theta_1  
-	      << ", ts = " << ts
-                << ", rho = " << rho
-                << ", T = " << spot_temperature
-               << ", ObsTime = " << obstime << "s" 
-            << ", Distance = " << distance
-	      << std::endl;   
-    
+
 
 	//double *datatime = mxGetPr(theInput[18]);
     //std::cout << "Read in the time vector! " << std::endl;
@@ -279,7 +268,18 @@ std::cout << "Hello World!" << std::endl;
     obstime = mxGetScalar(theInput[26]); // in Mega-seconds
     //obstime *= 1e6; // convert to seconds
    
-       
+           std::cout << "Spot: m = " << mass
+	      << " Msun, r = " << req
+	      << " km, f = " << omega 
+	      << " Hz, i = " << incl_1 
+	      << ", e = " << theta_1  
+	      << ", ts = " << ts
+                << ", rho = " << rho
+                << ", T = " << spot_temperature
+               << ", ObsTime = " << obstime << "s" 
+            << ", Distance = " << distance
+	      << std::endl;   
+    
        
     inst_curve = mxGetScalar(theInput[27]);
     attenuation = mxGetScalar(theInput[28]);
@@ -297,8 +297,7 @@ std::cout << "Hello World!" << std::endl;
     curve.mcloget = dvector(0,101);
     curve.mcloget = mxGetPr(theInput[31]);
  
-    
-  
+     
     for (int i = 0; i < numbands-1; i++){
     obsdata.f[i] = mxGetPr(theInput[32+2*i]); // array of double
     //std::cout << "i=" << i << " flux = " << obsdata.f[i][15] << std::endl;
@@ -307,10 +306,35 @@ std::cout << "Hello World!" << std::endl;
     background[i] = mxGetScalar(theInput[33+2*i]);
        //std::cout << " bg["<<i<<"]=" << background[i] ;
     }
-      // std::cout <<"We Read in the flux!!!" << std::endl;
-    /*for( int i = 0; i < databins ; i++){   
-    std::cout << "i = " << i  << " Flux[0][i]  = " << obsdata.f[0][i] << " background = " << background[0] << std::endl;
-    }*/
+
+	int thing;
+	thing = 33 + 2*(numbands-2) + 1;
+
+double *row;
+// Read in the Instrumental Response file
+    if (inst_curve > 0){
+
+	for (int p=0; p<400; p++){ 
+	row = mxGetPr(theInput[thing+p]);
+
+	/*if (p==0)
+	for (int i=0;i<80;i++)
+	std::cout << "i = " << i << " row[i] = " << row[i] << std::endl;*/
+
+
+	curve.start[p] = row[2];
+	//std::cout << "p=" << p << " start[p] = " << curve.start[p] << std::endl;
+	for (int i=0;i<77; i++){
+	curve.response[p][i] = row[3+i];
+	}
+	}
+//std::cout << "response[0][1] = " << curve.response[0][1] << std::endl;
+
+    }	
+
+
+
+
     
     /*****************************************************/
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
@@ -828,24 +852,27 @@ std::cout << "Hello World!" << std::endl;
     }
 	
 */
+
+	//std::cout << " Before Instr REsponse: f[0][0] = " << curve.f[0][0] << std::endl;
+
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
     if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response" << std::endl;
+      //std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
 
-
+//std::cout << " After Instr REsponse: f[0][0] = " << curve.f[0][0] << std::endl;
 
     /* Create Phase-independent Powerlaw Background */
-
+/*
     (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
     if (curve.flags.inst_curve > 0){
-      //std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
+      std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
       (*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
     }
-
+*/
    
 
 
@@ -856,15 +883,15 @@ std::cout << "Hello World!" << std::endl;
         obsdata.numbins = databins;
 	//  std::cout << " Rebin the data! " << std::endl;
         curve = ReBinCurve(&obsdata,&curve);
-	    (*flxcurve) = ReBinCurve(&obsdata,flxcurve);
+	    //(*flxcurve) = ReBinCurve(&obsdata,flxcurve);
         numbins = databins;
     }
 
 
     numbands = curve.fbands;
     // Count the photons!
-    double spotcounts = 0.0;
-    double bkgcounts = 0.0;
+    //double spotcounts = 0.0;
+    //double bkgcounts = 0.0;
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
@@ -872,19 +899,20 @@ std::cout << "Hello World!" << std::endl;
        for (unsigned int i = 0; i < numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
-	  spotcounts += curve.f[p][i];
-	  bkgcounts += flxcurve->f[p][i];
+	  //spotcounts += curve.f[p][i];
+	  //bkgcounts += flxcurve->f[p][i];
         }
     }
     
+	//std::cout << "Spot Counts = " << spotcounts << std::endl;
     numbands = curve.tbands;
 
     //double totalcounts = 0.0;
     for (unsigned int p = 0; p < numbands; p++){  
         for (unsigned int i = 0; i < numbins; i++){           
 	  //curve.f[p][i] *= 1e4/spotcounts;
-	  //curve.f[p][i] += background[p];
-	  curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
+	  curve.f[p][i] += background[p];
+	  //curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
 	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  //totalcounts += curve.f[p][i];
         }
@@ -899,7 +927,7 @@ std::cout << "Hello World!" << std::endl;
     /************************************************************/
 	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     //if ( datafile_is_set ) {
-    	std::cout << "calculating chi squared" << std::endl;
+    	//std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
     //}
     
@@ -926,7 +954,7 @@ std::cout << "Hello World!" << std::endl;
     //std::cout << "Pre printing to everything." << std::endl;
     
     
-    std::cout << "Final value of flux[0][0] = " << curve.f[0][0] << std::endl;
+    //std::cout << "Final value of flux[0][0] = " << curve.f[0][0] << std::endl;
  
   
    
@@ -978,7 +1006,7 @@ std::cout << "Hello World!" << std::endl;
 	free_dvector(curve.mccinte,0,1595001);
     //free_dvector(curve.mccangl,0,51);
     //free_dvector(curve.mcloget,0,101);
-	std::cout << "Freed the memory" << std::endl;
+	//std::cout << "Freed the memory" << std::endl;
     
     //delete model;
 

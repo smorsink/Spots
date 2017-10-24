@@ -20,7 +20,7 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 64  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
 #define NCURVES 400        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
 #define FBANDS 300        // Final number of energy channels
@@ -142,6 +142,8 @@ class LightCurve {                     // Stores all the data about the light cu
 	bool ingoing;                          // True if one or more photons are ingoing
 	bool problem;                          // True if a problem occurs
 	unsigned int count;                    // for outputting command line args in Chisquare, chi.cpp
+     	int start[NCURVES];                    // Starting channels for Instrument Response 
+	double response[NCURVES][77];          // Instrument Response Curve
 };
 
 

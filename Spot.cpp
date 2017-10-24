@@ -1075,6 +1075,44 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
     } // Finished reading in the data file
 	
+
+    /******************************************/
+    /*      OPEN INSTRUMENT RESPONSE CURVE    */
+    /******************************************/
+
+    std::cout << "Read in the Instrumental Response: ints_curve = " << curve.flags.inst_curve << std::endl;
+    if (curve.flags.inst_curve > 0){
+
+      	//int start[NCURVES];
+	//double response[NCURVES][77];
+        //std::ifstream data;
+      	std::ifstream file;
+	file.open("Area/NICER_May2014_rsp.txt");
+	double elow,ehigh;
+	
+
+	if(file.is_open()) {
+	  for (unsigned int p(0);p<NCURVES;p++){
+	    file >> elow;
+	    file >> ehigh;
+	    file >> curve.start[p];
+	    //std::cout << "p="<<p << " elow=" << elow << " ehigh=" << ehigh << " starti=" << start[p] << std::endl;
+	    for (unsigned int j(0); j<=76; j++){
+	      file >> curve.response[p][j]; 
+	    }
+	  }
+	  std::cout << "response[0][1] = " << curve.response[0][1] << std::endl;
+	
+	}else{
+        throw( Exception( "instrument response curve file is not found" ));
+        }
+        file.close();
+
+    }
+
+
+
+
     /***************************/
     /* START SETTING THINGS UP */
     /***************************/ 
