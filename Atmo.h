@@ -12,7 +12,7 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 64 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
 #define NCURVES 400      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
 
 
