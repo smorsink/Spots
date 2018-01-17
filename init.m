@@ -1,6 +1,8 @@
 function extPar = init  %defining an external parameter sent to the executable; equivalent of command line arguments to main
 
-%spotDir=fileparts(which(mfilename));
+% This version of the code reads in a fixed background. Only geometric
+% parameters are allowed to vary
+
 spotDir=fileparts(which('init.m'));
 %extPar.dataDir='/home/kitung/Ferret_Runs/May12a';
 %
@@ -17,9 +19,11 @@ spotDir=fileparts(which('init.m'));
 %
 %cmd=['mex spotMex_trial.cpp -L', spotDir, ' -cxx Units.cpp -cxx Chi.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.cpp'];
 
+disp('----  Hello ------');
+cd(spotDir);
 mex spotMex_new.cpp -L/home/kitung/Spot -cxx Units.cpp -cxx Chi.cpp -cxx McPhac.cpp -cxx Atmo.cpp -cxx Instru.cpp -cxx OblDeflectionTOA.cpp -cxx PolyOblModelBase.cpp -cxx PolyOblModelCFLQS.cpp -cxx PolyOblModelNHQS.cpp -cxx matpack.cpp -cxx SphericalOblModel.cpp -cxx nrutil.c -cxx interp.cpp -cxx TimeDelays.cpp -cxx BlackBody.cpp
 
-cd(spotDir);
+%cd(spotDir);
 disp('------ Init ------');
 %disp(cmd);
 %which('spotMex_trial.cpp');
@@ -32,7 +36,6 @@ disp('------ Init ------');
 % Parameters for comparison with smmpoisson1.txt
 %
 extPar.fixed.mass=1.4;                % mass in MSun
-%disp(extPar.fixed.mass);
 extPar.fixed.radius=12.0;               % radius in km
 extPar.fixed.freq=600;                % spin frequency of NS, in Hz
 extPar.fixed.inclination=90;          % spot inclination angle in degrees
@@ -71,8 +74,10 @@ else
 end
 extPar.fixed.spotshape=0;
 
-extPar.fixed.instru = load('Area/NICER_May2014_rsp.txt');
+disp(extPar.fixed.spotshape);
 
+extPar.fixed.instru = load('Area/NICER_May2014_rsp.txt');
+disp('Response Maxtrx Loaded');
 
 %Load Atmosphere
 %cd /home/kitung/atmospheres/cole_mcphac
@@ -86,6 +91,7 @@ extPar.fixed.angl = angl(1:50);
 energytable = load('atmosphere/Energy.txt');
 energy = energytable(:,2);
 extPar.fixed.energy=energy;
+%disp(energy);
 %
 %
 % ------------
@@ -114,7 +120,8 @@ end
 
 % Load Background
 %extPar.fixed.background = 0.0*ones(1,extPar.fixed.numbands);
-extPar.fixed.background = zeros(1,extPar.fixed.numbands);
+%extPar.fixed.background = zeros(1,extPar.fixed.numbands);
+extPar.fixed.background = load('Background/Background2.txt');
 %extPar.obsdata2.numbins=size(dataFile,1);
 
 %disp(extPar.fixed.mass)

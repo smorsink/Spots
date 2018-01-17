@@ -1,10 +1,10 @@
 disp('Output results to file!')
 
-%cd '/home/kitung/Spot/Data/Data-2017-10-16-G'
-cd '/home/kitung/Spot/FerretData'
+cd '/home/kitung/Spot/Data/Data-2017-11-24-X'
+%cd '/home/kitung/Spot/FerretData'
 
-%load('OptimalSolutions.mat');
-load('MergedSolutions.mat');
+load('OptimalSolutions.mat');
+%load('MergedSolutions.mat');
 
 
 para = transpose(OptimalSolutions.X);

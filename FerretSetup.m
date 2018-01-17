@@ -36,7 +36,7 @@ par.user.XMod=''; % [string]: Name of optional user-defined XMod function.
 %disp(data_dir_name); % displaying the history directory name to double check that it says what I want it to
 % need to change data_dir_name in outputFerret too
 par.history.NGenPerHistoryFile=10; % [integer >= 1]: How many generations per History file?
-par.history.saveFrac=0.1; % [0 - 1]: Save only the optimals --> [0], or a fraction [0 - 1].  See also par.analysis.keepFrac.
+par.history.saveFrac=0.2; % [0 - 1]: Save only the optimals --> [0], or a fraction [0 - 1].  See also par.analysis.keepFrac.
 %*************ATTENTION**** MEANS 10% SOLUTIONS ARE SAVED, CAN BE CHANGED TO ZERO.
 %
 % ====================================
@@ -44,14 +44,14 @@ par.history.saveFrac=0.1; % [0 - 1]: Save only the optimals --> [0], or a fracti
 % multiple smaller populations is better than one very large population
 %par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
 %*************CAN BE VARIED**************************.
-par.general.NAggressive=4; % Number of populations that aggressively look for the minimum
+par.general.NAggressive=1; % Number of populations that aggressively look for the minimum
 %*************CAN BE CHANGED***********************.
-par.general.NPop=8;
+par.general.NPop=4;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
 par.general.popSize=200;
 %*************SMALL POPULATION FOR TESTING**********
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
-par.general.NGen=600; % g [integer >= 1]: Maximum number of generations to run for.
+par.general.NGen=400; % g [integer >= 1]: Maximum number of generations to run for.
 %par.general.NGen=250;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
@@ -68,83 +68,10 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 %*************ADD DISTANCE*****************
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature', 'distance'};
-par.general.min=[        8,            1.0,                 40.0,                    40.0,            0.00,         0.1,        0.15,        0.10];
-par.general.max=[       18,            2.2,                120.0,                   120.0,            1.00,         1.5,        0.45,        0.50];
+par.general.min=[        10.0,            0.8,                 70.0,                    50.0,            0.00,         0.5,        0.15,        0.10];
+par.general.max=[        18.0,            2.1,                120.0,                   120.0,            1.00,         1.5,        0.45,        0.30];
  
 par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
-
-
-% For Slavko's data require 300 energy bands
-
-for i = 1:1
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 2.0;
-    par.general.max(i+8) = 4.0;
-end
-
-for i = 2:10
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 3.0;
-    par.general.max(i+8) = 8.0;
-end
-
-for i = 11:20
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 8.0;
-    par.general.max(i+8) = 12.0;
-end
-
-for i = 21:30
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 6.0;
-    par.general.max(i+8) = 11.0;
-end
-
-for i = 31:40
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 5.0;
-    par.general.max(i+8) = 8.0;
-end
-
-for i = 41:50
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 4.0;
-    par.general.max(i+8) = 7.0;
-end
-
-for i = 51:100
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0;
-    par.general.max(i+8) = 6.0;
-end
-
-for i = 101:200
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0;
-    par.general.max(i+8) = 3.0;
-end
-
-for i = 201:250
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0;
-    par.general.max(i+8) = 2.0;
-end
-
-for i = 251:300
-    name1 = strcat('background',num2str(i));
-    par.general.XLabels{i+8} = name1;
-    par.general.min(i+8) = 0;
-    par.general.max(i+8) = 1.0;
-end
 
 % ====================================
 % Strategy Parameters
@@ -164,7 +91,7 @@ par.parallel.NWorkers=0; % [integer >= 0]: Number of worker nodes to launch init
 par.parallel.nodeDistributionFactor=2; % [integer >= 1]: average number of chunks each node evaluates.
 par.parallel.minChunkSize=10; % [integer]: Minimum number of evaluations in each work chunk.
 % I had to change the timeout time to a larger value!
-par.parallel.timeout=60; % [integer >= 0]: Maximum time in seconds before an unresponsive node disconnects.
+par.parallel.timeout=360; % [integer >= 0]: Maximum time in seconds before an unresponsive node disconnects.
 par.parallel.latency=0; % [real > 0]: Time to pause in seconds after writing to the scratch directory.
 par.parallel.useJava=true; % [logical]: Is Java required for worker nodes?
 par.parallel.writeLogFiles=true; % [logical]: Are log files required?
@@ -173,8 +100,8 @@ par.parallel.writeLogFiles=true; % [logical]: Are log files required?
 % Selection
 par.selection.PTournament=1; % [0 - 1]: Probability that each individual will compete.
 %Oct23
-%par.selection.pressure=0.8; % [0 - 1]: Selection pressure on overall fitness.
-par.selection.pressure=0.4; % [0 - 1]: Selection pressure on overall fitness.
+par.selection.pressure=0.8; % [0 - 1]: Selection pressure on overall fitness.
+%par.selection.pressure=0.6; % [0 - 1]: Selection pressure on overall fitness.
 %new
 %par.selection.PCompete=0.8;
 %new
@@ -222,10 +149,10 @@ par.XOverBB.PXOver=1; % [0 - 1]: Probability of Building Block crossovers.
 %
 % ====================================
 % Niching
-par.niching.priority='XPF'; % [string: re-order 3 letters, 'P', 'X', or 'F']: Priority of niching. If empty, use Pareto niching.
+par.niching.priority='PXF'; % [string: re-order 3 letters, 'P', 'X', or 'F']: Priority of niching. If empty, use Pareto niching.
 % par.niching.P=0;  % [0 - 1]: Pattern niching: Typically ~0.5 is about right.
-par.niching.X=0.3;  % [0 - 1]: X-Niching: Typically ~0.25 is about right.
-par.niching.XPar=[1,2]; % [integer vector > 1]: List of parameters used for X-niching.  If empty, use all.
+par.niching.X=0.25;  % [0 - 1]: X-Niching: Typically ~0.25 is about right.
+%par.niching.XPar=[1,2]; % [integer vector > 1]: List of parameters used for X-niching.  If empty, use all.
 % par.niching.F=0;  % [0 - 1]: F-Niching: Typically ~0.25 is about right.
 % par.niching.method='sigmaShare'; % [string: 'sigmaShare' or 'powerLaw']: Specify a niching method.
 % par.niching.exponent=2; % [real: usually > 0 & <~ 2]: Used in the niche function.
@@ -237,7 +164,7 @@ par.CPD.PDeactivateGenes=0; % [0 - 1]: Probability of gene deactivation.
 %
 % ====================================
 % Immigration
-par.immigration.PImmigrate=0.001; %[0 - 1, usually << 1]: Probability of immigration between populations.
+par.immigration.PImmigrate=0.0001; %[0 - 1, usually << 1]: Probability of immigration between populations.
 % *************HELPING NON-OPTIMAL POPULATION, CAN BE CHANGED**********
 % ====================================
 % Elitism
@@ -265,7 +192,7 @@ par.link.PLink=1; % [0 - 1]: Probability that an individual will be chosen for l
 % par.link.PRandomizeNewBBs=0;  % [0 - 1]: Randomize BBs when they form?
 % par.link.mixDim=0; % [usually 0 - 1, possibly higher]: Greater than 0 if mixing is desired.
 %par.link.BB={[3,4],[1,6,8]}; % [linkage matrix (0-1), or cell array of integer vectors]: Known building blocks. Empty list if none are known.
-par.link.restrict=[1,2,3,4,6,7,8];
+%par.link.restrict=[1,2,3,4,6,7,8];
 %
 % ====================================
 % Zooming % WE DO NOT WANT ZOOMING!  ***JDF: Should be OK!

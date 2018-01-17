@@ -69,8 +69,8 @@ obstime = 0.4117564708;
 inst_curve = 1;
 attenuation = 0;
 inte = atmo;
-background = zeros(1,numbands);
-%background = bg;
+%background = zeros(1,numbands);
+background = load('Background/Background1.txt');
 
 datatime = obsdata(:,2);
 dataflux = obsdata(:,3);
