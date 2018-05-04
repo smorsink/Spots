@@ -607,7 +607,7 @@ double *row;
 	      for ( unsigned int i(0); i < numbins; i++ ) {
 		//Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
 		//	if (pp==0 && i==0) std::cout << "before fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
-		flxcurve->f[pp][i] +=  curve.f[pp][i]*phishift/dphi ;
+		flxcurve->f[pp][i] +=  (curve.f[pp][i]+Temp[pp][i])*phishift/dphi * 0.5 ;
 		//if (pp==0 && i==0) std::cout << "fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
 	      }
 	  } //end of last bin  
@@ -821,37 +821,7 @@ double *row;
       curve = Attenuate(&curve,curve.flags.attenuation,nh);
     }
     
-    /******************************************/
-    /*         ADDING BACKGROUND              */
-    /******************************************/
-/*
-    if (background_file_is_set){
-      curve = Background_list(&curve, background_file);      
-    } 
-
-    else {
-      if (background != 0)
-	// Add a constant background in all bands
-	for (unsigned int p = 0; p < numbands; p++){	   
-	  for (unsigned int i = 0; i < numbins; i++){	     
-	    curve.f[p][i] += background;
-	    //	    if (p==0)
-	    //std::cout << "Added background: i="<<i << " flux = " << curve.f[p][i] << std::endl;
-	  }
-	}
-    }
-	
-    if (agnbackground > 0){
-      std::cout << "AGN Background" << std::endl;		
-      curve = AGN_Background(&curve, agnbackground, nh);
-    }
-
-    if (dsbackground > 0){
-      std::cout << "Sky Background" << std::endl;
-      curve = Sky_Background(&curve, dsbackground);
-    }
-	
-*/
+ 
 
 	//std::cout << " Before Instr REsponse: f[0][0] = " << curve.f[0][0] << std::endl;
 
@@ -864,16 +834,6 @@ double *row;
     }
 
 //std::cout << " After Instr REsponse: f[0][0] = " << curve.f[0][0] << std::endl;
-
-    /* Create Phase-independent Powerlaw Background */
-/*
-    (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
-    if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
-      (*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
-    }
-*/
-   
 
 
     // If databins < numbins then rebin the theoretical curve down 
@@ -907,17 +867,13 @@ double *row;
 	//std::cout << "Spot Counts = " << spotcounts << std::endl;
     numbands = curve.tbands;
 
-    //double totalcounts = 0.0;
+    
     for (unsigned int p = 0; p < numbands; p++){  
-        for (unsigned int i = 0; i < numbins; i++){           
-	  //curve.f[p][i] *= 1e4/spotcounts;
-	  curve.f[p][i] += background[p];
-	  //curve.f[p][i] += flxcurve->f[p][i] * 1e4 / bkgcounts;
-	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
-	  //totalcounts += curve.f[p][i];
-        }
+        // Store the background guess in normcurve
+	  normcurve.f[p][0] = background[p];    
+	  
     }
-    //std::cout << "Total Counts = " << totalcounts << std::endl;
+   
     
            
 
@@ -928,7 +884,8 @@ double *row;
 	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     //if ( datafile_is_set ) {
     	//std::cout << "calculating chi squared" << std::endl;
-    	chisquared = ChiSquare ( &obsdata, &curve );
+    	//chisquared = ChiSquare ( &obsdata, &curve );
+    chisquared = BackChi(&obsdata,&curve,&normcurve);
     //}
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 

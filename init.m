@@ -25,10 +25,7 @@ mex spotMex_new.cpp -L/home/kitung/Spot -cxx Units.cpp -cxx Chi.cpp -cxx McPhac.
 
 %cd(spotDir);
 disp('------ Init ------');
-%disp(cmd);
-%which('spotMex_trial.cpp');
-%eval(cmd);
-%
+
 %
 % ------------
 % extPar is external parameters
@@ -46,14 +43,14 @@ extPar.fixed.modelchoice=1;           % 1 (oblate 2014 A&M), 2 (oblate 2007 MLCB
 extPar.fixed.rho=1.0;                   % angular radius of the emitting hot spot, in radians
 extPar.fixed.spot_temperature=0.231139;      % temperature of the hot spot in frame of the NS, in keV
 extPar.fixed.distance=0.2;              % distance from us to the NS, in kpc
-extPar.fixed.numtheta=6;              % number of theta bins.
+extPar.fixed.numtheta=40;              % number of theta bins.
 extPar.fixed.spectral_model=0;		% 2 is for integrated bb and variation, 3 is for atmosphere flux integrated within energy bands
 extPar.fixed.numbands=301;              % 
 extPar.fixed.E_band_lower_1=0.095;      % lower bound of first energy band, in keV
 extPar.fixed.E_band_upper_1=3.105;      % upper bound of first energy band, in keV
 extPar.fixed.beaming_model=10;         % 0 for bb, 1 for bb+chandra gray, 2 for bb+hopf gray, 3 for hydrogen, 4 for helium
 extPar.fixed.spots_2=1;				% 1 for 1 spot, 2 for 2 spots
-extPar.fixed.obstime=0.411756;        % Time (in million seconds) that source was observed
+extPar.fixed.obstime=41.176;        % Time (in million seconds) that source was observed
 extPar.fixed.inst_curve=1;
 extPar.fixed.attenuation=0;
 extPar.fixed.bend_file_is=1;          % 1 means bend file is read
@@ -96,7 +93,8 @@ extPar.fixed.energy=energy;
 %
 % ------------
 % Load data.
-obsdata = load('Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt');
+%obsdata = load('Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt');
+obsdata = load('Slavko/new1e6.txt');
 datatime = obsdata(:,2);
 dataflux = obsdata(:,3);
 
@@ -121,7 +119,7 @@ end
 % Load Background
 %extPar.fixed.background = 0.0*ones(1,extPar.fixed.numbands);
 %extPar.fixed.background = zeros(1,extPar.fixed.numbands);
-extPar.fixed.background = load('Background/Background2.txt');
+extPar.fixed.background = load('Background/background6a.txt');
 %extPar.obsdata2.numbins=size(dataFile,1);
 
 %disp(extPar.fixed.mass)

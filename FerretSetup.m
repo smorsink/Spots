@@ -48,7 +48,7 @@ par.general.NAggressive=1; % Number of populations that aggressively look for th
 %*************CAN BE CHANGED***********************.
 par.general.NPop=4;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
-par.general.popSize=200;
+par.general.popSize=100;
 %*************SMALL POPULATION FOR TESTING**********
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
 par.general.NGen=400; % g [integer >= 1]: Maximum number of generations to run for.
@@ -68,8 +68,8 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 %*************ADD DISTANCE*****************
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature', 'distance'};
-par.general.min=[        10.0,            0.8,                 70.0,                    50.0,            0.00,         0.5,        0.15,        0.10];
-par.general.max=[        18.0,            2.1,                120.0,                   120.0,            1.00,         1.5,        0.45,        0.30];
+par.general.min=[        8.0,            1.2,                 30.0,                    30.0,            0.00,         0.01,        0.15,        0.010];
+par.general.max=[        18.0,           2.2,                100.0,                   150.0,            1.00,         2.00,        0.45,        0.500];
  
 par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
 
