@@ -29,3 +29,5 @@ class LightCurve AGN_Background (class LightCurve* incurve, double agnbackground
 class LightCurve Sky_Background (class LightCurve* incurve, double skybackground);
 
 class LightCurve PowerLaw_Background (class LightCurve* incurve, double agnbackground, double nh);
+
+class LightCurve Read_Background_Guess (class LightCurve* incurve, char *background_file);

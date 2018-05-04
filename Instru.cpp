@@ -237,6 +237,45 @@ class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve){
     return curve;
 }
 
+class LightCurve Read_Background_Guess (class LightCurve* incurve, char *background_file){
+
+	class LightCurve newcurve, curve;
+	unsigned int background_size(0), numbands, numbins;
+	double temp;
+	char line[1024];
+	//char cwd[1024], bgddir[1024];
+	std::vector<double> background_list;
+
+	FILE *file;
+
+	//Pour numbands and numbins into newcurve
+	curve = (*incurve);
+	numbands = curve.numbands;
+	numbins = curve.numbins;
+	newcurve.numbands = numbands;
+	newcurve.numbins = numbins;
+
+
+	file = fopen(background_file,"r");	
+	for (unsigned int p = 0; p < numbands-1; p++){
+
+	  fgets(line,20,file);
+	  //std::cout << "line = " << line << std::endl;
+	  
+	  sscanf(line,"%lf;",&temp);
+		  
+	  //std::cout << "p = " << p << " back = " << temp << std::endl;
+
+	  newcurve.f[p][0] = temp;
+
+	}
+	
+	fclose(file);
+       
+	return newcurve;
+}
+
+
 
 class LightCurve Background_list (class LightCurve* incurve, char *background_file){
 

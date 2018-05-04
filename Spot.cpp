@@ -205,8 +205,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            
 	    case 'D':  // Distance to NS in kpc
 	            	sscanf(argv[i+1], "%lf", &distance);
-					distance *= 3.08567758149e19; // Convert to metres
-					
+					distance *= 3.0857e19; // Convert to metres
 	            	break;
 	                
 	    case 'e':  // Emission angle of the spot (degrees), latitude
@@ -226,10 +225,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    case 'g':  // Spectral Model, beaming (graybody factor)
 	                sscanf(argv[i+1],"%u", &beaming_model);
 	                // 0 = BB, no beaming
-			// 6 = cos^2
-			// 7 = sin^2
-
-			// the ones below are out of date?
 	                // 2 = Fake Spectral Line
 	                // 3 = NSATMOS Hydrogen
 	                // 4 = NSX Helium
@@ -359,7 +354,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                
 	    case 'v': // NICER funny line E1
 	            	sscanf(argv[i+1], "%lf", &L1);
-			std::cout << "L1 = " << L1 << std::endl;
 	            	break;
 	            	
 	    case 'V': // NICER funny line E2
@@ -535,6 +529,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     std::cout << "Spin Frequency = " << omega << " Hz" << std::endl;
     std::cout << "Mass = " << mass << " MSUN" << std::endl;
     std::cout << "R_eq = " << req << " km" << std::endl;
+    std::cout << "Distance = " << distance << "m" << std::endl;
 
 
     mass_over_req = mass/(req) * Units::GMC2;
@@ -590,9 +585,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E_band_upper_1 = E_band_upper_1;
     curve.para.E_band_lower_2 = E_band_lower_2;
     curve.para.E_band_upper_2 = E_band_upper_2;
-    curve.para.E0 = E0;
-    curve.para.L1 = L1;
-    curve.para.L2 = L2;
     curve.para.distance = distance;
     curve.numbins = numbins;
 
@@ -607,8 +599,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.fbands = FBANDS;
     curve.tbands = NCURVES;
     curve.cbands = CBANDS;
-    if (spectral_model == 0)
-      curve.cbands = 1;
 
     curve.flags.spotshape = spotshape;
 
@@ -618,40 +608,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    // Define the Observer's Spectral Model
 
 
-   
-
-    if (curve.flags.beaming_model == 3){ // Hydrogen Atmosphere
-        Read_NSATMOS(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 4){ // *old* NSX Helium Atmosphere
-        Read_NSX(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 5){ // NSX Hydrogen Atmosphere
-        Read_NSXH(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 8){ // *slavko* McPHAC Hydrogen Atmosphere
-    	//Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-        Read_McPHAC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
-    if (curve.flags.beaming_model == 9){ // *new* NSX Helium Atmosphere
-        Read_NSXHe(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading NSATMOS FILES Files
-    }
-
     if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
       //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
       char atmodir[1024], cwd[1024];
       getcwd(cwd, sizeof(cwd));
 		
       std::cout << "Reading in McPhac Binary File " << std::endl;
-
-      out.open("Energy.txt", std::ios_base::trunc);
-      out.precision(10);
-      
-
 
       sprintf(atmodir,"%s/atmosphere",cwd);
       chdir(atmodir);
@@ -669,13 +631,19 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	fread(&curve.mccangl[i],sizeof(double),1,Hspecttable);    		
 	fread(&curve.mccinte[i],sizeof(double),1,Hspecttable);
 
-	std::cout.precision(10);
-	       
+	//setprecision(10);
+		
+	/*	std::cout << "i = " << i 
+		<< " junk = " << junk
+		<< " junk2 = " << junk2
+		<< " junk3 = " << junk3
+		<< " costheta=" << curve.mccangl[i]
+		<< " thing = " << curve.mccinte[i]
+		<< std::endl;*/
 		
 	if (i%50 == 0){
 	  curve.mcloget[e_index] = junk3;
-	  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-		  out << e_index << " " << curve.mcloget[e_index] << std::endl;
+	  //	  std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
 	  e_index ++;
 	}
       }
@@ -690,18 +658,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	if (i%50==0 && e_index < 100){
 	  curve.mcloget[e_index] = junk3;
 	  //std::cout << "e_index = " << e_index << " log(e/t)=" << curve.mcloget[e_index] << std::endl;
-	  out << e_index << " " << curve.mcloget[e_index] << std::endl;
 	  e_index ++;
 	}
 
-
+	/*if (junk == 6.15 && junk2 == 14.5 && junk3 > 0.96 && junk3 < 0.97)
+	  std::cout <<
+	  "junk = " << junk
+	  <<" junk2 = " << junk2
+	  <<" junk3 = " << junk3
+	  <<" junk4 = " << junk4
+	  <<" Intensity = " << curve.mccinte[i]
+	  << std::endl;*/
       }
       fclose(Hspecttable);
       chdir(cwd);
       std::cout << "finished reading Cole's McPHAC" << std::endl;
-
-      out.close();
-
       //std::cout << curve.mccangl[0] << std::endl;
       //std::cout << curve.mccinte[51] << std::endl;
     } // End Spectrum Option 10
@@ -1080,6 +1051,44 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
     } // Finished reading in the data file
 	
+
+    /******************************************/
+    /*      OPEN INSTRUMENT RESPONSE CURVE    */
+    /******************************************/
+
+    std::cout << "Read in the Instrumental Response: ints_curve = " << curve.flags.inst_curve << std::endl;
+    if (curve.flags.inst_curve > 0){
+
+      	//int start[NCURVES];
+	//double response[NCURVES][77];
+        //std::ifstream data;
+      	std::ifstream file;
+	file.open("Area/NICER_May2014_rsp.txt");
+	double elow,ehigh;
+	
+
+	if(file.is_open()) {
+	  for (unsigned int p(0);p<NCURVES;p++){
+	    file >> elow;
+	    file >> ehigh;
+	    file >> curve.start[p];
+	    //std::cout << "p="<<p << " elow=" << elow << " ehigh=" << ehigh << " starti=" << start[p] << std::endl;
+	    for (unsigned int j(0); j<=76; j++){
+	      file >> curve.response[p][j]; 
+	    }
+	  }
+	  std::cout << "response[0][1] = " << curve.response[0][1] << std::endl;
+	
+	}else{
+        throw( Exception( "instrument response curve file is not found" ));
+        }
+        file.close();
+
+    }
+
+
+
+
     /***************************/
     /* START SETTING THINGS UP */
     /***************************/ 
@@ -1099,7 +1108,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		   		    mass_over_req,
 				    rot_par );
 
-      std::cout << " mass/req = " <<  mass_over_req << std::endl;
+      std::cout << " r_pole = " <<  model->R_at_costheta(1.0) << std::endl;
 
        
     }
@@ -1135,9 +1144,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         curve.t[i] = i / (1.0 * numbins);// + ts;  // defining the time used in the lightcurves
         for ( unsigned int p(0); p < curve.tbands; p++ ) {
             curve.f[p][i] = 0.0;
-	    flxcurve->f[p][i] = 0.0;
 	}
     } 
+
+  
 
     /*********************************/
     /* FIRST HOT SPOT - STANDARD CASE*/
@@ -1163,24 +1173,21 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numbands = NCURVES;
 
 
-       for (unsigned int p(0);p<pieces;p++){
-    //	for (unsigned int p(0);p<1;p++){
-
-	 std::cout << "piece = " << p << std::endl;
+    for (unsigned int p(0);p<pieces;p++){
 
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
 
 	// Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-	  //for (unsigned int k(0.5*numtheta); k < (0.5*numtheta)+1; k++) { // Loop through the circles
+	  //   		for (unsigned int k(9); k < 10; k++) { // Loop through the circles
 	 
 	  deltatheta = curve.para.dtheta[k];
 
 	  double thetak = curve.para.theta_k[k];
 	  	
 	  double phi_edge = curve.para.phi_k[k];
-	  
+
 	  dphi = 2.0*Units::PI/(numbins*1.0);
 
 	  mu_1 = cos(thetak);
@@ -1198,16 +1205,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.para.radius = rspot; // load rspot into structure
 	  curve.para.mass_over_r = mass_over_req * req/rspot;
 
-	  std::cout << "k = " << k << " theta = " << thetak * 180.0/3.1415 << " rspot = " << rspot << " Mass/Rspot = " << curve.para.mass_over_r << std::endl;
-
 	  OblDeflectionTOA* defltoa = new OblDeflectionTOA(model, mass, curve.para.mass_over_r , rspot); 
 	  curve = Bend(&curve,defltoa);
 
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
-
-	  //std::cout << "phi_edge = " << phi_edge* 180.0/3.1415 << " numphi = " << numphi << std::endl;
-	  
 	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
 
 	  if (numphi==0){
@@ -1216,10 +1218,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * (2.0*phi_edge);
 	  }
 
-	  std::cout << "spotshape == " << spotshape << " gamma = " << curve.para.gamma_k[k];
-	  if (spotshape!=2){
+	  if (spotshape!=2)
 	    curve.para.dS *= curve.para.gamma_k[k];
-	  }
+
 	  curve.para.theta = thetak;
 
 	  SurfaceArea += pow(rspot,2) * sin(thetak) * deltatheta * 2.0*Units::PI / curve.para.cosgamma;
@@ -1238,15 +1239,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
 	  for ( unsigned int j(0); j < numphi; j++ ) {// looping through the phi divisions
+	    
+	    curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
-	    //curve.para.phi_0 =  -phi_edge;
-	    //curve.para.phi_0 =  -phi_edge + 0.5*dphi;			
-	    curve.para.phi_0 =  -phi_edge + (0.5)*dphi + phishift*0.5;
-	    //curve.para.phi_0 =  -phi_edge  + phishift*0.5;
-	    //curve.para.phi_0 = 0 - (numphi*0.5 - 0.5)*dphi;
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){
-	      //std::cout << "starting ComputeAngles" << std::endl;
+	      //	      std::cout << "starting ComputeAngles" << std::endl;
 
 	      curve = ComputeAngles(&curve, defltoa); 	
 	      //std::cout << "starting ComputeCurve " << std::endl;
@@ -1255,24 +1253,25 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      curve = TimeDelays(&curve);
 
 	    }
-       
+	
+	    if ( curve.para.temperature == 0.0 ) {// Flux is zero for parts with zero temperature
+	      for ( unsigned int i(0); i < numbins; i++ ) {
+		for ( unsigned int pp(0); pp < curve.tbands; pp++ ) curve.f[pp][i] = 0.0;
+	      }
+	    }
 
 	    // Add curves, load into Flux array
 	    for ( unsigned int i(0); i < numbins; i++ ) {
 	      int q(i+j);
 	      if (q>=numbins) q+=-numbins;
 	      for ( unsigned int pp(0); pp < curve.cbands; pp++ ) {
-		//Flux[p][i] += curve.f[p][q];
-		//if (p==0 && i==0) std::cout << "before adding: flux[0][0] =" << curve.f[0][0] << std::endl;
-
 		flxcurve->f[pp][i] += curve.f[pp][q];
-		//if (p==0 && i==0) std::cout << "after adding j=" << j << ": flux[0][0] =" << flxcurve->f[0][0] << std::endl;
 	      }
 	    } // ending Add curves
 	  } // end for-j-loop
 
 	  // Add in the missing bit.      
-	  if (phishift != 0.0){ // Add light from last bin, which requires shifting
+	  if (phishift != 0.0 ){ // Add light from last bin, which requires shifting
 	    for ( unsigned int i(0); i < numbins; i++ ) {
 	      int q(i+numphi-1);
 	      if (q>=numbins) q+=-numbins;
@@ -1280,22 +1279,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		Temp[pp][i] = curve.f[pp][q];
 	      }
 	    }
-	    /* for (unsigned int pp(0); pp < curve.cbands; pp++ )
+	    for (unsigned int pp(0); pp < curve.cbands; pp++ )
 	      for ( unsigned int i(0); i < numbins; i++ ) 
-	      curve.f[pp][i] = Temp[pp][i];	  */	
+	    	curve.f[pp][i] = Temp[pp][i];	  	
     
-	    curve = ShiftCurve(&curve,phishift);	   
+	    curve = ShiftCurve(&curve,phishift);
+	    
 	    for( unsigned int pp(0); pp < curve.cbands; pp++ )
 	      for ( unsigned int i(0); i < numbins; i++ ) {
-		//Flux[pp][i] += curve.f[pp][i]*phishift/dphi      ;
-		//if (pp==0 && i==0) std::cout << "before fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
 		flxcurve->f[pp][i] +=  (Temp[pp][i]+curve.f[pp][i])*phishift/dphi * 0.5 ;
-		//flxcurve->f[pp][i] +=  (Temp[pp][i])*phishift/dphi  ;
-			//if (pp==0 && i==0) std::cout << "fractional shift: flux[0][0] =" << flxcurve->f[0][0] << std::endl;
-	      }	    
-	  } //end of last bin
-
-	  
+		//flxcurve->f[pp][i] +=  (curve.f[pp][i])*phishift/dphi ;
+	      }
+	  } //end of last bin  
 	  delete defltoa;
 	  
 	  //free memory here
@@ -1335,10 +1330,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}
 		
 	for (unsigned int p(0);p<pieces;p++){
-	//for (unsigned int p(1);p<pieces;p++){
-
-	  // std::cout << "p = " << p << std::endl;
-
 	  curve = SpotShape(pieces,p,numtheta,theta_2,rho2, &curve, model);
 
 	  double deltatheta(0.0);
@@ -1474,6 +1465,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     } // closing second spot
 
     
+std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl;
+
+
     /***************************************/
     /* START OF INSTRUMENT EFFECT ROUTINES */
     /***************************************/
@@ -1495,17 +1489,37 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       q = (p/factor);
       index = p - (q*factor);
+
+      // std::cout << "Energy Interpolation: p = " << p << " q = " << q << " index = " << index << " factor=" << factor << std::endl;
+
       for (unsigned int i = 0; i < numbins; i++){
 
 	if (index == 0)
 	  curve.f[p][i] = flxcurve->f[q][i];
 	else{
 	  // linear interp
-	  curve.f[p][i] = flxcurve->f[q][i] * (factor - index)/(factor*1.0) + flxcurve->f[q+1][i] * index/(factor*1.0); 	  
+	  curve.f[p][i] = flxcurve->f[q][i] * (factor - index)/(factor*1.0) + flxcurve->f[q+1][i] * index/(factor*1.0); 
+	  /*
+	  if (q+npt > curve.tbands)
+	    q = curve.tbands - 4;
+
+	  for (unsigned int j=1;j<=npt;j++){
+	    tvec[j] = (q+j-1+zip); 
+	    fvec[j] = flxcurve->f[q+j-1+zip][i];
+	  }
+	  curve.f[p][i] = printpolint(tvec,fvec,npt,p,&err);
+	  */
 	}
+	//if (i==0)
+	//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
+	//<< " After: flux = " << curve.f[p][i] << std::endl;
+       
+
       }
     }
 
+    
+    //curve = EquateCurve(flxcurve);
 
     /**********************************/
     /*       APPLYING ATTENUATION     */
@@ -1521,7 +1535,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
 
     if (background_file_is_set){
-      curve = Background_list(&curve, background_file);      
+      //curve = Background_list(&curve, background_file);      
     } 
 
     else {
@@ -1546,22 +1560,31 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       curve = Sky_Background(&curve, dsbackground);
     }
 	
+    std::cout << "BEfore response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
 
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
 
+    //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
 
+    //for (unsigned int i=0; i<numbins; i++){
+    std::cout << "After response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
+    //}
+
 
     /* Create Phase-independent Powerlaw Background */
-    (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
-    if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
-      (*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
+
+    if (!background_file_is_set){
+      (*flxcurve) = PowerLaw_Background(&curve,1.0,-2.0);    
+      if (curve.flags.inst_curve > 0){
+	std::cout << "Applying Instrument Response to the Powerlaw Background" << std::endl;
+	(*flxcurve) = Inst_Res2(flxcurve, curve.flags.inst_curve);
+      }
     }
 
    
@@ -1578,9 +1601,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         numbins = databins;
     }
 
+    //for (unsigned int i=0; i<numbins; i++){
+    std::cout << "After rebinning i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
+    //}
 
     numbands = curve.fbands;
-
+    //std::cout << "numbands = " << numbands << std::endl;
     // Count the photons!
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
@@ -1594,38 +1620,51 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
 	  spotcounts += curve.f[p][i];
-	  bkgcounts += flxcurve->f[p][i];
+	  //bkgcounts += flxcurve->f[p][i];
         }
     }
-    //std::cout << "Spot Counts = " << spotcounts << std::endl;
+    std::cout << "Spot Counts = " << spotcounts << std::endl;
     //std::cout << "Background Counts = " << bkgcounts << std::endl;
    
     
     numbands = curve.tbands;
 
-    double totalcounts = 0.0;
+    //	std::cout << "Before normalizing Flux[0][0] = " << curve.f[0][0] << std::endl;
+
+    /*  double totalcounts = 0.0;
     for (unsigned int p = 0; p < numbands; p++){  
         for (unsigned int i = 0; i < numbins; i++){           
-	  //curve.f[p][i] *= 1e6/spotcounts;
-	  //curve.f[p][i] *= 1.0/spotcounts;
-
+	  curve.f[p][i] *= 1e6/spotcounts;
 	  //curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  //curve.f[p][i] = flxcurve->f[p][i] * 1e6 / bkgcounts;
 	  totalcounts += curve.f[p][i];
         }
     }
-    //std::cout << "Total Counts = " << totalcounts << std::endl;
-    
+    std::cout << "Total Counts = " << totalcounts << std::endl;
+    */
            
 
 
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
-	//std::cout << obsdata.f[0][7] << " " << curve.f[0][7] << " " << std::endl;
     if ( datafile_is_set ) {
     	//std::cout << "calculating chi squared" << std::endl;
-    	chisquared = ChiSquare ( &obsdata, &curve );
+    	//chisquared = ChiSquare ( &obsdata, &curve );
+
+
+	
+	if (background_file_is_set){
+
+	   normcurve = Read_Background_Guess(&curve, background_file);   
+
+	   chisquared = BackChi ( &obsdata, &curve, &normcurve );
+
+	   
+	}
+
+
+	
     }
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
@@ -1636,8 +1675,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      << ", X^2 = " << chisquared 
 	      << std::endl;    
 
-
+    std::cout << "Back[0] = " << normcurve.f[0][0] << std::endl;
     std::cout << "Chi^2[0] = " << obsdata.chi[0] << std::endl;
+
+    //	std::cout << "Final value of Flux[0][0] = " << curve.f[0][0] << std::endl;
 
  
     /********************************************/
@@ -1679,41 +1720,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       	}
     }
     */
-
-    if (curve.flags.spectral_model==0){
-      //      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
-      //out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
-      //out << "% " << std::endl;
-      //unsigned int p;
-      for ( unsigned int i(0); i < numbins; i++ ) {
-	//	for ( unsigned int p(0); p < numbands; p++ ) { 
-	  out << curve.t[i]<< "\t" ;
-	  //out << curve.para.E0 + p*curve.para.DeltaE << "\t";
-	  out << curve.f[0][i] << "\t" ;
-	  //	  out << curve.f[0][numbins-i] << "\t" ;
-	  //out << i;
-	  out << std::endl;
-	  //}
-
-      }
-    }
-    
-
-    
     if (curve.flags.spectral_model==1){
       //      out << "% Column 2: Photon Energy (keV) in Observer's frame" << std::endl;
       //out << "% Column 3: Number flux (photons/(cm^2 s) " << std::endl;
       //out << "% " << std::endl;
 
-      //std::cout << "numbins = " << numbins
-      //	<< " numbands = " << numbands << std::endl;
-     
-      DeltaE = (E_band_upper_1 - E_band_lower_1)/(numbands);
-
       for ( unsigned int i(0); i < numbins; i++ ) {
 	for ( unsigned int p(0); p < numbands; p++ ) { 
 	  out << curve.t[i]<< "\t" ;
-	  out << E_band_lower_1 + (p+0.5)*DeltaE << "\t";
+	  out << curve.para.E0 + p*curve.para.DeltaE << "\t";
 	  out << curve.f[p][i] << "\t" << std::endl;
 	  //out << i;
 	  //out << std::endl;
@@ -1782,6 +1797,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	if (curve.flags.spectral_model==0){
 
 	  double E_diff, Eobs, Eem;
+	  //double redshift (1.0/sqrt(1 - 2.0*curve.para.mass_over_r));
+	  //E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
+			//out1 << "%Column 1: Phase (from 0 to 1). " << std::endl;
+			//out1 << "%Column 2: Energy Bin Centres (keV). " << std::endl;	
+			//out1 << "%Column 3: Counts/keV. " << std::endl;
+
 	  numbands = curve.tbands;
 	  for ( unsigned int p(0); p < numbands; p++ ) {
 	    //Eobs = curve.para.E_band_lower_1+p*E_diff+E_diff/2;
@@ -1791,7 +1812,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      out1 << curve.t[i]<< "\t";
 	      //out1 << Eobs << "\t";
 	      //out1 << p << "\t";
-	      out1 << curve.f[p][i] << "\t";
+	      out1 << curve.f[p][i] + normcurve.f[p][0] << "\t";
 	      //out1 << Eobs << "\t";
 	      //out1 << Eem << "\t";
 	      //out1 << Eem/curve.para.temperature << "\t"

@@ -161,6 +161,236 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
     
 }
 
+/**************************************************************************************/
+/* ChiSquare:                                                                         */
+/*           computes the chi^2 fit of data vs a simulation                           */
+/*																					  */
+/* pass: obsdata = light curve fluxes from observational data                         */
+/*       ts = time shift or phase shift (normalized)                                  */
+/**************************************************************************************/
+double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class LightCurve* backcurve) {
+        
+    /***************************************/
+    /* VARIABLE DECLARATIONS FOR ChiSquare */
+    /***************************************/
+    
+    unsigned int numbins,  // Number of phase (or time) bins the light curve is cut into
+                 numbands;   
+
+    int k,      // Array index variable
+      n;      // Array index variable
+    
+    double ts,                              // time shift, so the phase of the simulation matches the phase of the data
+         chisquare(0.0),                  // Computed chi^2
+         tempflux[NCURVES][MAX_NUMBINS],  // Temporary array to store the flux
+         min_location;                    // 
+    
+    //cout << "starting chi squared calculation" << endl;
+    numbins = obsdata->numbins;
+    numbands = curve->numbands;
+    ts = curve->para.ts;
+    
+    for (unsigned int i(0);i<numbins;i++)
+        for (unsigned int p(0);p<numbands;p++)
+                tempflux[p][i] = 0.0;
+    
+    
+
+    for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
+
+        while ( ts < 0.0 ) {
+            ts += 1.0;
+        }
+        while ( ts > 1.0 ) {
+            ts -= 1.0;
+        }
+        
+        min_location = ts * numbins; // real version of the bin with the num
+        int new_b = min_location;
+        double new_shift = (min_location-new_b)/(numbins*1.0);
+       
+        // Rebinning the data and store shifted data back in Flux        
+        for ( unsigned int i(0); i < numbins; i++ ) {
+            k = i - new_b; //May changed
+            if (k > static_cast<int>(numbins)-1) k -= numbins;
+            if (k < 0) k += numbins;
+            
+	    for (unsigned int p(0);p<numbands-1;p++){
+          if (std::isinf(curve->f[p][k]))
+              std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+	      tempflux[p][i] = curve->f[p][k]; // putting things from curve->f's k bin into tempflux's i bin           
+	    }
+        }
+        //cout << "integer shift complete" << endl;
+
+        for ( unsigned int i(0); i < numbins; i++ ) {
+            n = i - 1;
+            if ( n < 0 ) n += numbins;
+            // n = i+1;
+            if ( n > static_cast<int>(numbins) - 1 ) n -= numbins;
+            
+	    for (unsigned int p(0); p < numbands-1; p++){
+	      curve->f[p][i] = tempflux[p][i] + (tempflux[p][n]-tempflux[p][i]) * new_shift * numbins;         
+	    }
+        }
+        //cout << "fractional shift complete complete" << endl;
+        
+        // Compute chisquare for shifted data
+        
+	chisquare = 0.0;
+	double xxx, thing;
+	double back;
+	double flux;
+	double epsilon(0.5);
+	double a,b,c, fa, fb, fc;
+	double xmin,fmin(4e6);
+	int kmin;
+	double chi[11];
+	
+	for ( unsigned int j(0); j<numbands-1; j++){ // Loop through the energy bands
+
+	  fmin = 1e6;
+	  
+	//for ( unsigned int j(0); j<1; j++){ // Loop through the energy bands
+	  
+	  for (unsigned int k(0); k<10; k++){
+	  
+	    //obsdata->chi[k] = 0.0;
+	    back = backcurve->f[j][0]*(1.0-epsilon + (2.0*k*0.1*epsilon)); // background is constant in phase
+
+	    chi[k] =  BandChi(obsdata,curve,back,j);
+
+	    /* if (j==299){
+	    std::cout << "j = " << j
+	    	      << " k = " << k
+		      << " chimin = " << fmin
+	    	      << " back = " << back
+	    	      << " chi = " << chi[k] << std::endl;
+		      }*/
+	    if (chi[k] < fmin && chi[k] > 0){
+	      kmin=k;
+	      b = back;
+	      fb = chi[k];
+	      fmin = fb;
+	      
+	      /* std::cout << "New Min " 
+	            << " k = " << k
+	            << " back = " << back
+	            << " chi = " << chi[k] << std::endl;*/
+	      
+	    }	    
+	  }
+
+	  std::cout << std::endl << "Energy Band: " << j << std::endl;
+	  thing = BandChi(obsdata,curve,backcurve->f[j][0],j);
+	  std::cout << "Initial Guess: ";
+	  std::cout << " Back = " << backcurve->f[j][0]
+	  	    << " Chi = " << thing << std::endl;
+	  
+	  std::cout << "Parabolic Interpolation!!!!!" << std::endl;
+	  
+	  a = backcurve->f[j][0]*(1.0-epsilon + (2.0*(kmin-1)*0.1*epsilon));
+	  //b = backcurve->f[j][0];
+	  c = backcurve->f[j][0]*(1.0-epsilon + (2.0*(kmin+1)*0.1*epsilon));
+
+	  fa = chi[kmin-1];
+	  //fb =  BandChi(obsdata,curve,b,j);
+	  fc =  chi[kmin+1];
+
+	  std::cout << "Bracket a: ";
+	  std::cout << " Back = " << a
+	  	    << " Chi = " << fa << std::endl;
+	  std::cout << "Bracket b: ";
+	  std::cout << " Back = " << b
+	  	    << " Chi = " << fb << std::endl;
+	  std::cout << "Bracket c: ";
+	  std::cout << " Back = " << c
+	  	    << " Chi = " << fc << std::endl;
+	  
+
+	  // Parabolic Interpolation
+
+	  xmin = b - 0.5 * ( pow(b-a,2) * (fb-fc) - pow(b-c,2) * (fb-fa) )/
+	    ( (b-a)*(fb-fc) - (b-c)*(fb-fa)   );
+	  fmin = BandChi(obsdata,curve,xmin,j);
+
+	  std::cout << "Interpolated: ";
+	  std::cout << " Back = " << xmin
+	  	    << " Chi = " << fmin << std::endl;
+
+	  backcurve->f[j][0] = xmin;
+	  obsdata->chi[j] = fmin;
+	  chisquare += obsdata->chi[j];
+	  
+	} // end for-j-loop   
+    } // End epoch loop
+   
+    return chisquare;
+    
+}
+
+double BandChi ( class DataStruct* obsdata, class LightCurve* curve, double back, unsigned int band) {
+        
+    /***************************************/
+    /* VARIABLE DECLARATIONS FOR ChiSquare */
+    /***************************************/
+    
+    unsigned int numbins,  // Number of phase (or time) bins the light curve is cut into
+                 numbands;   
+
+    double                           
+      chisquare(0.0);                  // Computed chi^2
+
+    
+    //cout << "starting Band chi calculation" << endl;
+    numbins = obsdata->numbins;
+    numbands = curve->numbands;
+        
+    // Compute chisquare for a single energy band
+        
+    chisquare = 0.0;
+    double xxx;
+    double flux;
+	
+    unsigned int j(band);
+	  
+    obsdata->chi[j] = 0.0;
+    //back = backcurve->f[j][0]*(0.9 + (2.0*k*0.01)); // background is constant in phase
+
+    for ( unsigned int i(0); i < numbins; i++ ) {
+	    
+
+      //std::cout << "i = " << i << " flux = " << curve->f[j][i] << " back = " << back ;
+	    
+      flux = curve->f[j][i] + back;
+
+	    //std::cout << " total flux = " << flux
+	    //	      << " obs flux = " << obsdata->f[j][i]
+	    //		      << std::endl;
+	    
+      if (obsdata->f[j][i] == 0.0)
+	obsdata->chi[j] +=  flux;
+      else{
+	xxx = flux/obsdata->f[j][i];
+	obsdata->chi[j] += - obsdata->f[j][i] * ( log(xxx) + 1.0 - xxx);
+      }
+         
+    }
+    
+    //std::cout << "j = " << j
+    //	      << " back = " << back
+    //	      << " chi = " << obsdata->chi[j] << std::endl;
+    chisquare = obsdata->chi[j];
+
+
+
+    return chisquare;
+    
+}
+
+
+
+
 class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve, class OblModelBase* model){
   // If the spot is in one piece, then p=0
   // If the spot is in two pieces, then:

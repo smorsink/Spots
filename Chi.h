@@ -19,6 +19,9 @@
 // Calculates chi^2
 double ChiSquare( class DataStruct* obsdata, class LightCurve* curve);
 
+double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class LightCurve* backcurve);
+double BandChi ( class DataStruct* obsdata, class LightCurve* curve, double back, unsigned int band);
+
 class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, double rho, class LightCurve* incurve,  class OblModelBase* modptr);
 
 double SpotIntegrand( double rho, double zeta, class LightCurve* curve, class OblModelBase* model);
