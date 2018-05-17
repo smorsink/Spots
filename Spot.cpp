@@ -181,7 +181,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         			// 5 = NICER J0437 TBnew (with fine bands)
         			break;
 
-        case 'A': // ISM column density, in multiples of 4e19
+        case 'A': // ISM column density, in multiples of 1e18cm^2
         			sscanf(argv[i+1], "%lf", &nh);
         			break;
 	            
@@ -400,7 +400,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
                               << "      4 for NICER J0437 TBABS model" << std::endl
                               << "      5 for NICER J0437 'fine channels' TBnew model" << std::endl
                               << "-A ISM column density, in multiples of base value [0]" << std::endl
-                              << "      base value is 4e19 for J0437 and 1.8e20 for J0030" << std::endl
+                              << "      base value is 1e18 " << std::endl
                               << "-b Bending Angle File" << std::endl
                               << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
                               << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
@@ -604,10 +604,51 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     std::cout << "ints_curve = " << curve.flags.inst_curve << std::endl;
 
+    double **atten;
+    atten = dmatrix(0,400,0,1191);
+    double *tbnew;
+    tbnew = dvector(0,1191);
+    int inh;
+
+    // Read in the attenuation file
+    if (curve.flags.attenuation == 5){
+      std::cout << "Read in ISM" << std::endl;
+      //curve = Attenuate(&curve,curve.flags.attenuation,nh);
+      std::ifstream ism;       // input stream
+      ism.open("ISM/tbnew_full.txt");
+      char line[265]; // line of the data file being read in
+      double get_nh, get_e, get_att;
+      for (unsigned int k(1); k<= 400; k++){
+	for (unsigned int i(0); i<1191; i++){
+	  ism.getline(line,265);
+	  //std::cout << "line = " << line << std::endl;
+	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
+	  atten[k][i] = get_att;
+	}
+      }
+
+      std::cout << "nh = " << nh << "e18 cm^2" << std::endl;
+      inh = nh;
+      std::cout << "inh = " << inh  << std::endl;
+      if (inh == 0)
+	curve.flags.attenuation = 0;
+      else{
+      
+	std::cout << "index = " << 2+(inh-10)/5 << std::endl;
+      
+	if (inh < 10 && inh > 0)
+	  tbnew = atten[1];      
+	if (inh >= 10){
+	  inh = 2+(nh-10)/5;
+	  tbnew = atten[inh];
+	}
+      }
+      
+      free_dmatrix(atten,0,400,0,1191);
+    }
+    
 
    // Define the Observer's Spectral Model
-
-
     if (curve.flags.beaming_model == 10){ // *cole* McPHAC Hydrogen Atmosphere
       //Read_McPHACC(curve.para.temperature, curve.para.mass, curve.para.radius); // Reading Cole's McPHAC text Files
       char atmodir[1024], cwd[1024];
@@ -1472,9 +1513,6 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     /* START OF INSTRUMENT EFFECT ROUTINES */
     /***************************************/
 
-    //tempcurve.numbins = numbins;
-    //tempcurve.numbands = numbands;
-
     // Interpolate to create all the other energy bands
     
     unsigned int q = 0;
@@ -1486,12 +1524,8 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
     int zip=0;
 
     for (unsigned int p = 0; p < curve.tbands; p++){
-
       q = (p/factor);
       index = p - (q*factor);
-
-      // std::cout << "Energy Interpolation: p = " << p << " q = " << q << " index = " << index << " factor=" << factor << std::endl;
-
       for (unsigned int i = 0; i < numbins; i++){
 
 	if (index == 0)
@@ -1499,35 +1533,17 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
 	else{
 	  // linear interp
 	  curve.f[p][i] = flxcurve->f[q][i] * (factor - index)/(factor*1.0) + flxcurve->f[q+1][i] * index/(factor*1.0); 
-	  /*
-	  if (q+npt > curve.tbands)
-	    q = curve.tbands - 4;
-
-	  for (unsigned int j=1;j<=npt;j++){
-	    tvec[j] = (q+j-1+zip); 
-	    fvec[j] = flxcurve->f[q+j-1+zip][i];
-	  }
-	  curve.f[p][i] = printpolint(tvec,fvec,npt,p,&err);
-	  */
-	}
-	//if (i==0)
-	//std::cout << "Before flux[q] = " << flxcurve->f[q][i] << " flux[q+1] = " << flxcurve->f[q+1][i] 
-	//<< " After: flux = " << curve.f[p][i] << std::endl;
-       
-
+	} 
       }
     }
-
-    
-    //curve = EquateCurve(flxcurve);
 
     /**********************************/
     /*       APPLYING ATTENUATION     */
     /**********************************/
 
     if (curve.flags.attenuation != 0){
-      std::cout << "ISM" << std::endl;
-      curve = Attenuate(&curve,curve.flags.attenuation,nh);
+      std::cout << "Apply ISM!" << std::endl;
+      curve = Attenuate(&curve,curve.flags.attenuation,nh,tbnew);
     }
     
     /******************************************/
@@ -1560,8 +1576,6 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
       curve = Sky_Background(&curve, dsbackground);
     }
 	
-    std::cout << "BEfore response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
-
     /******************************************/
     /*  APPLYING INSTRUMENT RESPONSE CURVE    */
     /******************************************/
@@ -1572,10 +1586,7 @@ std::cout << "Before Energy Interpolation f= " << flxcurve->f[0][0] << std::endl
       curve = Inst_Res2(&curve, curve.flags.inst_curve);
     }
 
-    //for (unsigned int i=0; i<numbins; i++){
-    std::cout << "After response i=" << 0 << " flux= " << curve.f[0][0] << std::endl;
-    //}
-
+ 
 
     /* Create Phase-independent Powerlaw Background */
 

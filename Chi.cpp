@@ -281,13 +281,13 @@ double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class Light
 	    }	    
 	  }
 
-	  std::cout << std::endl << "Energy Band: " << j << std::endl;
+	  //std::cout << std::endl << "Energy Band: " << j << std::endl;
 	  thing = BandChi(obsdata,curve,backcurve->f[j][0],j);
-	  std::cout << "Initial Guess: ";
-	  std::cout << " Back = " << backcurve->f[j][0]
-	  	    << " Chi = " << thing << std::endl;
+	  //std::cout << "Initial Guess: ";
+	  //std::cout << " Back = " << backcurve->f[j][0]
+	  //	    << " Chi = " << thing << std::endl;
 	  
-	  std::cout << "Parabolic Interpolation!!!!!" << std::endl;
+	  //std::cout << "Parabolic Interpolation!!!!!" << std::endl;
 	  
 	  a = backcurve->f[j][0]*(1.0-epsilon + (2.0*(kmin-1)*0.1*epsilon));
 	  //b = backcurve->f[j][0];
@@ -297,6 +297,7 @@ double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class Light
 	  //fb =  BandChi(obsdata,curve,b,j);
 	  fc =  chi[kmin+1];
 
+	  /*
 	  std::cout << "Bracket a: ";
 	  std::cout << " Back = " << a
 	  	    << " Chi = " << fa << std::endl;
@@ -306,7 +307,7 @@ double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class Light
 	  std::cout << "Bracket c: ";
 	  std::cout << " Back = " << c
 	  	    << " Chi = " << fc << std::endl;
-	  
+	  */
 
 	  // Parabolic Interpolation
 
@@ -314,10 +315,12 @@ double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class Light
 	    ( (b-a)*(fb-fc) - (b-c)*(fb-fa)   );
 	  fmin = BandChi(obsdata,curve,xmin,j);
 
+	  /*
 	  std::cout << "Interpolated: ";
 	  std::cout << " Back = " << xmin
 	  	    << " Chi = " << fmin << std::endl;
-
+	  */
+	  
 	  backcurve->f[j][0] = xmin;
 	  obsdata->chi[j] = fmin;
 	  chisquare += obsdata->chi[j];

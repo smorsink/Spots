@@ -18,7 +18,8 @@ spectraltype=0 #
 beaming=10     # McPhac
 spotmodel=0    # circular in the static frame, no gamma
 inst_res=0
-attenuation=0  # 
+attenuation=5  # 
+nh=1  # units of 10^{18} cm^2
 
 # doubles -- using "e" notation
 spin=600 # in Hz
@@ -56,7 +57,7 @@ radius=12.0
 
 
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "output.txt" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_file" -R "$inst_res" -I "$data_file" -K "Background/background6a_guess.txt"
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "output.txt" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_file" -R "$inst_res" -I "$data_file" -K "Background/background6a_guess.txt" -a "$attenuation" -A "$nh"
 times
 
 

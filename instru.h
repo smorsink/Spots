@@ -15,7 +15,7 @@
 
 //
 
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh);
+class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh, double* tbnew);
 
 class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve);
 
