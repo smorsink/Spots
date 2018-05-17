@@ -44,14 +44,14 @@ par.history.saveFrac=0.2; % [0 - 1]: Save only the optimals --> [0], or a fracti
 % multiple smaller populations is better than one very large population
 %par.general.NPop=4; % p [integer >= 1]: Number of populations for one generation
 %*************CAN BE VARIED**************************.
-par.general.NAggressive=1; % Number of populations that aggressively look for the minimum
+par.general.NAggressive=4; % Number of populations that aggressively look for the minimum
 %*************CAN BE CHANGED***********************.
-par.general.NPop=4;
+par.general.NPop=8;
 %par.general.popSize=250; % i [integer >= 1]: Size of each population.
 par.general.popSize=100;
 %*************SMALL POPULATION FOR TESTING**********
 % for debugging purposes it helps to have smaller numbers for popSize and NPop=1
-par.general.NGen=400; % g [integer >= 1]: Maximum number of generations to run for.
+par.general.NGen=1000; % g [integer >= 1]: Maximum number of generations to run for.
 %par.general.NGen=250;
 % pop=4, indiv=250,  gen=1000
 % pop=5, indiv=300, gen=300
@@ -68,8 +68,8 @@ par.general.FLabels={'\chi^2'}; % [Cell array of strings]: Give names to some or
 
 %*************ADD DISTANCE*****************
 par.general.XLabels={'radius (km)', 'mass (M_{sun})', 'inclination (degrees)', 'theta (degrees)', 'phase shift', 'rho', 'temperature', 'distance'};
-par.general.min=[        8.0,            1.2,                 30.0,                    30.0,            0.00,         0.01,        0.15,        0.010];
-par.general.max=[        18.0,           2.2,                100.0,                   150.0,            1.00,         2.00,        0.45,        0.500];
+par.general.min=[        8.0,            1.0,                 70.0,                    70.0,            0.00,         0.01,        0.15,        0.010];
+par.general.max=[        18.0,            2.0,                100.0,                   100.0,            1.00,         2.00,        0.45,        0.500];
  
 par.general.cyclic=[5]; % [integer vector > 1]: Which parameters are cyclic?
 
