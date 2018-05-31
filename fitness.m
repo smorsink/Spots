@@ -13,6 +13,7 @@ for i=size(X,2):-1:1  % we want to count backwards here
         ObsTime=extPar.fixed.obstime;
         
         radius=X(1,i);
+        %disp(radius)
         mass=X(2,i);
         inclination=X(3,i);
         emission=X(4,i);
@@ -20,7 +21,8 @@ for i=size(X,2):-1:1  % we want to count backwards here
         rho=X(6,i);
         temperature=X(7,i);
         distance=X(8,i);
-        
+        nh=X(9,i);
+        %nh=1;
         
         %ObsTime=extPar.fixed.obstime;
         %mass=extPar.fixed.mass;
@@ -50,7 +52,7 @@ end
 for j = 1:400
     cmd = [cmd,', extPar.fixed.instru(',num2str(j),',:)'];
 end
-
+cmd = [cmd,',extPar.fixed.atten, nh'];
 cmd = [cmd,');'];
 
         disp(cmd)

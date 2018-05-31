@@ -12,32 +12,33 @@ time=toc
 disp('Setting Things up!')
 tic;
 
-%cd /home/kitung/Spot/Slavko/
-obsdata = load('Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt');
+%Load in the Synthetic Data
+disp('Loading the Synthetic Data')
+%obsdata = load('Slavko/CU_high_accuracy_1spot_10k_plaw_10k_poisson_sampled.txt');
+obsdata = load('synthetic_2e6_realisation.dat');
+datatime = obsdata(:,2);
+dataflux = obsdata(:,3);
+obsdatatime = reshape(datatime,32,300);
+obsdatanew = reshape(dataflux,32,300);
 
+%Load the Instrumental Response Matrix
+disp('Loading the Instrumental Response Matrix')
 instru = load('Area/NICER_May2014_rsp.txt');
-%instru3 = instru(1,:);
-%disp(instru3);
 
-
-%bg = load('mcphacc_may12_bgnormalized.txt');
-
-cd /home/kitung/Spot/atmosphere
-atmotable=fopen('Hatm8000dT0.05.bin');
+%Load the Hydrogen Atmosphere 
+disp('Loading the Hydrogen Atmosphere Model')
+atmotable=fopen('atmosphere/Hatm8000dT0.05.bin');
 a = fread(atmotable,'double');   
 fclose(atmotable);
 atmo = a([1:1595000]*5);
 angl = a([1:1595000]*5-1);
-
 energytable = load('atmosphere/Energy.txt');
 energy = energytable(:,2);
 
-cd /home/kitung/Spot
-
-%setting up
 auxOutput = cell(1,5);
 %parameters
 
+disp('Setting the Parameter Values')
 mass = 1.4;
 radius = 12.0;
 freq = 600;
@@ -65,22 +66,22 @@ psi = bendfile(:,3);
 dcosa = bendfile(:,4);
 toa = bendfile(:,5);
 spotshape = 0;
-obstime = 0.4117564708;
+%obstime = 41.176;
+obstime = 28.56;
 inst_curve = 1;
-attenuation = 0;
+attenuation = 5;
+nh = 1.1;  % in units of 10^{18} cm^2
 inte = atmo;
+
+disp('Loading the guess for the background')
 %background = zeros(1,numbands);
-background = load('Background/Background1.txt');
+background = load('Background/background6a.txt');
 
-datatime = obsdata(:,2);
-dataflux = obsdata(:,3);
-
-obsdatatime = reshape(datatime,16,300);
-obsdatanew = reshape(dataflux,16,300);
-
-
-
-
+disp('Loading the ISM Absorption Model')
+% 3 column file format: col 1=NH x 10^{18} cm^2, col 2=Energy,
+% col 3=attenuation factor
+atten_full = load('ISM/tbnew_full.txt');
+atten = atten_full(:,3);
 
 time=toc
 
@@ -96,13 +97,11 @@ for i = 1:400
     cmd = [cmd,', instru(',num2str(i),',:)'];
 end
 
+cmd = [cmd,',atten, nh'];
+
 cmd = [cmd,');'];
-
-%cmd = '[Fspot,auxOutput{1}] = spotMex_new(mass, radius, freq, inclination, emission, timeShift, numbins, modelchoice, rho, spot_temperature, distance, numtheta, spectral_model, numbands, E_band_lower_1, E_band_upper_1, beaming_model, spots_2, obsdata(:,2), bend_file_is, mr, b, psi, dcosa, toa, spotshape, obstime, inst_curve, attenuation, inte, angl, obsdata(:,3));';
-
-%cmd = '[Fspot,auxOutput{1}] = spotMex_new(mass, radius, freq, inclination, emission, timeShift, numbins, modelchoice, rho, spot_temperature, distance, numtheta, spectral_model, numbands, E_band_lower_1, E_band_upper_1, beaming_model, spots_2, datatime, bend_file_is, mr, b, psi, dcosa, toa );';
-
 disp(cmd)
+
 tic;
 eval(cmd);
 time=toc                   

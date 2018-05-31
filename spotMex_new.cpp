@@ -55,7 +55,7 @@
 // MAIN
 void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mxArray *theInput[]) {
 
-//std::cout << "Hello World!" << std::endl;
+std::cout << "Hello World!" << std::endl;
 
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -268,7 +268,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
     obstime = mxGetScalar(theInput[26]); // in Mega-seconds
     //obstime *= 1e6; // convert to seconds
    
-           std::cout << "Spot: m = " << mass
+           std::cout << "SpotBKground: m = " << mass
 	      << " Msun, r = " << req
 	      << " km, f = " << omega 
 	      << " Hz, i = " << incl_1 
@@ -277,7 +277,7 @@ void mexFunction ( int numOutputs, mxArray *theOutput[], int numInputs, const mx
                 << ", rho = " << rho
                 << ", T = " << spot_temperature
                << ", ObsTime = " << obstime << "s" 
-            << ", Distance = " << distance
+            << ", Distance = " << distance 
 	      << std::endl;   
     
        
@@ -314,25 +314,57 @@ double *row;
 // Read in the Instrumental Response file
     if (inst_curve > 0){
 
-	for (int p=0; p<400; p++){ 
-	row = mxGetPr(theInput[thing+p]);
+        for (int p=0; p<400; p++){ 
+            row = mxGetPr(theInput[thing+p]);
 
-	/*if (p==0)
-	for (int i=0;i<80;i++)
-	std::cout << "i = " << i << " row[i] = " << row[i] << std::endl;*/
+            int i=0;
+            //if (p==0)   
+            //std::cout << "i = " << i << " row[i] = " << row[i] << std::endl;
 
-
-	curve.start[p] = row[2];
-	//std::cout << "p=" << p << " start[p] = " << curve.start[p] << std::endl;
-	for (int i=0;i<77; i++){
-	curve.response[p][i] = row[3+i];
-	}
-	}
-//std::cout << "response[0][1] = " << curve.response[0][1] << std::endl;
-
+            curve.start[p] = row[2];
+        //if (p==0) std::cout << "p=" << p << " start[p] = " << curve.start[p] << std::endl;
+            for (int i=0;i<77; i++){
+            curve.response[p][i] = row[3+i];
+            }
+        }
+        //std::cout << "response[0][1] = " << curve.response[0][1] << std::endl;
     }	
+//std::cout << "thing = " << thing << std::endl;
+thing += 400;
 
+double *atten_full;
+atten_full = mxGetPr(theInput[thing]);
+nh = mxGetScalar(theInput[thing + 1]);
+//std::cout << "nh = " << nh << std::endl;
 
+int inh = nh;
+int nh_index;
+
+if (inh == 0){
+ attenuation = 0;  
+ nh_index=0;
+}
+if (inh < 10 && inh > 0){
+    nh_index = 0;
+}
+if (inh>=10){
+    nh_index = (nh-10)/5 + 1;
+    //std::cout << "nh_index = " << nh_index << std::endl;
+}
+
+double *atten;
+atten = dvector(0,400);
+
+// Load in the values for NH = 10e18 cm^2 as a default
+if (inh !=0)
+for (int i(0);i<=400;i++){
+ atten[i] = atten_full[1191*nh_index + i];
+ //std::cout << "i = " << i 
+   //         << " E = " << 0.1 + i*0.01
+     //    << " Atten = " << atten[i]
+       //  << " Atten_full = " << atten_full[1191*nh_index + i]
+         //<< std::endl;
+}
 
 
     
@@ -714,7 +746,9 @@ double *row;
 	      //phi_edge=-1*Units::PI;
 	      phi_edge=-1*(Units::PI * 2 * phase_2);
 	      dphi=0.0;
-	      phishift = 0.0;
+	      phishift = 0.0;nh = mxGetScalar(theInput[thing + 1]);
+std::cout << "nh = " << nh << std::endl;
+
 	      curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho2)) ;
 	      if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
 	      if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
@@ -817,8 +851,8 @@ double *row;
     /**********************************/
 
     if (curve.flags.attenuation != 0){
-      std::cout << "ISM" << std::endl;
-      curve = Attenuate(&curve,curve.flags.attenuation,nh);
+      std::cout << "ISM, nh=" << nh << std::endl;
+      curve = Attenuate(&curve,attenuation,nh,atten);
     }
     
  
@@ -837,8 +871,8 @@ double *row;
 
 
     // If databins < numbins then rebin the theoretical curve down 
-    //std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
-    //std::cout << " Rebin the data? " << std::endl;
+    std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
+    std::cout << " Rebin the data? " << std::endl;
     if (databins < numbins) {
         obsdata.numbins = databins;
 	//  std::cout << " Rebin the data! " << std::endl;
@@ -876,7 +910,7 @@ double *row;
    
     
            
-
+    obsdata.numbins = databins;
 
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
@@ -894,6 +928,7 @@ double *row;
 	      << " Hz, i = " << incl_1 * 180.0 / Units::PI 
 	      << ", e = " << theta_1 * 180.0 / Units::PI 
 	      << ", X^2 = " << chisquared 
+            << ", NH = " << nh
 	      << std::endl;    
 
 
@@ -959,6 +994,7 @@ double *row;
         free_dmatrix(curve.defl.dcosa,0,1001,0,301);
         free_dmatrix(curve.defl.toa,0,1001,0,301);
         
+        free_dvector(atten,0,400);
 
 	free_dvector(curve.mccinte,0,1595001);
     //free_dvector(curve.mccangl,0,51);
