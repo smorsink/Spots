@@ -2,13 +2,13 @@
 
 # Scripts to run NICER code tests -- Sharon's computer settings
 times
-#base="/Users/kitung/Desktop/thesis_material"
-base="/Users/sharon/code/Albert"
-exe_dir="$base/Spot-master-25"
-#pwd
+
+base="/Users/sharon"
+exe_dir="$base/Spots-master"
+pwd
 make spot
 times
-out_dir="$exe_dir/BBtests"
+out_dir="$exe_dir/Test"
 
 # integers
 NS_model=1     # 1 (oblate) or 3 (spherical); 2 is for old-fashioned shape model
@@ -18,8 +18,8 @@ spectraltype=0 #
 #beaming=10     # McPhac
 beaming=0      # Blackbody no beaming
 spotmodel=0    # circular in the static frame, no gamma
-inst_res=0
-attenuation=0  # 
+inst_res=0     # No instrument
+attenuation=0  # No ISM
 
 # doubles -- using "e" notation
 spin=173.6 # in Hz
@@ -57,68 +57,10 @@ out_file="$out_dir/one_blackbody.txt"
 numtheta=1
 spectraltype=0
 ## RUNNING THE CODE
+#./spot -m "$mass"
+
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
+
 #./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot1.txt"
 times
 
-
-# TEST 2: second spot - No Phase Shift 
-out_file="$out_dir/two_blackbody.txt"
-numtheta=30
-spectraltype=0
-emission2=131.780293
-phase_2=0
-rho2=0.36
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission2" -E "$deltatheta" -l "$phase_2" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho2" -T "$temp_2" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot2_30.txt"
-times
-
-
-# TEST 3: First spot - Hopf Beaming
-out_file="$out_dir/one_hopf.txt"
-numtheta=1
-spectraltype=0
-beaming=7  #Hopf Beaming
-## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot1hopf.txt"
-times
-
-
-# TEST 4: second spot - No Phase Shift - Hopf Beaming
-out_file="$out_dir/two_hopf.txt"
-numtheta=30
-spectraltype=0
-beaming=7  #Hopf Beaming
-emission2=131.780293
-phase_2=0
-rho2=0.36
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission2" -E "$deltatheta" -l "$phase_2" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho2" -T "$temp_2" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot2_30hopf.txt"
-times
-
-
-# TEST 5: First spot
-out_file="$out_dir/one_blackbodytab.txt"
-numtheta=1
-spectraltype=0
-beaming=12
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot1tab.txt"
-times
-
-# TEST 6: First spot - Hopf Beaming - Tabulated
-out_file="$out_dir/one_hopftab.txt"
-numtheta=1
-spectraltype=0
-beaming=13
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot1hopftab.txt"
-times
-
-# TEST 6: First spot - Hopf Beaming - 2D Tabulated
-out_file="$out_dir/one_hopftab.txt"
-numtheta=1
-spectraltype=0
-beaming=14
-## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -E "$deltatheta" -l "$phaseshift" -n "$numbins" -q "$NS_model" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -b "angles1000.txt" -Z "$obstime"  -O "$out_dir/spot1hopftab2d.txt"
-times
