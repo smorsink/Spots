@@ -13,8 +13,8 @@
 #define MPTS 6  //
 
 #define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-#define NCURVES 400      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-
+//#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 700
 
 
 
@@ -95,7 +95,10 @@ double McPHACC(double E, double cos_theta);
 double McPHACC2(int E_dex, double cos_theta);
 
 
-double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
+//double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
+
+double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, int i_lgrav, double gvec[4], class LightCurve* curve);
+
 
 double NSXHenew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
