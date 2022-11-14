@@ -49,8 +49,13 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       // but time delays mean that j isn't always i-1
       // used in the linear interpolation
         
-      //std::cout << "Taking care of time delays!" << std::endl;
+      /*  std::cout << "Taking care of time delays!" << std::endl;
+      		  std::cout << "Before TD: curvef[0][0] = " << curve.f[0][0] << std::endl;
+ 		  std::cout << "Before TD: curvef[0][1] = " << curve.f[0][1] << std::endl;
+   		  std::cout << "Before TD: curvef[0][2] = " << curve.f[0][2] << std::endl;
 
+      */
+      
 
       int ecl1(0), ecl2(0), j1, j2, k1, k2;
       double tt1,tt2, ttt1, ttt2;
@@ -409,7 +414,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 
 		int npt=4;
 		int start=0;
-		int index=0;
+		//	int index=0;
 		j -= 1;
 
 		for (int m=1; m<=npt; m++){
@@ -427,9 +432,13 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 		    tvec[m] -= 1.0;
 		  }
 
+		  if ( tvec[m] > 1 ) tvec[m] -= 1.0;
+
 		  fvec[m] = curve.f[p][j+m+start];
-		  //std::cout << " START = " << start << " " 
-		  //	    << "m=" << m << " t=" << tvec[m] << " f=" << fvec[m] << std::endl;
+		  /*if ( i < 4 )
+		    std::cout << " START = " << start << " "
+			      << " j+m+start=" << j+m+start
+			      << "    m=" << m << " t=" << tvec[m] << " f=" << fvec[m] << std::endl;*/
 
 		}
 
@@ -443,6 +452,7 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
 
 		//std::cout << "do new interpolation!" << std::endl;
 		newflux.at(i) = polint(tvec,fvec,npt,curve.t[i],&err);
+		//	if (i < 4)
 		//std::cout << "New Interpolation time = " << curve.t[i] << "flux = " << newflux.at(i) << std::endl; 
 
 		/*	if (p==0)
@@ -529,7 +539,12 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
       }// end for-p-loop
     } // end time delay section
 
-
+    /*
+      		  std::cout << "After TD: curvef[0][0] = " << curve.f[0][0] << std::endl;
+ 		  std::cout << "After TD: curvef[0][1] = " << curve.f[0][1] << std::endl;
+  		  std::cout << "After TD: curvef[0][2] = " << curve.f[0][2] << std::endl;
+ 
+    */
     
     return curve;
 

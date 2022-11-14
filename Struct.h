@@ -21,13 +21,15 @@
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 400        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
-#define FBANDS 300        // Final number of energy channels
-#define CBANDS 20         // Number of energy bands computed
+#define MIN_NUMBINS 128   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define NCURVES 700        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define FBANDS 700        // Final number of energy channels
+#define CBANDS 700         // Number of energy bands computed
 #define MR 1000             // Maximum number of m/r values
 
-
+//#define NCURVES 1
+//#define FBANDS 1
+//#define CBANDS 1
 
 
 struct Parameters {      // local bit of spot information
@@ -64,10 +66,10 @@ struct Parameters {      // local bit of spot information
   double L1; // NICER
   double L2; // NICER
   double DeltaE; // NICER 
-  double theta_k[200]; // location of spot bins
-  double phi_k[200];   // phi location of edge of spot
-  double dtheta[200]; // width of spot bins
-  double gamma_k[200]; // value of lorentz gamma at the spot bin
+  double theta_k[250]; // location of spot bins
+  double phi_k[250];   // phi location of edge of spot
+  double dtheta[250]; // width of spot bins
+  double gamma_k[250]; // value of lorentz gamma at the spot bin
 };
 
 struct Flags {
@@ -142,8 +144,9 @@ class LightCurve {                     // Stores all the data about the light cu
 	bool ingoing;                          // True if one or more photons are ingoing
 	bool problem;                          // True if a problem occurs
 	unsigned int count;                    // for outputting command line args in Chisquare, chi.cpp
-     	int start[NCURVES];                    // Starting channels for Instrument Response 
-	double response[NCURVES][77];          // Instrument Response Curve
+	//     	int start[NCURVES];                    // Starting channels for Instrument Response 
+	//double area[NCURVES];
+	//double response[NCURVES][400];          // Instrument Response Curve
 };
 
 

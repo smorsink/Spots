@@ -9,6 +9,13 @@
 #define FREE_ARG char*
 #include "nrutil.h"
 
+unsigned long int *lvector(long nl, long nh)
+/* allocate a double vector with subscript range v[nl..nh] */{
+	unsigned long int *v;
+
+	v=(unsigned long int *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(unsigned long int)));
+	return v-nl+NR_END;
+}
 
 
 double *dvector(long nl, long nh)
@@ -75,6 +82,12 @@ double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 
 	/* return pointer to array of pointers to rows */
 	return t;
+}
+
+void free_lvector(unsigned long int *v, long nl, long nh)
+/* free a double vector allocated with dvector() */
+{
+	free((FREE_ARG) (v+nl-NR_END));
 }
 
 
