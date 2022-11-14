@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include "Chi.h"
 #include "OblDeflectionTOA.h"
+#include "BlackBody.h"
 #include "OblModelBase.h"
 #include "PolyOblModelNHQS.h"
 #include "Exception.h"
@@ -61,10 +62,12 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
          tempflux[NCURVES][MAX_NUMBINS],  // Temporary array to store the flux
          min_location;                    // 
     
-    //cout << "starting chi squared calculation" << endl;
+    cout << "starting chi squared calculation" << endl;
     numbins = obsdata->numbins;
-    numbands = curve->numbands;
+    numbands = curve->numbands + 1;
     ts = curve->para.ts;
+
+    cout << "numbands = " << numbands << std::endl;
     
     for (unsigned int i(0);i<numbins;i++)
         for (unsigned int p(0);p<numbands;p++)
@@ -76,6 +79,8 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 
     for ( unsigned int z(1); z<=1 ; z++ ) { // for different epochs
 
+      if ( ts != 0.0){
+      
         while ( ts < 0.0 ) {
             ts += 1.0;
         }
@@ -112,12 +117,13 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 	    }
         }
         //cout << "fractional shift complete complete" << endl;
-        
+      }
+      
         // Compute chisquare for shifted data
         
 	chisquare = 0.0;
     double xxx;
-	for ( unsigned int j(0); j<numbands-1; j++){
+	for ( unsigned int j(25); j<numbands-1; j++){
 	  obsdata->chi[j] = 0.0;
 	  for ( unsigned int i(0); i < numbins; i++ ) {
 	    //Chi^2 value
@@ -129,7 +135,9 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
               obsdata->chi[j] +=  curve->f[j][i];
           else{
             xxx = curve->f[j][i]/obsdata->f[j][i];
-            obsdata->chi[j] += - obsdata->f[j][i] * ( log(xxx) + 1.0 - xxx);
+            //obsdata->chi[j] +=  obsdata->f[j][i] * ( log(xxx) + 1.0 - xxx);
+	    //obsdata->chi[j] +=  obsdata->f[j][i] * ( log( obsdata->f[j][i] ) - 1.0);
+	    obsdata->chi[j] += obsdata->f[j][i] * log(curve->f[j][i]) - curve->f[j][i];
           }
           
 	    //obsdata->chi[j] += obsdata->f[j][i] * log(curve->f[j][i]) - curve->f[j][i];
@@ -137,22 +145,27 @@ double ChiSquare ( class DataStruct* obsdata, class LightCurve* curve) {
 
             //chisquare += pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2);
 	    
-	    /*if (j==0){
+	  /*if (j==24){
 	      std::cout <<"Chi: i=" << i
 				  << " Obs Flux = " << obsdata->f[j][i] 
 				  << " Err = " << obsdata->err[j][i]
 				  << " Cal Flux = " << curve->f[j][i]
+			<< " obsdata->chi[j] = " << obsdata->chi[j]
 				  << " SQdiff = " << pow( (obsdata->f[j][i] - curve->f[j][i])/obsdata->err[j][i], 2)
 				  << std::endl;
 				  }*/
 
 	  }
-	  //std::cout << " chi^2[" << j << "] = " << obsdata->chi[j] ;
+
+
 	  chisquare += obsdata->chi[j]; 
+	  //std::cout << " chi^2[" << j << "] = " << obsdata->chi[j] 
+	  //	    << " chisqare = " << chisquare
+	  //	    << std::endl;
 	}   
 
-	//std::cout << std::endl;
-	//std::cout << "Total Chi^2 = " << chisquare << std::endl;
+	std::cout << std::endl;
+	std::cout << "Total Chi^2 = " << chisquare << std::endl;
 
     } // End epoch loop
     
@@ -238,9 +251,9 @@ double BackChi ( class DataStruct* obsdata, class LightCurve* curve, class Light
         // Compute chisquare for shifted data
         
 	chisquare = 0.0;
-	double xxx, thing;
+	double thing;
 	double back;
-	double flux;
+
 	double epsilon(0.5);
 	double a,b,c, fa, fb, fc;
 	double xmin,fmin(4e6);
@@ -442,7 +455,7 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	  if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
 	    curve.para.phi_k[k] = acos( cos_phi_edge );   
 	    // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
-	    // std::cout << "k="<< k << " theta_k="<< thetak << " phi_edge=" << curve.para.phi_k[k] << std::endl;
+	    //std::cout << "SpotShape: k="<< k << " theta_k="<< thetak*180/Units::PI << " phi_edge=" << curve.para.phi_k[k] << std::endl;
 
 	}
       }
@@ -949,7 +962,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    double b_maximum = radius/sqrt(1.0 - 2.0*mass_over_r);
 	    if ( (fabs(b-b_maximum) < 1e-7) && (b > 0.0) && (b > b_maximum) ) { 
 	      // this corrects for b being ever so slightly over bmax, which yields all kinds of errors in OblDeflectionTOA
-	      std::cout << "Setting b = b_max." << std::endl;
+	      std::cout << "ComputeAngles: Setting b = b_max." << std::endl;
 	      b = b_maximum - DBL_EPSILON;
 	    }
             curve.b[i] = b/radius;
@@ -1070,9 +1083,26 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	                               * curve.cosbeta[i] 
 	                               * curve.dcosalpha_dcospsi[i];  // PG8
 
-		    //if (curve.dOmega_s[i] < 0) 
-		    //std::cout << "dOmega < 0 " << std::endl;
+		    /* double I_obs = pow(curve.eta[i],3) * pow(sqrt( 1 - 2.0 * mass_over_r),3)
+		      * BlackBody(curve.para.temperature,1.0 / sqrt( 1 - 2.0 * mass_over_r)/curve.eta[i])
+		      * 2.0e9 / pow(Units::C * Units::H_PLANCK, 2)
+		      * pow(curve.para.temperature * Units::EV, 3);*/
 
+		    
+		    //std::cout << "t_em     t_obs    E_em   I_obs d(cosa)/d(cosp) cos(beta)  cos(psi)  eta  dOmega flux" << std::endl;
+		    
+		    /*std::cout << curve.t[i] << " "
+			      << curve.t_o[i] << " "
+			      << 1.0 / sqrt( 1 - 2.0 * mass_over_r) /curve.eta[i] << " "
+			      << I_obs << " "
+			      << curve.dcosalpha_dcospsi[i] << "      "
+			      << curve.cosbeta[i] << " "
+			      << curve.cospsi[i] << " "
+			      << curve.eta[i] << " "
+			      << curve.dOmega_s[i] << " "
+			      << curve.dOmega_s[i] * curve.eta[i] * I_obs * (1.0 / ( 1.0 * Units::H_PLANCK )) << " "
+			      << i
+			      << std::endl;*/
 	        
                 if (std::isinf(curve.dOmega_s[i]))
                     std::cout << "ComputeAngles: dOmega = infinity!!!! i="<< i << std::endl;
@@ -1086,14 +1116,14 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
       
             else { // not visible; we think that it shouldn't matter if it's not visible at i=0
             if (i!=0)
-            curve.t_o[i] = curve.t[i] + (curve.t_o[i-1] - curve.t[i-1]) ; // t_o is not defined properly, so we'll set it to emission time
+	      curve.t_o[i] = curve.t[i] + (curve.t_o[i-1] - curve.t[i-1]) ; // t_o is not defined properly, so we'll set it to emission time
             else 
                 curve.t_o[i] = curve.t[i] ;
 	      curve.dOmega_s[i] = 0.0;    // don't see the spot, so dOmega = 0
 	      curve.cosbeta[i] = 0.0;     // doesn't matter, doesn't enter into calculation
 	      curve.eta[i] = 1.0;	        // doesn't matter, doesn't enter into calculation
-	      // std::cout << "toa = " << (curve.t_o[i-1] - curve.t[i-1]) << std::endl;
-	            //}
+
+	     
             } // end not visible
         } // end "there is a solution"
     }  // closing For-Loop-2

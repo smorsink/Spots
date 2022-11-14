@@ -37,7 +37,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   char in_file2[256] = "No file specified";
 
 		
-  int numbins(16), numbands(300);
+  int numbins(128), numbands(1);
 
   /*********************************************************/
   /* READING IN PARAMETERS FROM THE COMMAND LINE ARGUMENTS */
@@ -92,13 +92,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	for (unsigned j(0);j<numbins;j++){ // loop through the time bins
 
 	  in1.getline(line,265);  
-	  sscanf( line, "%lf %lf %lf", &get_t, &get_e, &get_f1 );
+	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f1 );
+	  //sscanf( line, "%lf %lf", &get_t, &get_f1 );
 
-	  // if (i == 0 && j == 0)
-	  //std::cout << "line1 = " << line << std::endl;
+	  if (i == 0 && j == 0)
+	    std::cout << "line1 = " << line << std::endl;
 
-	  in2.getline(line,265);  
-	  sscanf( line, "%lf %lf %lf", &get_t, &get_e, &get_f2);
+	  in2.getline(line,265);
+	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f2 );
+		  
+	  //sscanf( line, "%lf %lf", &get_t, &get_f2);
 
 	  //if (i == 0 && j == 0)
 	  //std::cout << "line2 = " << line << std::endl;
@@ -122,8 +125,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    diff = 0.0;
 	  */
 	  
-	    out << get_t << " " 
-		<< get_e << " "
+	    out << get_e << " " 
+		<< get_t << " "
 		<< diff << " "
 		<< get_f1 << " "
 		<< get_f2 << " "

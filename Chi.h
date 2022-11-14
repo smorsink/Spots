@@ -12,8 +12,8 @@
 #define MPTS 6  //
 
 #define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-#define NCURVES 400      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-
+//#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 700
 
 
 // Calculates chi^2
