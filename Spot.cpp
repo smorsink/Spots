@@ -36,7 +36,7 @@
 #include "Chi.h"
 #include "Atmo.h"
 #include "TimeDelays.h"
-#include "instru.h"    
+#include "Instru.h"    
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
@@ -54,6 +54,9 @@
 int main ( int argc, char** argv ) try {  // argc, number of cmd line args; 
                                           // argv, actual character strings of cmd line args
 
+
+ std::cout << "Hello!" << std::endl;
+  
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
   /*********************************************/
@@ -163,7 +166,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   class LightCurve *flxcurve;
   class DataStruct obsdata;           // observational data as read in from a file
 
+ 
 
+  
   /*********************************************************/
   /* READING IN PARAMETERS FROM THE COMMAND LINE ARGUMENTS */
   /*********************************************************/
@@ -468,7 +473,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         } // end if
     } // end for
 
-	
+
+    
+    
     if (bend_file_is_set){ // Read in table of bending angles for all M/R
 
       // ReadBend allocates memory for the look up tables
@@ -700,7 +707,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		
       std::cout << "Reading in McPhac Binary File " << std::endl;
 
-      sprintf(atmodir,"%s/atmosphere",cwd);
+      //sprintf(atmodir,"%s/atmosphere",cwd); Commented this out to see if this is a problem
       chdir(atmodir);
       FILE *Hspecttable;
       Hspecttable=fopen("Hatm8000dT0.05.bin","rb");
@@ -1574,10 +1581,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     if (curve.flags.attenuation != 0){
       std::cout << "Apply ISM to the Signal!" << std::endl;
-      if (curve.flags.attenuation >= 5)
-	curve = Attenuate(&curve,curve.flags.attenuation,nh,tbnew);
-      if (curve.flags.attenuation == 3)
-	curve = Wabs(&curve, curve.flags.attenuation, nh);
+      //if (curve.flags.attenuation >= 5)
+      //curve = Attenuate(&curve,curve.flags.attenuation,nh,tbnew);
+	//if (curve.flags.attenuation == 3)
+	//curve = Wabs(&curve, curve.flags.attenuation, nh);
     }
     
       
@@ -1654,8 +1661,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
            
-      if (curve.flags.inst_curve == 2)
-	curve = Inst_Res2(&curve, curve.flags.inst_curve,start,response);
+      //if (curve.flags.inst_curve == 2)
+      //curve = Inst_Res2(&curve, curve.flags.inst_curve,start,response);
 
       if (curve.flags.inst_curve == 3){ // Apply response to both signal and background
 	std::cout << "Apply the Response Matrix " << std::endl;
@@ -1669,8 +1676,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}	
 
 	// Redistribution Matrix
-	curve = Inst_Res3(&curve, curve.flags.inst_curve,start,response); // Signal
-	(*flxcurve) = Inst_Res3(flxcurve, curve.flags.inst_curve,start,response); // Background
+	//curve = Inst_Res3(&curve, curve.flags.inst_curve,start,response); // Signal
+	//(*flxcurve) = Inst_Res3(flxcurve, curve.flags.inst_curve,start,response); // Background
 
 	// Offaxis Response
 	for (unsigned int p = 0; p < 355; p++){
@@ -1733,7 +1740,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	chisquared = ChiSquare ( &obsdata, &curve );
 	
 	if (background_file_is_set){
-	   normcurve = Read_Background_Guess(&curve, background_file);   
+	  //normcurve = Read_Background_Guess(&curve, background_file);   
 	   chisquared = BackChi ( &obsdata, &curve, &normcurve );	   
 	}	
     }
