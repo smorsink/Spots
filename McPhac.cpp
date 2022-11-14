@@ -29,6 +29,7 @@
 #include <stdio.h>
 using namespace std;
 
+// Computes the correct theta index for McPhac
 int th_index(double cos_theta, class LightCurve* mexmcc){
 
   int n_mu, i_mu;
@@ -52,6 +53,24 @@ int th_index(double cos_theta, class LightCurve* mexmcc){
 
 }
 
+// Computes the correct theta index for NSX
+int th_index_nsx(double cos_theta, class LightCurve* mexmcc){
+
+  int n_mu;
+
+  //std::cout << "th_index_nsx: cos_theta = " << cos_theta << std::endl;  
+  //Find proper mu choice
+    n_mu = 1;
+    while (cos_theta < mexmcc->mccangl[n_mu] && n_mu < mexmcc->Nmu){
+    	n_mu += 1;
+    }
+    /*std::cout << "th_index_nsx: cos_theta = " << cos_theta << " nmu = " << n_mu
+	      << " mu[i] = " << mexmcc->mccangl[n_mu]
+	      << " mu[i-1] = " << mexmcc->mccangl[n_mu-1]
+	      << " mu[i-2] = " << mexmcc->mccangl[n_mu-2]
+	      << std::endl;*/
+    return (n_mu-1);
+}
 
 
 // Calculate the final interpolated intensity

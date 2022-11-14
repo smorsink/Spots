@@ -9,3 +9,5 @@ double AtmosEBandFlux3new( unsigned int model, double cos_theta, int theta_index
 
 
 int th_index(double cos_theta, class LightCurve* mexmcc);
+
+int th_index_nsx(double cos_theta, class LightCurve* mexmcc);
