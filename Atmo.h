@@ -97,7 +97,7 @@ double McPHACC2(int E_dex, double cos_theta);
 
 //double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
 
-double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, int i_lgrav, double gvec[4], class LightCurve* curve);
+double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, class LightCurve* curve);
 
 
 double NSXHenew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);

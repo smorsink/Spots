@@ -259,7 +259,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    if (p==0 && i==0)
 	      curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
-			cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
+			cos_theta, theta_index, curve.para.temperature, lgrav, &curve);
 	    curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
 	    curve.f[p][i] *= E_diff; // Fake Integration
 
@@ -620,7 +620,7 @@ double NSXHe2(int E_dex, double cos_theta){
 // NSX - Hydrogen Atmosphere Computed by Wynn Ho
 // Calculate the final interpolated intensity
 // This "new" version takes into account that the energy is really the ratio: E/kT
-double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, int i_iii, double gvec[4], class LightCurve* curve){
+double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav,  class LightCurve* curve){
 
   //std::cout << "Welcome to NSX! E=" << E << std::endl;
 
@@ -670,7 +670,7 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
     
     double ivec[5][5][5][5];
     double err, err1;
-    double tvec[5];
+    double tvec[5], gvec[5];
     
     int npt(4), tpt(4), gpt(4), mpt(4);
     
