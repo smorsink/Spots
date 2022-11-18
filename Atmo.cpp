@@ -77,7 +77,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     
   // One monochromatic energy, hardwired value, in keV
   //    E_mono = 1.0;
-  //std::cout << "ComputeCurve: Starting ComputeCurve" << std::endl;
+  std::cout << "ComputeCurve: Starting ComputeCurve" << std::endl;
   curve = (*angles);
 
   mass_over_r = curve.para.mass_over_r;
@@ -96,7 +96,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   E2 = curve.para.L2;
   DeltaE = curve.para.DeltaE;
   //cout << curve.mccinte[0] << endl;
-  //std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
+  std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
    
   redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
 
@@ -120,6 +120,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   //std::cout << "theta = " << curve.para.theta * 180.0/Units::PI << " cos(theta) = " << cos_theta << " g = " << delta * mass_over_req * pow(Units::C,2)/R * obl_approx
   //	      << " log(g) = " << lgrav << std::endl;
 
+
+  std::cout << "ComputeCurve: Gravity log(g) = " << lgrav << std::endl;
+
+  
   int i_lgrav = (lgrav-13.7)/0.1;
   if (i_lgrav < 1) i_lgrav = 1;
 
@@ -233,13 +237,11 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  //cout << "Calling NSXHnew!" << endl;	  
 	  double cos_theta = curve.cosbeta[i]*curve.eta[i];
 	  int theta_index = th_index_nsx( cos_theta, &curve);
+	  
 	  double solidangle = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3);
 	  double Elo, Ehi, Emid;
 	  	  
 	  for (unsigned int p = 0; p<numbands; p++){
-
-
-
 	    
 	      /* E0 = E_band_lower_1 + (p + 0.5)*E_diff;
 	      curve.f[p][i] = solidangle
@@ -251,16 +253,19 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    std::cout << "1. Atmo.cpp:  E0 = " << E0 <<  " flux[0][0] = " << curve.f[p][i] << std::endl;
 	      */
 
-	     E0 = E_band_lower_1 + (p + 0.5)*E_diff;
+	    E0 = E_band_lower_1 + (p + 0.5)*E_diff;
+
+	    //Testing
+	    if (p==0 && i==0)
 	      curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
-			    cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav+1, gvec, &curve);
+			cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
 	    curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
 	    curve.f[p][i] *= E_diff; // Fake Integration
 
-	    if (  p==0){
+	    /* if (  p==0){
 	      std::cout << "2. Atmo.cpp:  E0 = " << E0 <<  " flux[0][0] = " << curve.f[p][i] << std::endl;
-	    }
+	      }*/
 	    /*
 	     Elo = E_band_lower_1 + (p + 0)*E_diff;
 	    Emid = E_band_lower_1 + (p + 0.5)*E_diff;
@@ -282,7 +287,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	}
       } // Spectral_model == 0 
 
-
+      //std::cout << "Finished with Hydrogen!" << std::endl;
 
       /*******************************************************************/
       /* COMPUTING BLACKBODY LIGHT CURVE FOR INTEGRATED FLUX             */
@@ -615,7 +620,7 @@ double NSXHe2(int E_dex, double cos_theta){
 // NSX - Hydrogen Atmosphere Computed by Wynn Ho
 // Calculate the final interpolated intensity
 // This "new" version takes into account that the energy is really the ratio: E/kT
-double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, int i_lgrav, double gvec[4], class LightCurve* curve){
+double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, int i_iii, double gvec[4], class LightCurve* curve){
 
   //std::cout << "Welcome to NSX! E=" << E << std::endl;
 
@@ -628,16 +633,40 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
   int i_f, i_lt,  first_inte;  
   int ii_mu = theta_index;
 
+  // CALCULATE LOG(T) AND CORRECT INDEX
   lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
 
+  // CALCULATE LOG(E/T) 
+   double logET = log10(E/T);
+
+   
+  //TEST
+   /*
+  lt = 5.1;
+  lgrav = 15;
+  cos_theta = 0.5;
+  ii_mu = 43;
+  logET = 1.0;
+   */
+  // End TEST
+
+  
   // Find the correct temperature range
     i_lt = (lt-5.1)/0.05 ; //if we need to load 1st temperature, i_lt = 0. this is discrete math
-    if (i_lt < 0) i_lt = 0;
+    if (i_lt < 1) i_lt = 0;
     if (i_lt > 35) i_lt = 35;
 
-    //std::cout << "log(T) = " << lt << " i_lt = " << i_lt << " log(T) = " << mexmcc.mclogTeff[i_lt] << std::endl;
-    //std::cout << "log(g) = " << lgrav << " i _lg=" << i_lgrav << " log(g) = " << mexmcc.mclogg[i_lgrav] << std::endl;
-    //std::cout << "mu = " << cos_theta << " imu=" << ii_mu << " mu = " << mexmcc.mccangl[ii_mu] << std::endl;
+
+    // Find the correct gravity index
+    int i_lgrav = (lgrav-13.7)/0.1;
+    if (i_lgrav > 2) i_lgrav--;
+    if (i_lgrav > 10) i_lgrav=10;
+    
+    /*
+    std::cout << "log(T) = " << lt << " i_lt = " << i_lt << " log(T) = " << mexmcc.mclogTeff[i_lt] << std::endl;
+    std::cout << "log(g) = " << lgrav << " i_lg=" << i_lgrav << " log(g) = " << mexmcc.mclogg[i_lgrav] << std::endl;
+    std::cout << "mu = " << cos_theta << " imu=" << ii_mu << " mu = " << mexmcc.mccangl[ii_mu] << std::endl;
+    */
     
     double ivec[5][5][5][5];
     double err, err1;
@@ -649,12 +678,19 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
       L = 0.0;
     else{
 
+
+
+      
     //Find proper freqency choice
-    ener_index = (log10(E/T) + 1.30)/0.02;
-    i_f = (int) ener_index;  
-    if (npt==2 || npt==4) i_f +=1;
-    if (i_f < 0) i_f = 0;
-    if (i_f > 166) i_f=166;
+    ener_index = (logET + 1.30)/0.02;
+    i_f = (int) ener_index;
+    std::cout << "ener_index = " << ener_index << " i_f = " << i_f << std::endl;
+    // SMM 2022 if (npt==2 || npt==4) i_f +=1;
+    if (i_f < 0) i_f = 1;
+    // Original version
+    if (i_f > 162) i_f=162;
+    // SMM: 20221117 Change to:
+    if (i_f > 164) i_f=164;
     /*std::cout << "log(E/T) = " << log10(E/T)
 	      << " i_f = " << i_f
 	      << " log(E/T) = " << mexmcc.mcloget[i_f]
@@ -665,13 +701,15 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
     
     
     for (int r(0); r<tpt; r++){
-      tvec[r+1] =  5.1+0.05*(i_lt-1+r);
+      //std::cout << "r = " << r << std::endl << std::endl;
+      tvec[r+1] =  5.1+0.05*(i_lt-1+r+1);
       for (int q(0); q<gpt; q++){
+	gvec[q+1] =  mexmcc.mclogg[i_lgrav+q];
+	//std::cout << "q = " << q << std::endl;
 	for (int k(0); k<mpt; k++){
+	  //std::cout << "k = " << k << std::endl;
 	  for( int j(0); j<npt; j++){
-	   
-	    //first_inte = ((i_lt-1+r)*11 + i_lgrav-1+q) * 5000 + (i_f-1+j) * 50 + (ii_mu + k);
-
+	   	    
 	    first_inte = (i_lt + r) * mexmcc.NlogE * mexmcc.Nmu * mexmcc.Nlogg
 	      + (i_lgrav+q) * mexmcc.NlogE * mexmcc.Nmu
 	      + (i_f + j) * mexmcc.Nmu
@@ -682,31 +720,42 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
 
 	    // logarithmic interpolation
 	    //ivec[r][q][k][j+1] = log10(mexmcc.mccinte[first_inte]);
-	    /*if (r == 0 && q == 0 && k==0)
-	      std::cout << "j = " << j 
+	    /*
+	      std::cout << "j = " << j
+			<< "first_inte = " << first_inte
+			<< " tvec = " << tvec[r+1]
+			<< " gvec = " << gvec[q+1]
+			<< " costheta = " << mexmcc.mccangl[ii_mu+k]
 		      << " evec = " << mexmcc.mcloget[i_f+j] 
 		      << " ivec = " << ivec[r][q][k][j+1] << std::endl;*/
 	  }
 	  
 	  // linear interpolation
-	  I_int[k+1] = polint(&mexmcc.mcloget[i_f-1],ivec[r][q][k],npt,log10(E/T),&err1);
-	  /*if (r == 0 && q == 0){
-	    //I_int[k+1] = printpolint(&mexmcc.mcloget[i_f-1],ivec[r][q][k],npt,log10(E/T),&err1);		  
+
+	  // E=T*100.0;// TEST
+	  
+	  I_int[k+1] = polint(&mexmcc.mcloget[i_f-1],ivec[r][q][k],npt,logET,&err1);
+	  /*if (r == 0 && q == 0 ){
+	    I_int[k+1] = polint(&mexmcc.mcloget[i_f-1],ivec[r][q][k],npt,log10(E/T),&err1);		  
 	    std::cout << "mu = " << mexmcc.mccangl[ii_mu+k]
-	      << "Interpolated value = " << I_int[k+1] << std::endl;
+	      << " Interpolated value = " << I_int[k+1] << std::endl;
 	      }*/
+	  //std::cout << "mu = " << mexmcc.mccangl[ii_mu+k]
+	  // << " Interpolated value = " << I_int[k+1] << std::endl;
 	}
 	// Intepolate over mu for fixed Teff, gravity
 	J[q+1] = polint(&mexmcc.mccangl[ii_mu-1],I_int,mpt,cos_theta,&err);
+
 	/*if (r == 0){
-	  //J[q+1] = printpolint(&mexmcc.mccangl[ii_mu-1],I_int,mpt,cos_theta,&err);
+	  J[q+1] = polint(&mexmcc.mccangl[ii_mu-1],I_int,mpt,cos_theta,&err);
 	  std::cout << "logg = " << mexmcc.mclogg[i_lgrav+q] << " Interp = " << J[q+1] << std::endl;
 	  }*/
+	//std::cout << "logg = " << mexmcc.mclogg[i_lgrav+q] << " Interp = " << J[q+1] << std::endl;
       }
       // Interpolate over logg for fixed Teff
+      //K[r+1] = polint(gvec,J,gpt,lgrav,&err);
+      
       K[r+1] = polint(gvec,J,gpt,lgrav,&err);
-      //if (r==0){
-      //K[r+1] = printpolint(gvec,J,gpt,lgrav,&err);
 	
       //std::cout << " Interp logT=" << tvec[r+1] << " IntK= " << K[r+1] << std::endl;
       //}
@@ -714,6 +763,9 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
 
     // Interpolate over log(Teff)
     L = polint(tvec,K,tpt,lt,&err);
+
+    //std::cout << "Interpolated I = " << L << std::endl;
+    
     
     }
    

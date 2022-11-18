@@ -767,13 +767,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	double loget,mu,logt,logg,logi;
 
 	
-	std::cout << "Reading in NSX version 171019" << std::endl;
+	std::cout << "Reading in NSX version 200804" << std::endl;
 	
 	//	std::ifstream Hspecttable; 
 	//	Hspecttable.open( "atmosphere/nsx_H_v171019.out" );  // current version of NSX
 
       FILE *Hspecttable;
-      Hspecttable=fopen("atmosphere/nsx_H_v171019.out","r");
+      Hspecttable=fopen("../atmosphere/nsx_H_v200804.out","r");
       std::cout << "Done opening file" << std::endl;
 	  
 	NlogTeff = 35;
@@ -782,7 +782,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  curve.mclogTeff[i] = 5.10 + i*0.05;	  
 	}
 
-	Nlogg = 11;
+	Nlogg = 14; // updated 20221116
 	curve.mclogg = dvector(0,Nlogg);
 	for (int i=0;i<Nlogg;i++){
 	  curve.mclogg[i] = 13.7 + 0.1*i;
@@ -824,15 +824,16 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    //std::cout << " mu = " << curve.mccangl[i] << std::endl;
 	  }
 	  
-	  /*	  std::cout
+	  if (logt == 5.1 && mu == 0.5 && loget == 1.0 && logg == 15)
+	    std::cout
 	    << " i = " << i
 	    << " i%(Nmu) = " << i%(Nmu)
-	    << " logT = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
-	    << " logg = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
-	    << " logE = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
+	    << " logT = " << logt << " = " << curve.mclogTeff[i/(Nlogg*NlogE*Nmu)]
+	    << " logg = " << logg << " = " << curve.mclogg[i/(NlogE*Nmu*NlogTeff)]
+	    << " logE = " << loget << " = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
 	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
 		    << " I = " << curve.mccinte[i]
-		    << std::endl;*/
+		    << std::endl;
 	  
 	}
        
@@ -1207,13 +1208,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    }
 
 
-	    /*std::cout << "k = " << k
-		      << " theta = " << thetak * 180/Units::PI
-		      << " phiedge = " << phi_edge
-		      << " j = " << j 
-		      << " phi_0 = " << curve.para.phi_0
-		      << std::endl;*/
-	    
+	  
 	
 	  
 
@@ -1229,19 +1224,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      for ( unsigned int pp(0); pp < curve.cbands; pp++ ) {
 		flxcurve->f[pp][i] += curve.f[pp][q];
 		if (j!=0) flxcurve->f[pp][i] += curve.f[pp][qq];
-		/*if (pp==0) {
-		  //std::cout << "B: i = " << i << " j=" << j << "  q=i+j=" << i+j << std::endl;
-		  //std::cout << "B: i = " << i << " j=" << j << " qq=i-j=" << i-j << std::endl;
-
-		  //std::cout << "B: q=" << q << " curvef =    " << curve.f[0][q] << std::endl;
-		  //std::cout << "B: qq=" << qq << " curvef =    " << curve.f[0][qq] << std::endl;
-		  std::cout << "B: i=" << i << " time=" << curve.t[q] << " flxcurvef = " << flxcurve->f[0][q] << std::endl;
-		  }*/
 	      }
-	    } // ending Add curves
-
-	    //std::cout << "C: flxcurvef = " << flxcurve->f[0][0] << std::endl;
- 
+	    } // ending Add curve
 	  } // end for-j-loop
 
 	  
@@ -1488,7 +1472,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	if (p==0)
 	  curve.t[i] = curve.t[i*binfactor];
 
-		if (p==0)
+	/*	if (p==0)
 	  std::cout << " i=" << i
 		    << " t[0]=" << flxcurve->t[i]
 		    << " newt[0]=" << curve.t[i]
@@ -1496,8 +1480,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		    << " f[1]=" << flxcurve->f[p][binfactor*i+1]
 		    << " new f[0] = " << curve.f[p][i]
 		    << std::endl;
-
-	  
+	*/
       }
     }
     numbins = databins;
@@ -1508,38 +1491,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  }
 	}
 
-    // Integer phase shift
-    /*
-    //if (phase_2 == 0.5625){
-      // $$$$$$$ This Section only to be used with comparison with Anna!!!!!!!!      
-      std::cout << "PHASE SHIFT:   Before Shift f= " << flxcurve->f[0][0] << std::endl;
-      int new_b, k;
-      phase_2 = 0.015625;
-      new_b = -phase_2*numbins;
-      std::cout << "phase_2 = " << phase_2 << " new_b = " << new_b << std::endl;
-        // Rebinning the data and store shifted data back in Flux        
-        for ( unsigned int i(0); i < numbins; i++ ) {
-            k = i - new_b; 
-            if (k > static_cast<int>(numbins)-1) k -= numbins;
-            if (k < 0) k += numbins;
-            
-	    for (unsigned int p(0);p<numbands-1;p++){
-	      if (std::isinf(flxcurve->f[p][k]))
-		std::cout << "Chi: flux["<<p<<"]["<<k<<"]= infinity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-	      curve.f[p][i] = flxcurve->f[p][k]; // putting things from curve->f's k bin into tempflux's i bin
-	      
-	    }
-        }
-	for ( unsigned int i(0); i< numbins; i++){
-	  for (unsigned int p(0);p<numbands-1;p++){
-	    flxcurve->f[p][i] = curve.f[p][i];
-	  }
-	}	
-	std::cout << "integer shift complete" << std::endl;
-    */
-
-
-    std::cout << "2. Flux in Bin 0: = " << flxcurve->f[0][0] << std::endl;
+ 
 
 	
     /***************************************/
@@ -1571,8 +1523,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	} 
       }
     }
-
-        std::cout << "3. Flux in Bin 0: = " << curve.f[0][0] << std::endl;
 
 
     /**********************************/
@@ -1697,7 +1647,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
-    for (unsigned int p = 25; p < 300; p++){
+    for (unsigned int p = 0; p < 300; p++){
       //std::cout << "band " << p << std::endl; 
       //std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl;
         for (unsigned int i = 0; i < numbins; i++){          
@@ -1710,8 +1660,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
-       std::cout << "4. Flux in Bin 0: = " << curve.f[0][0] << std::endl;
-
+    
     
     //numbands = 300;
 
@@ -1719,7 +1668,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     if (powerlaw != 0.0){
       double totalcounts = 0.0;
-      for (unsigned int p = 25; p < numbands; p++){  
+      for (unsigned int p = 0; p < numbands; p++){  
         for (unsigned int i = 0; i < numbins; i++){           
 	  //curve.f[p][i] *= 1e6/spotcounts;
 	  //curve.f[p][i] += flxcurve->f[p][i] * obstime / 6.114e5;;
@@ -1792,7 +1741,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    Eobs = curve.para.E_band_lower_1 + p*E_diff;
 	  out << Eobs << "\t";
 	  out << curve.t[i]<< "\t";		
-	  out << curve.f[p][i] << std::endl;
+	  out << curve.f[p][i] << "\t";
+	  out << p << std::endl;
 	}
       }
       	
