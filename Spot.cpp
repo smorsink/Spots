@@ -824,7 +824,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    //std::cout << " mu = " << curve.mccangl[i] << std::endl;
 	  }
 	  
-	  if (logt == 5.1 && mu == 0.5 && loget == 1.0 && logg == 15)
+	  /* if (logt == 5.1 && mu == 0.5 && loget == 1.0 && logg == 15)
 	    std::cout
 	    << " i = " << i
 	    << " i%(Nmu) = " << i%(Nmu)
@@ -833,7 +833,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    << " logE = " << loget << " = " << curve.mcloget[i/(Nmu*Nlogg*NlogTeff)]
 	    << " cos(theta) = " << curve.mccangl[i%(Nmu)]
 		    << " I = " << curve.mccinte[i]
-		    << std::endl;
+		    << std::endl;*/
 	  
 	}
        
