@@ -418,6 +418,10 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 
   double r_eq = model->R_at_costheta(0.0); // Equatorial radius
 
+  if (theta_1 == 0.0)
+    p=1;
+
+  
   if (p==1){ // polar cap
 
     double deltatheta = (rho-theta_1)/numtheta; //symmetric over pole

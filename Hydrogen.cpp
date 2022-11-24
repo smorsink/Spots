@@ -15,12 +15,7 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include "Atmo.h"
-#include "McPhac.h"
-#include "BlackBody.h"
-#include "OblDeflectionTOA.h"
-#include "OblModelBase.h"
-#include "PolyOblModelNHQS.h"
+#include "Hydrogen.h"
 #include "Exception.h"
 #include "Units.h"
 #include "Struct.h"
@@ -29,6 +24,29 @@
 #include "nrutil.h"
 #include <stdio.h>
 using namespace std;
+
+
+
+// Computes the correct theta index for NSX
+int th_index_nsx(double cos_theta, class LightCurve* mexmcc){
+
+  int n_mu;
+
+  //std::cout << "th_index_nsx: cos_theta = " << cos_theta << std::endl;  
+  //Find proper mu choice
+    n_mu = 1;
+    while (cos_theta < mexmcc->mccangl[n_mu] && n_mu < mexmcc->Nmu){
+    	n_mu += 1;
+    }
+    /*std::cout << "th_index_nsx: cos_theta = " << cos_theta << " nmu = " << n_mu
+	      << " mu[i] = " << mexmcc->mccangl[n_mu]
+	      << " mu[i-1] = " << mexmcc->mccangl[n_mu-1]
+	      << " mu[i-2] = " << mexmcc->mccangl[n_mu-2]
+	      << std::endl;*/
+    return (n_mu-1);
+}
+
+
 
 // Read in Wynn Ho's Hydrogen Table
 void ReadNSXHnew(class LightCurve* curve){
@@ -139,6 +157,9 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
   int i_f, i_lt,  first_inte;  
   int ii_mu = theta_index;
 
+  if ( ii_mu > 62)
+    ii_mu = 62;
+
   // CALCULATE LOG(T) AND CORRECT INDEX
   lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
 
@@ -226,14 +247,16 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
 
 	    // logarithmic interpolation
 	    //ivec[r][q][k][j+1] = log10(mexmcc.mccinte[first_inte]);
-	    /*
+
+	    /* if ( cos_theta < 0.2 && r==0 && q==0 && j==0)
 	      std::cout << "j = " << j
 			<< "first_inte = " << first_inte
 			<< " tvec = " << tvec[r+1]
 			<< " gvec = " << gvec[q+1]
 			<< " costheta = " << mexmcc.mccangl[ii_mu+k]
 		      << " evec = " << mexmcc.mcloget[i_f+j] 
-		      << " ivec = " << ivec[r][q][k][j+1] << std::endl;*/
+		      << " ivec = " << ivec[r][q][k][j+1] << std::endl;
+	    */
 	  }
 	  
 	  // linear interpolation
