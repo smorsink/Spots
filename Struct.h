@@ -67,6 +67,7 @@ struct Parameters {      // local bit of spot information
   double L2; // NICER
   double DeltaE; // NICER 
   double theta_k[250]; // location of spot bins
+  double phaseshift;   // Overall phase shift of spot
   double phi_k[250];   // phi location of edge of spot
   double dtheta[250]; // width of spot bins
   double gamma_k[250]; // value of lorentz gamma at the spot bin

@@ -78,7 +78,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mass_over_req,              // Dimensionless mass divided by radius ratio
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
-    ts(0.0),                    // Phase shift or time off-set from data; Used in chi^2 calculation
+    phaseshift(0.0),                    // Phase shift of spot (in radians)
     spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in keV
     spot2_temperature(0.0),		// Temperature of second spot
     rho(0.0),                   // Angular radius of the first spot, in radians
@@ -265,8 +265,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    	        sscanf(argv[i+1], "%lf", &agnbackground);
 	    	        break;
 	          	          
-	    case 'l':  // Time shift, phase shift.
-	                sscanf(argv[i+1], "%lf", &ts);
+	    case 'l':  // phase shift.
+	                sscanf(argv[i+1], "%lf", &phaseshift);
 	                //ts *= -1;
 	                break;
 
@@ -577,7 +577,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.Gamma2 = Gamma2;
     curve.para.Gamma3 = Gamma3;
     curve.para.temperature = spot_temperature;
-    curve.para.ts = ts;
+    //curve.para.ts = ts;
     curve.para.E_band_lower_1 = E_band_lower_1;
     curve.para.E_band_upper_1 = E_band_upper_1;
     curve.para.E_band_lower_2 = E_band_lower_2;
@@ -585,6 +585,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.E0 = E0;
     curve.para.distance = distance;
     curve.numbins = numbins;
+    curve.para.phaseshift=phaseshift;
 
     curve.flags.ignore_time_delays = ignore_time_delays;
     curve.flags.spectral_model = spectral_model;
@@ -778,7 +779,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       data.close();
       //ts = obsdata.t[0]; // Don't do this if you want manually setting ts to do anything!!
       //obsdata.shift = obsdata.t[0];
-      obsdata.shift = ts;
+      //obsdata.shift = ts;
 
       //std::cout << "Finished reading data from " << data_file << ". " << std::endl;
     } // Finished reading in the data file
@@ -948,7 +949,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     flxcurve2 = &normcurve;
 
     for ( unsigned int i(0); i < numbins; i++ ) {
-        curve.t[i] = i / (1.0 * numbins);// + ts;  // defining the time used in the lightcurves
+      curve.t[i] = i / (1.0 * numbins); // + phaseshift/(2.0*Units::PI);  // defining the time used in the lightcurves
         for ( unsigned int p(0); p < curve.tbands; p++ ) {
             curve.f[p][i] = 0.0;
 	}
@@ -986,10 +987,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( rho <= 1e-2 )
       numtheta = 1;
 
-    //std::cout << "A: flxcurvef = " << flxcurve->f[0][0] << std::endl;
+    std::cout << "A: phaseshift = " << phaseshift << std::endl;
     
     for (unsigned int p(0);p<pieces;p++){
       //    for (unsigned int p(0);p<1;p++){
+      
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
 
@@ -1002,6 +1004,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		    << " Theta_spot = " << theta_1 *180/Units::PI << " (deg) "  << theta_1 << " (rad)"
 		    << " k = " << k
 		    << " theta_k = " << curve.para.theta_k[k]
+		    << " phi_k = " << curve.para.phi_k[k]
 		    << std::endl;
 
 	  
@@ -1050,7 +1053,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  if (numtheta==1){  //For a spot with only one theta bin (used for small spot)
 	    numphi=1;
-	    phi_edge=0.0;
+	    phi_edge=phaseshift;
 	    dphi=0.0;
 	    phishift = 0.0;
 	    curve.para.dS = 2.0*Units::PI * pow(rspot,2) * (1.0 - cos(rho));
@@ -1068,7 +1071,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
-	    curve.para.phi_0 = 0.0;
+	    curve.para.phi_0 = phaseshift;
 	   
 	    
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
@@ -1144,7 +1147,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     
 
     
-    std::cout << "*****Finished the first spot!\n" << std::endl;
+    std::cout << "*****Finished the first spot!" << std::endl;
     std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0] << std::endl;
     
     /**********************************************************/

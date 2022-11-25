@@ -413,14 +413,40 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
   // p=0 --> crescent shape
   // p=1 --> polar cap
 
+
   class LightCurve curve;
   curve = *incurve;
 
-  double r_eq = model->R_at_costheta(0.0); // Equatorial radius
+  // Add in an overall phaseshift incurve.para.phaseshift
 
+  
+  double r_eq = model->R_at_costheta(0.0); // Equatorial radius
+  double phaseshift = incurve->para.phaseshift;
+
+  std::cout << "Welcome to SpotShape! " 
+	    << " phaseshift = " << phaseshift
+	    << " pieces = " << pieces
+	    << " p = " << p
+	    << " numtheta = " << numtheta
+	    << " spotshape = " << curve.flags.spotshape
+	    << std::endl;
+
+  
+  
   if (theta_1 == 0.0)
     p=1;
 
+  phaseshift = 0.0;
+  
+  // Add in overall phaseshift
+  for (int k(0); k<numtheta; k++){
+    curve.para.phi_k[k] = phaseshift;
+    std::cout << "SPOTSHAPE: k = " << k
+	      << " phi = " << curve.para.phi_k[k]
+	      << std::endl;
+  }
+
+  // phi_k is a relative phase with respect to the spot centre.
   
   if (p==1){ // polar cap
 
@@ -428,7 +454,7 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
     for(int k(0); k < numtheta; k++){
       curve.para.dtheta[k] = deltatheta;
       curve.para.theta_k[k] = (k+0.5)*curve.para.dtheta[k];
-      curve.para.phi_k[k] = Units::PI;
+      curve.para.phi_k[k] += Units::PI ;
     }
   }
   if (p==0){
@@ -457,11 +483,14 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	  double cos_phi_edge = (cos(rho) - cos(theta_1)*cos(thetak))/(sin(theta_1)*sin(thetak));	
 	  if (  cos_phi_edge > 1.0 || cos_phi_edge < -1.0 ) cos_phi_edge = 1.0;
 	  if ( fabs( sin(theta_1) * sin(thetak) ) > 0.0) { // checking for a divide by 0
-	    curve.para.phi_k[k] = acos( cos_phi_edge );   
+	    curve.para.phi_k[k] += acos( cos_phi_edge );   
 	    // value of phi (a.k.a. azimuth projected onto equatorial plane) at the edge of the circular spot at some latitude thetak
 	    //std::cout << "SpotShape: k="<< k << " theta_k="<< thetak*180/Units::PI << " phi_edge=" << curve.para.phi_k[k] << std::endl;
 
 	}
+	      std::cout << "SPOTSHAPE: k = " << k
+	      << " phi = " << curve.para.phi_k[k]
+	      << std::endl;
       }
     } // end spotshape=0 case
 
@@ -573,9 +602,9 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	double tanphi = sin(rho_star)*sin(zeta_k)/(denom);
 
 	if (denom>0.0)
-	  curve.para.phi_k[k] = atan(tanphi);
+	  curve.para.phi_k[k] += atan(tanphi);
 	else
-	  curve.para.phi_k[k] = Units::PI + atan(tanphi);
+	  curve.para.phi_k[k] += Units::PI + atan(tanphi);
 
 	/*	std::cout << "k = " << k
 		  << " theta_k = " << curve.para.theta_k[k]
@@ -796,7 +825,10 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     curve.eclipse = false;
     curve.ingoing = false;
     curve.problem = false;
-	
+
+
+    std::cout << "ComputeCurve: phi_0 = " << phi_0 << std::endl;
+    
     /********************************************************/
     /* COMPUTE EMISSION TIME, PHASE BINS, AND LIGHT BENDING */
     /********************************************************/
