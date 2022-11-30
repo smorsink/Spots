@@ -51,57 +51,68 @@ if test ! -d "$out_dir"
 fi
 
 ### Flipped star. Observer and spot are both in Northern Hemisphere
-distance=3.240779e-20 # Remove Distance
+distance=3.2407557e-21 # Remove Distance
+distance=1.0
+obstime=1.0
 
-
-# TEST 1: First spot - Blackbody; Medium, on equator
-out_file="$out_dir/bb-med-n8.txt"
-numtheta=8
-spectraltype=0
-beaming=0
-# One small spot on South Pole
-emission=90 # Degrees
-rho=0.5 # Radians
-#distance=1.0
-
-## RUNNING THE CODE
-#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
 
 
 NN=128
 
-# TEST 2: First spot - Hydrogen; Medium, on equator
-out_file="$out_dir/hyd-med-$NN.txt"
+# TEST 1: First spot - Hydrogen; Medium, on equator
+out_file1="$out_dir/hyd-meda-$NN.txt"
 numtheta="$NN"
 spectraltype=0
 # One small spot near South Pole
 emission=90 # Degrees
 rho=0.5 # Radians
 beaming=11
+phaseshift=0.2
+temp=1e6
 
 
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file1" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
 
 
-# TEST 3: Second spot - Hydrogen; Medium, on equator
-out_file2="$out_dir/hyd-med2-$NN.txt"
+
+
+
+# TEST 2: Second spot - Hydrogen; Medium, on equator
+out_file2a="$out_dir/hyd-med2a-$NN.txt"
 numtheta="$NN"
 spectraltype=0
 # One small spot near South Pole
 emission=90 # Degrees
 rho=0.25 # Radians
 beaming=11
-phaseshift=0.0318309
+phaseshift=0.0 # Radians
 
 
 ## RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file2" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
+./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file2a" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
+
+# TEST 3: Second spot - Hydrogen; Medium, on equator
+out_file2b="$out_dir/hyd-med2b-$NN.txt"
+numtheta="$NN"
+spectraltype=0
+# One small spot near South Pole
+emission=90 # Degrees
+rho=0.25 # Radians
+beaming=11
+phaseshift=0.2
 
 
-out_file3="$out_dir/hyd-sum$NN.txt"
+## RUNNING THE CODE
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file2b" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" 
 
-./addcurves -t 64 -e 300 -i "$out_file" -j "$out_file2" -o "$out_file3"
+
+
+out_file3a="$out_dir/hyd-a-sum$NN.txt"
+./addcurves -t 64 -e 300 -i "$out_file1" -j "$out_file2a" -o "$out_file3a"
+
+out_file3b="$out_dir/hyd-b-sum$NN.txt"
+./addcurves -t 64 -e 300 -i "$out_file1" -j "$out_file2b" -o "$out_file3b"
 
 
 times

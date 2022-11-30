@@ -152,6 +152,7 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
   mexmcc = (*curve);
 
   double lt, ener_index;
+  double logET;
 	
   double I_int[5], J[5], K[5], L(0.0);
   int i_f, i_lt,  first_inte;  
@@ -161,10 +162,17 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
     ii_mu = 62;
 
   // CALCULATE LOG(T) AND CORRECT INDEX
-  lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+  if (curve->flags.kelvin){
+    lt = log10(T);
+    logET = log10(E/(T*Units::K_BOLTZ/Units::EV*1e-3)); // Convert T to keV
+    //std::cout << "Temperature in Kelvin! log(T) = " << lt << std::endl;
+  }
+  else{
+    lt = log10(1E3 * (T * Units::EV / Units::K_BOLTZ));
+      // CALCULATE LOG(E/T) 
+    logET = log10(E/T);
 
-  // CALCULATE LOG(E/T) 
-   double logET = log10(E/T);
+  }
 
    
   //TEST

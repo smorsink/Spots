@@ -197,10 +197,14 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       if (curve.flags.spectral_model == 0){ // Monochromatic Observation 
 
 
-	
+	// Check units for Temperature!!!!
 	
 	if ( curve.flags.beaming_model == 0 || curve.flags.beaming_model == 6 || curve.flags.beaming_model == 7){
 
+	  if (curve.flags.kelvin){
+	    temperature *= Units::K_BOLTZ/Units::EV*1e-3 ; // Convert T to keV
+	  }
+	  
 	  for (unsigned int p = 0; p<numbands; p++){
 	    if (numbands != 1)
 	      E0 = (E_band_lower_1+p*E_diff);
@@ -227,8 +231,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  	  
 	  for (unsigned int p = 0; p<numbands; p++){
 	    
-	     
-
 	    E0 = E_band_lower_1 + (p + 0.5)*E_diff;
 
 	    //Testing
@@ -237,31 +239,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	      * NSXHnew(E0*redshift/curve.eta[i], 
 			cos_theta, theta_index, curve.para.temperature, lgrav, &curve);
 	    curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
-	    curve.f[p][i] *= E_diff; // Fake Integration
-
-	    /*if (  p==0){
-	      std::cout << "Atmo.cpp:  E0 = " << E0
-			<< " i = " << i
-			<< " cos_theta = " << cos_theta
-			<< " solidangle = " << solidangle
-			<<  " flux[0][i] = " << curve.f[p][i] << std::endl;
-			}*/
-	    /*
-	     Elo = E_band_lower_1 + (p + 0)*E_diff;
-	    Emid = E_band_lower_1 + (p + 0.5)*E_diff;
-	    Ehi = E_band_lower_1 + (p + 1)*E_diff;
-
-	    curve.f[p][i] =  NSXHnew(Elo*redshift/curve.eta[i], 
-				     cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
-
-	    curve.f[p][i] +=  NSXHnew(Emid*redshift/curve.eta[i], 
-				     cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
-
-	    curve.f[p][i] += NSXHnew(Ehi*redshift/curve.eta[i], 
-				     cos_theta, theta_index, curve.para.temperature, lgrav, i_lgrav, gvec, &curve);
-	    
-				     curve.f[p][i] *= 1.0/3.0 * solidangle * E_diff / ( Emid * Units::H_PLANCK);
-	    */
+	    curve.f[p][i] *= E_diff; // Fake Integration	   
 
 	  }
 	}
@@ -277,6 +255,10 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
 	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
 
+	  if (curve.flags.kelvin){
+	    temperature *= Units::K_BOLTZ/Units::EV*1e-3 ; // Convert T to keV
+	  }
+	
 	for (unsigned int p = 0; p<numbands; p++){
            
 	  curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) 

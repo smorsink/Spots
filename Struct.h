@@ -43,7 +43,7 @@ struct Parameters {      // local bit of spot information
   double Gamma1;         // Not related to above gamma; spectral index
   double Gamma2;         // Not related to above gamma; spectral index
   double Gamma3;         // Not related to above gamma; spectral index
-  double temperature;    // Temperature of the spot, in the spot's frame; in keV
+  double temperature;    // Temperature of the spot, in the spot's frame; in keV or Kelvin (depends on Temperature Flag)
   double mass;           // Mass of the star; unitless in here
   double radius;         // Radius of the spot; unitless in here
   double req;            // Radius at the equator
@@ -84,6 +84,7 @@ struct Flags {
     unsigned int attenuation;	  // attenuation flag for the four NICER target files
     unsigned int inst_curve;      // instrument response curve flag for NICER
     unsigned int spotshape;
+  bool kelvin; // true means temperature in Kelvin; false means in keV
 };
 
 class Defl {

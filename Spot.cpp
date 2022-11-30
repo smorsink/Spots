@@ -79,7 +79,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     omega,                      // Frequency of the spin of the star, in Hz
     req,                        // Radius of the star at the equator, in km
     phaseshift(0.0),                    // Phase shift of spot (in radians)
-    spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in keV
+    spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in Kelvin
     spot2_temperature(0.0),		// Temperature of second spot
     rho(0.0),                   // Angular radius of the first spot, in radians
     rho2(0.0),
@@ -105,7 +105,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
-    powerlaw(0.0),
     nh(1.0);					// real nh = nh*4e19
 
   unsigned long int *start;                    // Starting channels for Instrument Response 
@@ -139,11 +138,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
        bend_file[256] = "No File Name Specified!", 
-       T_mesh_file[100],              // Input file name for a temperature mesh, to make a spot of any shape
        data_file[256],                // Name of input file for reading in data
-    filenameheader[256]="Run",
-       background_file[256];
-
+    filenameheader[256]="Run";
+     
          
   // flags!
   bool incl_is_set(false),         // True if inclination is set at the command line (inclination is a necessary variable)
@@ -153,13 +150,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 omega_is_set(false),        // True if omega is set at the command line (omega is a necessary variable)
     	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
     	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
+    kelvin(true),                    // True if Temperature is in Kelvin; Otherwise in keV
     	 ignore_time_delays(false),  // True if we are ignoring time delays
          bend_file_is_set(false),
-    	 T_mesh_in(false),           // True if we are varying spot shape by inputting a temperature mesh for the hot spot's temperature
-   	 two_spots(false),           // True if we are modelling a NS with two antipodal hot spots
-    	 //only_second_spot(false),    // True if we only want to see the flux from the second hot spot (does best with normalize_flux = false)
-    	 pd_neg_soln(false),
-    background_file_is_set(false);
+    two_spots(false);           // True if we are modelling a NS with two antipodal hot spots
+    	
+   
     		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
@@ -212,8 +208,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            
 	    case 'D':  // Distance to NS in kpc
 	            	sscanf(argv[i+1], "%lf", &distance);
-			distance *= 3.08567758149e19; // Convert to metres -- Correct factor
-			//distance *= 3.1e19;
+			//distance *= 3.08567758149e19; // Convert to metres -- Correct factor		
 	            	break;
 	                
 	    case 'e':  // Emission angle of the spot (degrees), latitude
@@ -267,22 +262,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	          	          
 	    case 'l':  // phase shift.
 	                sscanf(argv[i+1], "%lf", &phaseshift);
-	                //ts *= -1;
+	                phaseshift *= -1.0;
 	                break;
-
-	    case 'L': // Powerlaw for Powerlaw Background
-	      sscanf(argv[i+1], "%lf", &powerlaw);
-	      break;
 
 	    case 'k': // Background in low energy band (between 0 and 1)
 	      			sscanf(argv[i+1], "%lf", &background);
 	      			break;
 
-	    case 'K': // Background file specified for each band (between 0 and 1)
-	      			sscanf(argv[i+1], "%s", background_file);
-	      			background_file_is_set = true;
-				std::cout << "Background file is set to : " << background_file << std::endl;
-	      			break;
+	    case 'K': // Kelvin or keV?
+	      // If -K is added then use keV [Default is Kelvin]
+	      kelvin = false; // Use keV
+	      break;
 	          	          
 	    case 'm':  // Mass of the star (solar mass units)
 	                sscanf(argv[i+1], "%lf", &mass);
@@ -341,7 +331,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			numtheta_in = numtheta;
 	                break;
 	          
-	    case 'T':  // Temperature of the spot, in the star's frame, in keV
+	    case 'T':  // Temperature of the spot, in the star's frame, in Kelvin
+	      // Kelvin as default
+	      // Set -K flag to change this to keV
 	                sscanf(argv[i+1], "%lf", &spot_temperature);
 	                break;
 	            
@@ -370,12 +362,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    case 'X': // Part of funny NICER line
 	            	sscanf(argv[i+1], "%lf", &DeltaE);
 	            	break;
-	            	
-	    case 'z': // Input file for temperature mesh
-	            	sscanf(argv[i+1], "%s", T_mesh_file);
-	            	T_mesh_in = true;
-	            	break;
-			
+	               	
 	    case 'Z': // Observation time (in seconds)
 	      			sscanf(argv[i+1], "%lf", &obstime);
 	      			break;
@@ -389,9 +376,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	sscanf(argv[i+1],"%s", filenameheader);
 	            	break;
 	            
-	            case '8': // Param_degen gave a negative solution
-	            	pd_neg_soln = true;
-	            	break;
 	            
                 case 'h': default: // Prints help
       	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
@@ -430,7 +414,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		                      << "-j Diffuse Sky Background, normalized to expected counts/second in NICER [0.0]" << std::endl
 		                      << "-J AGN Background, normalized to expected counts/second in NICER [0.0]" << std::endl
 		                      << "-k Constant background for all bands" << std::endl
-		                      << "-K Listed backgrounds for each band" << std::endl
+		                      << "-K Kelvin or keV" << std::endl
 		                      << "-l Time shift (or phase shift), in seconds." << std::endl
 		                      << "-L Offset inclination of observer, in degrees, between 0 and 90." << std::endl
 		                      << "-m * Mass of star in Msun." << std::endl          
@@ -457,14 +441,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		                      << "      3 for Atmosphere integrated" << std::endl
 		                      << "-S Number of energy bands: [NCURVES]" << std::endl
 		                      << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
-		                      << "-T Temperature of the spot, in keV. [0]" << std::endl
+		                      << "-T Temperature of the spot, in keV or Kelvin. [0]" << std::endl
 		                      << "-u Energy bands' lower limit, in keV. [2]" << std::endl
 		                      << "-U Energy bands' upper limit, in keV. [3]" << std::endl
 		                      << "-v NICER funny line L1" << std::endl
 		                      << "-V NICER funny line L2" << std::endl
 		                      << "-x NICER funny line E0" << std::endl
 		                      << "-X NICER funny line DeltaE" << std::endl
-		                      << "-z Input file name for temperature mesh." << std::endl
 		                      << "-Z Observation time in seconds [1.0]" << std::endl
 		                      << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
 		                      << " Note: '*' next to description means required input parameter." << std::endl
@@ -598,6 +581,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.fbands = FBANDS;
     curve.tbands = NCURVES;
     curve.cbands = CBANDS;
+    curve.flags.kelvin = kelvin;
 
     curve.flags.spotshape = spotshape;
 
@@ -962,10 +946,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*********************************/
 
 		
-    if ( T_mesh_in ) {
-    	std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
-    	spot_temperature = 2;
-    }
     curve.para.temperature = spot_temperature;
 
     int pieces;
@@ -1167,10 +1147,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	curve.para.cosgamma = cosgamma;
 	//curve.para.rho = rho2;
 
-    	if ( T_mesh_in ) {
-      		std::cout << "WARNING: code can't handle a spot asymmetric over the pole with a temperature mesh." << std::endl;
-      		spot_temperature = 2;
-    	}
+
     	curve.para.temperature = spot2_temperature;
     	int pieces;
     	//Does the spot go over the pole?
@@ -1454,19 +1431,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*         ADDING BACKGROUND              */
     /******************************************/
 
-    /* Create Phase-independent Powerlaw Background */
-    
-    if (powerlaw!=0){
-      std::cout << "Create the powerlaw background!" << std::endl;
-      (*flxcurve) = PowerLaw_Background(&curve,1.0,powerlaw);
-      // Add attenuation to the background
-      //if (curve.flags.attenuation == 5)
-      //(*flxcurve) = Attenuate(flxcurve,curve.flags.attenuation,nh,tbnew);
-    }
       
-    if (background_file_is_set){
-      //curve = Background_list(&curve, background_file);      
-    } 
+
 
     else {
       if (background != 0)
@@ -1550,11 +1516,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     double spotcounts = 0.0;
     double bkgcounts = 0.0;
 
-    if (powerlaw != 0.0){
+   
 
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
+    /*
     for (unsigned int p = 0; p < 300; p++){
       //std::cout << "band " << p << std::endl; 
       //std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl;
@@ -1565,15 +1532,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  bkgcounts += flxcurve->f[p][i];
         }
     }
-    }
-
+    
+    */
 
     
     
     //numbands = 300;
 
     // bkgcounts *= 1.0011;
-
+    /*
     if (powerlaw != 0.0){
       double totalcounts = 0.0;
       for (unsigned int p = 0; p < numbands; p++){  
@@ -1586,7 +1553,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }
       std::cout << "Total Counts = " << totalcounts << std::endl;
     }
-    
+    */ 
 
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
@@ -1596,10 +1563,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	std::cout << "calculating chi squared" << std::endl;
     	chisquared = ChiSquare ( &obsdata, &curve );
 	
-	if (background_file_is_set){
-	  //normcurve = Read_Background_Guess(&curve, background_file);   
-	   chisquared = BackChi ( &obsdata, &curve, &normcurve );	   
-	}	
+
     }
     
     std::cout << "Spot: m = " << Units::nounits_to_cgs(mass, Units::MASS)/Units::MSUN 
