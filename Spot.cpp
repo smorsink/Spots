@@ -90,9 +90,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
-    E_band_lower_2(5.0),        // Lower bound of second energy band to calculate flux over, in keV.
-    E_band_upper_2(6.0),        // Upper bound of second energy band to calculate flux over, in keV.
-    background(0.0),	        // One background value for all bands.
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
@@ -110,7 +107,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   
   double SurfaceArea(0.0);
 
-  double E0, L1, L2, DeltaE(0.0), DeltaLogE(0.0), rot_par;
+  double E0, DeltaE(0.0), DeltaLogE(0.0), rot_par;
     
   unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
     spectral_model(0),    // Spectral model choice (initialized to blackbody)
@@ -208,16 +205,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    case 'g':  // Spectral Model, beaming (graybody factor)
 	                sscanf(argv[i+1],"%u", &beaming_model);
 	                // 0 = BB, no beaming
-	                // 2 = Fake Spectral Line
-	                // 3 = NSATMOS Hydrogen
-	                // 4 = NSX Helium
-	                // 5 = NSX Hydrogen
-					// 7 = Hopf Function
-			// 10 = McPhac 
 			// 11 = NSX Hydrogen (New version by Wynn Ho)
-			// 12 = Blackbody Test
-			// 13 = Hopf function Test
-			// 14 = BB + Hopf Test
 	                break;
 	                
 	    case 'i':  // Inclination angle of the observer (radians)
@@ -231,10 +219,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	datafile_is_set = true;
 	            	break;
 	                
-	          	        
-	    case 'k': // Background in low energy band (between 0 and 1)
-	      			sscanf(argv[i+1], "%lf", &background);
-	      			break;
+	          	    
 
 	    case 'K': // Kelvin or keV?
 	      // If -K is added then use Kelvin [Default is keV]
@@ -309,7 +294,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			numtheta_in = numtheta;
 	                break;
 	          
-	    case 'T':  // Temperature of the spot, in the star's frame, in Kelvin
+	    case 'T':  // Temperature of the spot, in the star's frame
 	      // keV as default
 	      // Set -K flag to change this to Kelvin
 	                sscanf(argv[i+1], "%lf", &spot_temperature);
@@ -325,13 +310,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	//E_band_upper_1_set = true;
 	            	break;
 	                
-	    case 'v': // NICER funny line E1
-	            	sscanf(argv[i+1], "%lf", &L1);
-	            	break;
-	            	
-	    case 'V': // NICER funny line E2
-	            	sscanf(argv[i+1], "%lf", &L2);
-	            	break;
 	            
 	    case 'x': // Part of funny NICER line
 	            	sscanf(argv[i+1], "%lf", &E0);
@@ -356,75 +334,60 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            
 	            
                 case 'h': default: // Prints help
-      	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
-       	            		  
-                              << "-A ISM column density, in multiples of base value [0]" << std::endl
-                              << "      base value is 1e18 cm^-2 " << std::endl
-                              << "-b Bending Angle File" << std::endl
-                              << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
-                              << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
-                              << "-d Size of second spot. [0.0]" << std::endl
-                              << "-D Distance from earth to star, in kpc. [10]" << std::endl
-                              << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
-                              << "-E Offset latitudinal angle of second spot (from antipodal), in degrees [0.0]" << std::endl
-                              << "-f * Spin frequency of star, in Hz." << std::endl
-                              << "-g Atmosphere beaming model [0]:" << std::endl
-                              << "      0 for BB, no beaming" << std::endl
-                              << "      1 for BB + graybody" << std::endl
-                              << "      2 for NICER fake spectral lines" << std::endl
-                              << "      3 for NSATMOS (Khaled's)" << std::endl
-                              << "      4 for *Old* NSX Helium" << std::endl
-                              << "      5 for *limited T/g* NSXH" << std::endl
-                              << "      6 for BB * (1 - cosbeta*coseta^2)" << std::endl
-                              << "      7 for BB Hopf Function" << std::endl
-                              << "      8 for *limited T/g* Slavko's McPHAC" << std::endl
-                              << "      9 for *limited T/g* NSX Helium" << std::endl
-                              << "      10 for Cole's McPHAC correct E/T version" << std::endl
-                              << "      11 for Wynn's full NSXH table" << std::endl
-		                      << "-i * Inclination of observer, in degrees, between 0 and 90." << std::endl
-                              << "-I Input filename." << std::endl
-		                      << "-j Diffuse Sky Background, normalized to expected counts/second in NICER [0.0]" << std::endl
-		                      << "-J AGN Background, normalized to expected counts/second in NICER [0.0]" << std::endl
-		                      << "-k Constant background for all bands" << std::endl
-		                      << "-K Kelvin or keV" << std::endl
-		                      << "-l Time shift (or phase shift), in seconds." << std::endl
-		                      << "-L Offset inclination of observer, in degrees, between 0 and 90." << std::endl
-		                      << "-m * Mass of star in Msun." << std::endl          
-      	  	                  << "-n Number of phase or time bins. [128]" << std::endl
-      	  	                  << "-N Flag for normalizing the flux. Using this sets it to true. [false]" << std::endl
-		                      << "-o Output filename." << std::endl
-		                      << "-O Name for second output file, file has alternative format" << std::endl
-		                      << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
-		                      << "-P Hot spot shape model [0]:" << std::endl
-		                      << "      0 for standard circular" << std::endl
-		                      << "      1 for circular in rotating frame" << std::endl
-		                      << "-q * Oblateness Model of star: [1]" << std::endl
-		                      << "      1 for Neutron/Hybrid quark star poly model" << std::endl
-		                      << "      2 for CFL quark star poly model" << std::endl
-		                      << "      3 for spherical model" << std::endl
-		                      << "-R Instrument response curve [0]:" << std::endl
-		                      << "      0 nothing's done as if all channels are 1 cm^2" << std::endl
-		                      << "      1 NICER 2014 'fine channels' effective areas" << std::endl
-		                      << "-r * Radius of star (at the equator), in km." << std::endl
-		                      << "-s Spectral model of radiation: [0]" << std::endl
-		                      << "      0 for monochromatic." << std::endl
-		                      << "      1 for NICER fake lines" << std::endl
-		                      << "      2 for BB integrated" << std::endl
-		                      << "      3 for Atmosphere integrated" << std::endl
-		                      << "-S Number of energy bands: [NCURVES]" << std::endl
-		                      << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
-		                      << "-T Temperature of the spot, in keV or Kelvin. [0]" << std::endl
-		                      << "-u Energy bands' lower limit, in keV. [2]" << std::endl
-		                      << "-U Energy bands' upper limit, in keV. [3]" << std::endl
-		                      << "-v NICER funny line L1" << std::endl
-		                      << "-V NICER funny line L2" << std::endl
-		                      << "-x NICER funny line E0" << std::endl
-		                      << "-X NICER funny line DeltaE" << std::endl
-		                      << "-Z Observation time in seconds [1.0]" << std::endl
-		                      << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
-		                      << " Note: '*' next to description means required input parameter." << std::endl
-		                      << std::endl;
-	                return 0;
+		  std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl      	            		  
+			    << "-A ISM column density, in multiples of base value [0]" << std::endl
+			    << "      base value is 1e18 cm^-2 " << std::endl
+			    << "-b Bending Angle File" << std::endl
+			    << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
+			    << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
+			    << "-d Size of second spot. [0.0]" << std::endl
+			    << "-D Distance from earth to star, in kpc. [10]" << std::endl
+			    << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
+			    << "-E Offset latitudinal angle of second spot (from antipodal), in degrees [0.0]" << std::endl
+			    << "-f * Spin frequency of star, in Hz." << std::endl
+			    << "-g Atmosphere beaming model [0]:" << std::endl
+			    << "      0 for BB, no beaming" << std::endl
+			    << "      11 for Wynn's full NSXH table" << std::endl
+			    << "-i * Inclination of observer, in degrees, between 0 and 90." << std::endl
+			    << "-I Input filename." << std::endl
+		                     
+			    << "-K Kelvin or keV" << std::endl
+			    << "-l Time shift (or phase shift), in seconds." << std::endl
+			    << "-L Offset inclination of observer, in degrees, between 0 and 90." << std::endl
+			    << "-m * Mass of star in Msun." << std::endl          
+			    << "-n Number of phase or time bins. [128]" << std::endl
+      	  	               
+			    << "-o Output filename." << std::endl
+		                      
+			    << "-p Angular radius of spot, rho, in radians. [0.0]" << std::endl
+			    << "-P Hot spot shape model [0]:" << std::endl
+			    << "      0 for standard circular" << std::endl
+			    << "      1 for circular in rotating frame" << std::endl
+			    << "-q * Oblateness Model of star: [1]" << std::endl
+			    << "      1 for Neutron/Hybrid quark star poly model" << std::endl
+			    << "      2 for CFL quark star poly model" << std::endl
+			    << "      3 for spherical model" << std::endl
+			    << "-R Instrument response curve [0]:" << std::endl
+			    << "      0 nothing's done as if all channels are 1 cm^2" << std::endl
+			    << "      1 NICER 2014 'fine channels' effective areas" << std::endl
+			    << "-r * Radius of star (at the equator), in km." << std::endl
+			    << "-s Spectral model of radiation: [0]" << std::endl
+			    << "      0 for monochromatic." << std::endl
+			    << "      1 for NICER fake lines" << std::endl
+			    << "      2 for BB integrated" << std::endl
+			    << "      3 for Atmosphere integrated" << std::endl
+			    << "-S Number of energy bands: [NCURVES]" << std::endl
+			    << "-t Number of theta bins for large spots. Must be < 30. [1]" << std::endl
+			    << "-T Temperature of the spot, in keV or Kelvin. [0]" << std::endl
+			    << "-u Energy bands' lower limit, in keV. [2]" << std::endl
+			    << "-U Energy bands' upper limit, in keV. [3]" << std::endl
+			    << "-x NICER funny line E0" << std::endl
+			    << "-X NICER funny line DeltaE" << std::endl
+			    << "-Z Observation time in seconds [1.0]" << std::endl
+			    << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
+			    << " Note: '*' next to description means required input parameter." << std::endl
+			    << std::endl;
+		  return 0;
             } // end switch	
         } // end if
     } // end for
@@ -540,8 +503,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //curve.para.ts = ts;
     curve.para.E_band_lower_1 = E_band_lower_1;
     curve.para.E_band_upper_1 = E_band_upper_1;
-    curve.para.E_band_lower_2 = E_band_lower_2;
-    curve.para.E_band_upper_2 = E_band_upper_2;
+
     curve.para.DeltaE = DeltaE;
     curve.para.DeltaLogE = DeltaLogE;
     curve.para.E0 = E0;
@@ -1134,42 +1096,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*       APPLYING ATTENUATION     */
     /**********************************/
 
-    if (curve.flags.attenuation != 0){
-      std::cout << "Apply ISM to the Signal!" << std::endl;
-      //if (curve.flags.attenuation >= 5)
-      //curve = Attenuate(&curve,curve.flags.attenuation,nh,tbnew);
-	//if (curve.flags.attenuation == 3)
-	//curve = Wabs(&curve, curve.flags.attenuation, nh);
+    if (nh != 0){
+      std::cout << "Apply ISM to the Signal!" << std::endl;    
+      curve = Attenuate(&curve,tbnew);	
     }
-    
-      
    
-        
-
-
-    /******************************************/
-    /*         ADDING BACKGROUND              */
-    /******************************************/
-
-      
-
-
-    else {
-      if (background != 0)
-	// Add a constant background in all bands
-	for (unsigned int p = 0; p < numbands; p++){	   
-	  for (unsigned int i = 0; i < numbins; i++){	     
-	    curve.f[p][i] += background;
-	    if (p==0)
-	      std::cout << "Added background: i="<<i << " flux = " << curve.f[p][i] << std::endl;
-	  }
-	}
-    }
-	
-   
-
-
-
 
     // If databins < numbins then rebin the theoretical curve down 
     std::cout << "databins = " << databins << ", numbins = " << numbins << std::endl;
@@ -1237,38 +1168,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
     
     for (unsigned int p = 0; p < numbands; p++){
-      //std::cout << "band " << p << std::endl; 
-      //std::cout << "spotcounts = " << spotcounts << " f=" << curve.f[p][0] << std::endl;
         for (unsigned int i = 0; i < numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
 	  curve.f[p][i] *= obstime;  
-	  //spotcounts += curve.f[p][i];
-	  //bkgcounts += flxcurve->f[p][i];
         }
     }
     
-    
-
-    
-    
-    //numbands = 300;
-
-    // bkgcounts *= 1.0011;
-    /*
-    if (powerlaw != 0.0){
-      double totalcounts = 0.0;
-      for (unsigned int p = 0; p < numbands; p++){  
-        for (unsigned int i = 0; i < numbins; i++){           
-	  //curve.f[p][i] *= 1e6/spotcounts;
-	  //curve.f[p][i] += flxcurve->f[p][i] * obstime / 6.114e5;;
-	  curve.f[p][i] += flxcurve->f[p][i] * 1e6 / bkgcounts;
-	  totalcounts += curve.f[p][i];
-        }
-      }
-      std::cout << "Total Counts = " << totalcounts << std::endl;
-    }
-    */ 
-
+   
     /************************************************************/
     /* If data file is set, calculate chi^2 fit with simulation */
     /************************************************************/
@@ -1347,26 +1253,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}
       }
       	
-      /*
-      for ( unsigned int p(25); p < 300; p++ ) {
-	for ( unsigned int i(0); i < numbins; i++ ) {
-	  if (numbands !=1)
-	    Eobs = curve.para.E_band_lower_1 + p*E_diff;
-	  
-	  out << p << "\t"; // NICER Channels
-	  out << curve.t[i]<< "\t";	
-	  out << curve.f[p][i] - flxcurve->f[p][i] * 1e6 / bkgcounts << "\t" ;	
-	  out << curve.f[p][i] << "\t"; // Signal from Spots, with ISM and off-axis response + Background
-	  //	  out << flxcurve->f[p][i] *1e6/(bkgcounts) << "\t"; //Background, with off-axis response
-	  //      out << flxcurve->f[p][i] << "\t";
-	  out << std::endl;
-	}
-      }
 
-      */
-      
-
-    
       out.close();
     
 
