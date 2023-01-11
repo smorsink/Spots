@@ -20,11 +20,11 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 128   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 700        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
-#define FBANDS 700        // Final number of energy channels
-#define CBANDS 700         // Number of energy bands computed
+#define MAX_NUMBINS 256  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define FBANDS 300        // Final number of energy channels
+#define CBANDS 300         // Number of energy bands computed
 #define MR 1000             // Maximum number of m/r values
 
 //#define NCURVES 1
@@ -65,7 +65,8 @@ struct Parameters {      // local bit of spot information
   double E0; // NICER
   double L1; // NICER
   double L2; // NICER
-  double DeltaE; // NICER 
+  double DeltaE; // width of energy band
+  double DeltaLogE; //logarithmic width of energy band
   double theta_k[250]; // location of spot bins
   double phaseshift;   // Overall phase shift of spot
   double phi_k[250];   // phi location of edge of spot
@@ -85,6 +86,7 @@ struct Flags {
     unsigned int inst_curve;      // instrument response curve flag for NICER
     unsigned int spotshape;
   bool kelvin; // true means temperature in Kelvin; false means in keV
+  bool logEflag; // true means energy bands evenly spaced in log space; false means linear space
 };
 
 class Defl {

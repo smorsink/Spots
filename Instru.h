@@ -10,17 +10,20 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-#define NCURVES 700      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-
+#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+//#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 300
 //
 
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh);
+class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, double nh);
+
+class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh, double* tbnew);
 
 class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve);
 
-class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve);
+class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve, unsigned long int *start, double** response);
 
+class LightCurve Inst_Res3 (class LightCurve* incurve, unsigned int inst_curve, unsigned long int *start, double** response);
 
 class LightCurve Background_list (class LightCurve* incurve, char *background_file);
 
@@ -29,3 +32,5 @@ class LightCurve AGN_Background (class LightCurve* incurve, double agnbackground
 class LightCurve Sky_Background (class LightCurve* incurve, double skybackground);
 
 class LightCurve PowerLaw_Background (class LightCurve* incurve, double agnbackground, double nh);
+
+class LightCurve Read_Background_Guess (class LightCurve* incurve, char *background_file);

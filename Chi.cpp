@@ -789,7 +789,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     /* SETTING THINGS UP - keep in mind that these variables are in dimensionless units */
     /************************************************************************************/
     
-    dS = curve.para.dS;
+    dS = curve.para.dS; // dimensionless code units
     theta_0 = curve.para.theta;
     incl = curve.para.incl;
     phi_0 = curve.para.phi_0;
@@ -800,19 +800,24 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     red = 1.0/sqrt(1.0-2.0*mass_over_r);
     omega = curve.para.omega;
     cosgamma = curve.para.cosgamma;  // for spherical, cosgamma = 0
-    distance = curve.para.distance;
+    distance = curve.para.distance; // units?
     shift_t = curve.para.ts;
     infile_is_set = curve.flags.infile_is_set;
     //speed = omega*radius*sin(theta_0) / sqrt( 1.0 - 2.0*mass_over_r ); // MLCB34
     speed = omega*radius*sin(theta_0)*red; // MLCB34
+    // Quick test
+    //speed = omega*radius*sin(theta_0); // incorrect formula
+
+    //std::cout << "Distance = " << distance << std::endl;
+    
     //std::cout << "Speed = " << speed << std::endl;
     mu = cos(theta_0);
 
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
-    // std::cout << "ComputeAngles:" << std::endl;
-    //std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
+    std::cout << "ComputeAngles:" << std::endl;
+    std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -1195,17 +1200,17 @@ class LightCurve ReadBend ( class LightCurve* incurve,
   // Read in value of NN
   in.getline(line,265);      
   sscanf( line, "%u", &numangles);
-  std::cout << "numangles = " << numangles << std::endl;
+  //std::cout << "numangles = " << numangles << std::endl;
   if ( numangles != NN)
-    std::cerr << "Something is really wrong here: numangles != NN "<< std::endl;
+    std::cerr << "ReadBend: Something is really wrong here: numangles != NN "<< std::endl;
 
   // Read in value of num_mr
   in.getline(line,265);      
   sscanf( line, "%u", &num_mr);
   curve.defl.num_mr = num_mr;
-  std::cout << "num_mr = " << num_mr << std::endl;
+  //std::cout << "num_mr = " << num_mr << std::endl;
   if ( num_mr > MR)
-    std::cerr << "Problem: num_mr > MR... check struct.h " << std::endl;
+    std::cerr << "ReadBend Problem: num_mr > MR... check struct.h " << std::endl;
  
   curve.defl.mr = dvector(0,num_mr);
   curve.defl.psi = dmatrix(0,num_mr,0,3*numangles+1);

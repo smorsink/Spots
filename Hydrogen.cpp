@@ -207,7 +207,8 @@ double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgr
     double err, err1;
     double tvec[5], gvec[5];
     
-    int npt(4), tpt(4), gpt(4), mpt(4);
+    //    int npt(4), tpt(4), gpt(4), mpt(4);
+    int npt(2), tpt(2), gpt(2), mpt(2);
     
     if ( npt > 4)
       L = 0.0;

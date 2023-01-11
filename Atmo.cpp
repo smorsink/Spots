@@ -62,15 +62,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     bolo,               // Bolometric flux; bolo = sigma T^4/pi
     gray(1.0);          // Graybody factor (when = 1, not effective)
   
-  double E0, E1, E2, DeltaE;
+  double E0, E1, E2, DeltaE, DeltaLogE;
 
   unsigned int numbins(MAX_NUMBINS);  // Time bins of light curve (usually 128)
   unsigned int numbands(NCURVES);  // Number of Energy Bands
-        
-  //  std::vector< double > totflux(MAX_NUMBINS, 0.0); // integrated flux
 
-
-
+  bool logEflag(false);
 
   /*********************/
   /* SETTING THINGS UP */
@@ -96,6 +93,18 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   E1 = curve.para.L1;
   E2 = curve.para.L2;
   DeltaE = curve.para.DeltaE;
+  DeltaLogE = curve.para.DeltaLogE;
+  logEflag = curve.flags.logEflag;
+
+
+  // DeltaE = (E_band_upper_1 - E_band_lower_1)/(numbands-1.0);
+      std::cout << "COMPUTE CURVE: Lowest energy = " << E_band_lower_1
+		<< " Highest energy = " << E_band_upper_1
+		<< " numbands = " << numbands
+		<< " Delta(E) = " << DeltaE
+		<< std::endl;
+
+  
   //cout << curve.mccinte[0] << endl;
   std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
    
@@ -150,6 +159,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   std::cout << "Eband_upper = " << E_band_upper_1 << std::endl;
   std::cout << "Eband_lower = " << E_band_lower_1 << std::endl;
 
+  /*
   double E_diff = 1.0;
   if ( numbands == 1){
     E0 = curve.para.E0;
@@ -160,20 +170,26 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
     // Compute new energy band width
 
-    numbands = curve.cbands;
+    //numbands = curve.cbands;
     std::cout << "Number of bands to be computed = " << numbands << std::endl;
     E_diff *= (curve.tbands*1.0)/(numbands*1.0);
     std::cout << "New Energy band width = " << E_diff << std::endl;
   }
-
-  //std::cout << "curve.flags.spectral_model = " << curve.flags.spectral_model << std::endl;
-  //std::cout << "curve.flags.beaming_model = " << curve.flags.beaming_model << std::endl;
+  */
+  
+  std::cout << "curve.flags.spectral_model = " << curve.flags.spectral_model << std::endl;
+  std::cout << "curve.flags.beaming_model = " << curve.flags.beaming_model << std::endl;
+  std::cout << "curve.flags.logEflag = " << logEflag << std::endl;
   
   
   for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
 
+    //std::cout << "ATMO:: i = " << i << " dOm = " << curve.dOmega_s[i] << std::endl;
+    
     if ( curve.dOmega_s[i] != 0.0 ) {
 
+      
+      
       // Default value is gray = 1
       gray = 1.0; // beaming_model == 0
 
@@ -193,6 +209,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       /*      photons/(s cm^2 keV)                                       */
       /*******************************************************************/
 
+      double E_diff = DeltaE;
 
       if (curve.flags.spectral_model == 0){ // Monochromatic Observation 
 
@@ -208,39 +225,97 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  for (unsigned int p = 0; p<numbands; p++){
 	    if (numbands != 1)
 	      E0 = (E_band_lower_1+p*E_diff);
-	    //if (i==0) std::cout << "p = " << p << " E0bs = " << E0 << " Ediff = " << E_diff << std::endl;
+
+	    if (logEflag){ // logarithmic
+	      E0 = curve.para.E_band_lower_1 * pow(10,p*DeltaLogE);
+	    }
+	    else{
+	      E0 = curve.para.E_band_lower_1 + (p+0.5)*E_diff;
+	    }
+	    
+	    
+
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3)
-	      * BlackBody(temperature,E0*redshift/curve.eta[i])*2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3); 
-	    curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
-	    curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
+	      * BlackBody(temperature,E0*redshift/curve.eta[i])*2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3);
+	    
+	    //curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK )); // Units: photons/(s cm^2 keV)
+	    //curve.f[p][i] *= E_diff; // Units: photons/(s cm^2)
 	    // In case of numbands == 1 E_diff = 1.0, and the units are photon/(s cm^2 keV)
+
+	    if (logEflag){ // Logarithmic
+	      if (p==0 && i==0)
+		std::cout << " Logarithmic! " << std::endl;
+	      curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK ));	    
+	      curve.f[p][i] *=  0.01 ; // Fake Integration	  
+	    }
+	    else{ // Linear
+	      curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
+	      curve.f[p][i] *= DeltaE; // Fake Integration	   
+	    }
+
+	    
 	  }
 	}
 	      	        	
 
-
-
+   
 	/*************************************************/
 	if (curve.flags.beaming_model == 11){ // New NSX-H
-	  //cout << "Calling NSXHnew!" << endl;	  
+	  //std::cout << "Calling NSXHnew!" << endl;	  
 	  double cos_theta = curve.cosbeta[i]*curve.eta[i];
 	  int theta_index = th_index_nsx( cos_theta, &curve);
 	  
 	  double solidangle = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3);
 	  double Elo, Ehi, Emid;
-	  	  
+
+	  //std::cout << "Temperature = " << curve.para.temperature << std::endl;
+	  
 	  for (unsigned int p = 0; p<numbands; p++){
 	    
-	    E0 = E_band_lower_1 + (p + 0.5)*E_diff;
+	    //E0 = E_band_lower_1 + (p + 0.5)*E_diff;
 
-	    //Testing
-	    //if (p==0 )
+	    if (logEflag){ // logarithmic
+	      E0 = curve.para.E_band_lower_1 * pow(10,(p)*DeltaLogE);
+	    }
+	    else{
+	      E0 = curve.para.E_band_lower_1 + (p)*E_diff;
+	    }
+	    
+	    
 	    curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
 			cos_theta, theta_index, curve.para.temperature, lgrav, &curve);
-	    curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
-	    curve.f[p][i] *= E_diff; // Fake Integration	   
 
+	    if (p==0 && i==0)
+	      std::cout << "ATMO (H): Omega = " << curve.dOmega_s[i]
+			<< " solid angle = " << solidangle
+			<< " E0 = " << E0
+			<< " DeltaLogE = " << DeltaLogE
+			<< " DeltaE = " << DeltaE
+			<< " flux = " << curve.f[p][i]
+			<< std::endl;
+
+	    if (logEflag){ // Logarithmic
+	      if (p==0 && i==0)
+		std::cout << " Logarithmic! " << std::endl;
+	      curve.f[p][i] *= (1.0 / ( E0 * Units::H_PLANCK ));	    
+	      curve.f[p][i] *=  0.01 ; // Fake Integration	  
+	    }
+	    else{ // Linear
+	      curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
+	      curve.f[p][i] *= DeltaE; // Fake Integration	   
+	    }
+
+	    if (p==0 && i==0)
+	      std::cout << "ATMO (H): Omega = " << curve.dOmega_s[i]
+			<< " solid angle = " << solidangle
+			<< " E0 = " << E0
+			<< " DeltaLogE = " << DeltaLogE
+			<< " DeltaE = " << DeltaE
+			<< " flux = " << curve.f[p][i]
+			<< " log(10) = " << log(10.0)
+			<< std::endl;
+	    
 	  }
 	}
       } // Spectral_model == 0 
@@ -253,16 +328,27 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       /*******************************************************************/
 
       if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
-	double E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-
+	
+	double Elo, Ehi, Emid;
+	
 	  if (curve.flags.kelvin){
 	    temperature *= Units::K_BOLTZ/Units::EV*1e-3 ; // Convert T to keV
 	  }
-	
+
 	for (unsigned int p = 0; p<numbands; p++){
-           
+
+	    if (logEflag){ // logarithmic
+	      Elo = curve.para.E_band_lower_1 * pow(10,(p-0.5)*DeltaLogE);
+	      Ehi = curve.para.E_band_lower_1 * pow(10,(p+0.5)*DeltaLogE);
+	    }
+	    else{
+	      Elo = curve.para.E_band_lower_1 + (p+0.5)*E_diff;
+	      Elo = curve.para.E_band_lower_1 + (p+1.5)*E_diff;
+	    }
+
+	   
 	  curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3) 
-	    * EnergyBandFlux(temperature, (E_band_lower_1+p*E_diff)*redshift/curve.eta[i], (E_band_lower_1+(p+1)*E_diff)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
+	    * EnergyBandFlux(temperature, (Elo)*redshift/curve.eta[i], (Ehi)*redshift/curve.eta[i]); // Units: photon/(s cm^2)
 	  
 	}          
       }

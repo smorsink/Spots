@@ -12,9 +12,9 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 128 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
+#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
 //#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-#define NCURVES 700
+#define NCURVES 300
 
 
 
@@ -93,11 +93,6 @@ double McPHACC(double E, double cos_theta);
 
 // Cole's McPHAC
 double McPHACC2(int E_dex, double cos_theta);
-
-
-//double NSXHnew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);
-
-double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav, class LightCurve* curve);
 
 
 double NSXHenew(double E, double cos_theta, double T, double lgrave, class LightCurve mexmcc);

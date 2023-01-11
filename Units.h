@@ -26,9 +26,10 @@
 // Number density = {-3,0,0}
 
 namespace Units {
-  const double GMC2 = 1.4766250385; // G x MSUN/C^2 in km
+  const double GMC2 = 1.47662512; // G x MSUN/C^2 in km (2017)
   const double C = 2.99792458e10; // speed of light in vacuo in cgs (NIST recommended, 19 Oct 2004, 2002 CODATA)
-  const double G = 6.6742e-8;  // gravitational constant in cgs (NIST recommended, 19 Oct 2004, 2002 CODATA) 
+  const double G = 6.67408e-8;  // gravitational constant in cgs (2017) 
+ 
   const double KAPPA = (1.0e-15*C*C/G); // length scale  (consider this as some number expressed in cm^2)
   //const double MSUN = 1.9891e33; // ("IAU Style Manual", Wilkinson, G.A. Comm. 5, IAU Transactions XXB (1987)) 
                                         // solar mass in grams
@@ -36,14 +37,10 @@ namespace Units {
   const double MBARYON = 1.67e-24;  // baryon mass  
   const double PI = 3.14159265358979323846; // (Eric W. Weisstein. "Pi." From MathWorld--A Wolfram Web Resource. 
                                              //    http://mathworld.wolfram.com/Pi.html)
-  //const double H_PLANCK = 6.6260657e-27; // erg-seconds (2014).  This isn't hbar.  hbar = H_PLANCK/(2*PI)
-  const double H_PLANCK = 6.626070040e-27;
-  //const double EV = 1.60217665e-12; // 1 eV in ergs (2014)
-  const double EV = 1.6021766208e-12;
-  //const double K_BOLTZ = 1.3806488e-16; // erg / Kelvin  (2014)
-  const double K_BOLTZ = 1.38064852e-16; 
-  //const double PARSEC = 3.08572e18; // in cm (agrees with IAU, above)
-  const double PARSEC = 3.08567758149e18;
+  const double H_PLANCK = 6.626070040e-27; // erg-seconds (2017).  This isn't hbar.  hbar = H_PLANCK/(2*PI)
+  const double EV = 1.6021766208e-12; // 1 eV in ergs (2017)
+  const double K_BOLTZ = 1.38064852e-16; // erg/K (2017)
+  const double PARSEC = 3.08567758149e18; // in cm (2017)
 
 
 
