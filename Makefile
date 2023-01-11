@@ -7,10 +7,6 @@
 # The code is not thoroughly tested or guaranteed for
 # any particular use.
 
-#Albert's version of the flags
-#CC=g++
-#CCFLAGS=-Wall -pedantic -O3 -std=c++11
-
 #Sharon needs to use the following:
 CC=c++
 CCFLAGS=-Wall -pedantic -O3 
@@ -20,7 +16,7 @@ LDFLAGS=-lm
 NAMES=spot bend
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
-	Chi.o Atmo.o TimeDelays.o McPhac.o BlackBody.o Instru.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
+	Chi.o Hydrogen.o Atmo.o TimeDelays.o BlackBody.o Instru.o Ism.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
 
 APPOBJ=Spot.o
 
@@ -41,6 +37,7 @@ Spot.o: \
 	Atmo.h \
 	TimeDelays.h \
 	Instru.h \
+	Ism.h \
 	Struct.h \
 	PolyOblModelNHQS.h \
 	PolyOblModelCFLQS.h \
@@ -118,6 +115,16 @@ Atmo.o: \
 	matpack.h
 	$(CC) $(CCFLAGS) -c Atmo.cpp
 
+Hydrogen.o: \
+	Hydrogen.h \
+	OblDeflectionTOA.h \
+	Hydrogen.cpp \
+	OblModelBase.h \
+	McPhac.h \
+	Units.h \
+	matpack.h
+	$(CC) $(CCFLAGS) -c Hydrogen.cpp
+
 TimeDelays.o: \
 	TimeDelays.h \
 	TimeDelays.cpp \
@@ -151,6 +158,11 @@ Instru.o: \
 	matpack.h
 	$(CC) $(CCFLAGS) -c Instru.cpp
 
+Ism.o: \
+	Ism.h \
+	Ism.cpp \
+	Units.h 
+	$(CC) $(CCFLAGS) -c Ism.cpp
 
 Units.o: \
 	Units.h \

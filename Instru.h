@@ -1,8 +1,8 @@
 /***************************************************************************************/
 /*                                      Instru.h
 
-    This is the header file for Instru.cpp, which contains attenuation tables
-    pre-calculated for NICER and instrument response curve. 
+    This is the header file for Instru.cpp, which accesses
+    NICER response and area matrices.
 
 */
 /***************************************************************************************/
@@ -15,9 +15,6 @@
 #define NCURVES 300
 //
 
-class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, double nh);
-
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh, double* tbnew);
 
 class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve);
 
@@ -25,12 +22,3 @@ class LightCurve Inst_Res2 (class LightCurve* incurve, unsigned int inst_curve, 
 
 class LightCurve Inst_Res3 (class LightCurve* incurve, unsigned int inst_curve, unsigned long int *start, double** response);
 
-class LightCurve Background_list (class LightCurve* incurve, char *background_file);
-
-class LightCurve AGN_Background (class LightCurve* incurve, double agnbackground, double nh);
-
-class LightCurve Sky_Background (class LightCurve* incurve, double skybackground);
-
-class LightCurve PowerLaw_Background (class LightCurve* incurve, double agnbackground, double nh);
-
-class LightCurve Read_Background_Guess (class LightCurve* incurve, char *background_file);

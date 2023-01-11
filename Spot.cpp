@@ -37,7 +37,8 @@
 #include "Atmo.h"
 #include "Hydrogen.h"
 #include "TimeDelays.h"
-#include "Instru.h"    
+#include "Instru.h"
+#include "Ism.h"
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
@@ -63,9 +64,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   /*********************************************/
     
   std::ofstream out;      // output stream; printing information to the output file
-  std::ofstream allflux;      // Prints information about the star's surface area
-  std::ofstream testout;  // testing output stream;
-  std::ofstream param_out;// piping out the parameters and chisquared
 
   double incl_1(90.0),          // Inclination angle of the observer, in degrees
     incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
@@ -85,10 +83,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     rho2(0.0),
     dphi(1.0),                  // Each chunk of azimuthal angle projected onto equator, when broken up into the bins (see numphi)
     phishift,
-    aniso(0.586),               // Anisotropy parameter
-    Gamma1(2.0),                // Spectral index
-    Gamma2(2.0),                // Spectral index
-    Gamma3(2.0),                // Spectral index
     mu_1(1.0),                  // = cos(theta_1), unitless
     mu_2(1.0),                  // = cos(theta_2), unitless
     cosgamma,                   // Cos of the angle between the radial vector and the vector normal to the surface; defined in equation 13, MLCB
@@ -103,7 +97,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
-    nh(1.0);					// real nh = nh*4e19
+    nh(0.0);					// real nh = nh*e18
 
   unsigned long int *start;                    // Starting channels for Instrument Response 
   double *arf, *offaxis;
@@ -128,7 +122,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numtheta_in(1),
     spotshape(0), 		  // Spot shape; 0=standard
     numbands(NCURVES),    // Number of energy bands;
-    attenuation(0),       // Attenuation flag, specific to NICER targets with implemented factors
     inst_curve(0);		  // Instrument response flag, 1 = NICER response curve
 
 
@@ -158,11 +151,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
-  //class LightCurve curve2;
   class LightCurve *flxcurve, *flxcurve2;
   class DataStruct obsdata;           // observational data as read in from a file
 
- 
 
   
   /*********************************************************/
@@ -172,16 +163,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for ( int i(1); i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
             switch ( argv[i][1] ) {
-
-        case 'a': // Attenuation flag, corresponds to four attenuation files for NICER targets
-        			sscanf(argv[i+1], "%u", &attenuation);
-        			// 0 = nothing happens, light curve produced as normal
-        			// 1 = NICER J0030 WABS
-        			// 2 = NICER J0030 TBABS
-        			// 3 = NICER J0437 WABS
-        			// 4 = NICER J0437 TBABS
-        			// 5 = NICER J0437 TBnew (with fine bands)
-        			break;
 
         case 'A': // ISM column density, in multiples of 1e18cm^2
         			sscanf(argv[i+1], "%lf", &nh);
@@ -218,8 +199,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 		case 'E':  // Offset emission angle of the second spot (degrees), latitude
 	                sscanf(argv[i+1], "%lf", &d_theta_2);
-	                break;      
-
+	                break;    
 	    case 'f':  // Spin frequency (Hz)
 	                sscanf(argv[i+1], "%lf", &omega);
 	                omega_is_set = true;
@@ -251,9 +231,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	            	datafile_is_set = true;
 	            	break;
 	                
-	          	          
-
-
+	          	        
 	    case 'k': // Background in low energy band (between 0 and 1)
 	      			sscanf(argv[i+1], "%lf", &background);
 	      			break;
@@ -380,14 +358,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
                 case 'h': default: // Prints help
       	            std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl
        	            		  
-                              << "-a Attenuation Flag [0]:" << std::endl
-                              << "      1 for NICER J0030 WABS model" << std::endl
-                              << "      2 for NICER J0030 TBABS model" << std::endl
-                              << "      3 for NICER J0437 WABS model" << std::endl
-                              << "      4 for NICER J0437 TBABS model" << std::endl
-                              << "      5 for NICER J0437 'fine channels' TBnew model" << std::endl
                               << "-A ISM column density, in multiples of base value [0]" << std::endl
-                              << "      base value is 1e18 " << std::endl
+                              << "      base value is 1e18 cm^-2 " << std::endl
                               << "-b Bending Angle File" << std::endl
                               << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
                               << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
@@ -518,8 +490,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     std::cout << "R_eq = " << req << " km" << std::endl;
     std::cout << "Distance = " << distance << "m" << std::endl;
 
-    //mass_over_req = 1.0/6.1138;
-
     mass_over_req = mass/(req) * Units::GMC2 * 1;
     std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
     std::cout << "R/M = " << 1.0/mass_over_req << std::endl;
@@ -534,10 +504,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     mass = Units::cgs_to_nounits( mass*Units::MSUN, Units::MASS );
     req = Units::cgs_to_nounits( req*1.0e5, Units::LENGTH );
    
-
-    std::cout << "R/M = " << req/mass << std::endl;
-    //mass_over_req = mass/req;
-
     omega = Units::cgs_to_nounits( 2.0*Units::PI*omega, Units::INVTIME );
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
@@ -570,10 +536,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.para.theta = theta_1;
     curve.para.theta_c = theta_1;
     curve.para.incl = incl_1;
-    curve.para.aniso = aniso;
-    curve.para.Gamma1 = Gamma1;
-    curve.para.Gamma2 = Gamma2;
-    curve.para.Gamma3 = Gamma3;
     curve.para.temperature = spot_temperature;
     //curve.para.ts = ts;
     curve.para.E_band_lower_1 = E_band_lower_1;
@@ -592,7 +554,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.beaming_model = beaming_model;
     curve.flags.ns_model = NS_model;
     curve.flags.bend_file = bend_file_is_set;
-    curve.flags.attenuation = attenuation;
+    //    curve.flags.attenuation = attenuation;
     curve.flags.inst_curve = inst_curve;
     curve.numbands = numbands;
     curve.fbands = FBANDS;
@@ -603,120 +565,23 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     curve.flags.spotshape = spotshape;
 
-    double **atten;
-    atten = dmatrix(0,400,0,1191);
-    double *tbnew, *tbnew_nh;
-    tbnew_nh = dvector(0,1191);
-    tbnew = dvector(0,NCURVES);
-    int inh;
-
-    // Read in the attenuation file
-    if (curve.flags.attenuation == 5){
-      std::cout << "Read in ISM" << std::endl;
-      std::ifstream ism;       // input stream
-      ism.open("ISM/tbnew_full.txt");
-      char line[265]; // line of the data file being read in
-      double get_nh, get_e, get_att;
-      for (unsigned int k(1); k<= 400; k++){
-	for (unsigned int i(0); i<1191; i++){
-	  ism.getline(line,265);
-	  //std::cout << "line = " << line << std::endl;
-	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
-	  atten[k][i] = get_att;
-	}
-      }
-      std::cout << "nh = " << nh << "e18 cm^2" << std::endl;
-      inh = nh;
-      std::cout << "inh = " << inh  << std::endl;
-      if (inh == 0)
-	curve.flags.attenuation = 0;
-      else{
-      
-	//	std::cout << "index = " << 2+(inh-10)/5 << std::endl;
-      
-	if (inh < 10 && inh > 0)
-	  tbnew_nh = atten[1];      
-	if (inh >= 10){
-	  inh = 2+(nh-10)/5;
-	  tbnew_nh = atten[inh];
-	}
-      }
-
-      for (unsigned int p(0); p<NCURVES; p++){
-
-	if (p%2==0){ //p is even
-	  tbnew[p] = 0.25*(3.0*tbnew_nh[p/2] + tbnew_nh[p/2+1]);
-	}
-	else{ //p is odd
-	  tbnew[p] = 0.25 * (tbnew_nh[p/2] + 3.0*tbnew_nh[p/2+1]);
-	}	
-      }
-      
-	std::cout << "tbnew[0] = " << tbnew[0] << std::endl;
- 
-
-      free_dmatrix(atten,0,400,0,1191);
-    }
-    //    free_dvector(tbnew_nh,0,1191);      
-   
-    // Read in the attenuation file
-    if (curve.flags.attenuation == 6){
-      std::cout << "Read in ISM (approximate version) " << std::endl;
-      std::ifstream ism;       // input stream
-      ism.open("ISM/tbnew/tbnew0.004.txt");
-      char line[265]; // line of the data file being read in
-      double get_nh, get_e, get_att;
-      int m=0;
-	for (unsigned int i(0); i<1191; i++){
-	  ism.getline(line,265);
-	  //std::cout << "line = " << line << std::endl;
-	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
-	  atten[m][i] = get_att;
-	    //pow(get_att,nh);
-	}
-
-      std::cout << "nh = " << nh << " x 0.4 x e20 cm^2" << std::endl;
-      inh = nh; 
-      std::cout << "inh = " << inh  << std::endl;
-      if (inh == 0)
-	curve.flags.attenuation = 0;
-      else{
-      
-	for (unsigned int p(0); p<NCURVES; p++){
-
-	  if (p%2==0){ //p is even
-	    tbnew[p] = 0.25*(3.0*atten[0][p/2] + atten[0][p/2+1]);
-	  }
-	  else{ //p is odd
-	    tbnew[p] = 0.25 * (atten[0][p/2] + 3.0*atten[0][p/2+1]);
-	  }
-	  
-	  tbnew[p] *= pow(tbnew[p],nh-1);
-
-	 
-
-	}
-	std::cout << "tbnew[0] = " << tbnew[0] << std::endl;
-      
-	free_dmatrix(atten,0,400,0,1191);
-      }
-    //    free_dvector(tbnew_nh,0,1191);      
-    }
-
-   // Define the Atmosphere Model
   
 
+    double *tbnew;
+    tbnew = dvector(0,NCURVES);
+    // Read in TBNew using the correct value of NH.
+    if (nh != 0.0)
+      ReadTBNEW(nh,tbnew);
+
+    
+
+    // Define the Atmosphere Model
     // NSX 
-
    if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
-
      ReadNSXHnew(&curve);
-     
    }
 
    
-
-
     /*************************/
     /* OPENING THE DATA FILE */
     /*************************/
@@ -1510,11 +1375,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
  
     // Free previously allocated memory
 
-     if (curve.flags.beaming_model == 10 || curve.flags.beaming_model >= 12  ){ // *cole* McPHAC Hydrogen Atmosphere        
-       free_dvector(curve.mccangl,0,51);
-       free_dvector(curve.mcloget,0,101);
-       free_dvector(curve.mccinte,0,1595001);
-     }
+
      if (curve.flags.beaming_model == 11){ // New NSX-H model
 	free_dvector(curve.mclogTeff,0,NlogTeff);
 	free_dvector(curve.mclogg,0,Nlogg);
