@@ -179,6 +179,11 @@ class Instrument { // Information about the instrument's response matrix, etc
   double *ehi;       // Highest energy photon in channel p
 };
 
+class ISM { // Attenuation by the ISM
+ public:
+  double *attenuation; // Vector of attenuations for each photon energy
+  double *energy;     // Vector of photon energies
+};
 
 
 #endif // STRUCT_H

@@ -16,6 +16,6 @@
 
 class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, double nh);
 
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh, double* tbnew);
+class LightCurve Attenuate (class LightCurve* incurve, class ISM* ism);
 
-void ReadTBNEW(double nh, double* tbnew);
+void ReadTBNEW(double nh, class ISM* ism);

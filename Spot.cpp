@@ -523,14 +523,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     curve.flags.spotshape = spotshape;
 
-    //std::cout << "A. curve.cbands = " << curve.cbands << std::endl;
-
-    double *tbnew;
-    tbnew = dvector(0,NCURVES);
+    class ISM ism;   
     // Read in TBNew using the correct value of NH.
     if (nh != 0.0)
-      ReadTBNEW(nh,tbnew);
-
+      ReadTBNEW(nh,&ism);
+    
+    //std::cout << "TBNEW energy[0] = " << ism.energy[0] << " attenuation = " << ism.attenuation[0] << std::endl;
     
 
     // Define the Atmosphere Model
@@ -618,10 +616,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     std::cout << "Read in the Instrumental Response: ints_curve = " << inst_curve << std::endl;
 
     if (inst_curve == 1 ){ // READ in the response matrix
-
  
       ReadResponse( &nicer);
-
       
     }
     
@@ -975,8 +971,23 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
-	std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0] << std::endl;
 
+    /**********************************/
+    /*       APPLYING ATTENUATION     */
+    /**********************************/
+
+    if (nh != 0){
+      std::cout << "Apply ISM to the Signal!" << std::endl;
+      std::cout << " Before ISM flux[0][0] = " << curve.f[0][0] << std::endl;
+      
+      curve = Attenuate(&curve,&ism);
+
+      std::cout << " After ISM flux[0][0] = " << curve.f[0][0] << std::endl;
+
+    }
+
+
+	
     
     /***************************************/
     /* START OF INSTRUMENT EFFECT ROUTINES */
@@ -1009,19 +1020,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
-    /**********************************/
-    /*       APPLYING ATTENUATION     */
-    /**********************************/
 
-    if (nh != 0){
-      std::cout << "Apply ISM to the Signal!" << std::endl;
-      std::cout << " Before ISM flux[0][0] = " << curve.f[0][0] << std::endl;
-      
-      curve = Attenuate(&curve,tbnew);
-
-      std::cout << " After ISM flux[0][0] = " << curve.f[0][0] << std::endl;
-
-    }
    
 
     // If databins < numbins then rebin the theoretical curve down 

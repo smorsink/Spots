@@ -103,19 +103,44 @@ class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, doub
 }
 
 
-class LightCurve Attenuate (class LightCurve* incurve, double* tbnew){
+class LightCurve Attenuate (class LightCurve* incurve, class ISM* tbnew){
 
 	class LightCurve curve;
 	unsigned int numbins;
+	unsigned int numbands;
 
+	double factor;
+	int index;
+
+	//	double attenuation;
+	
 	curve = (*incurve);
 	numbins = curve.numbins;
+	numbands = curve.numbands;
 
-	for (unsigned int p = 0; p < NCURVES; p++){
-	  //std::cout << "p = " << p << "atten = " << tbnew[p] << std::endl;
+	// The light curve is computed at NCURVES observed energy values defined by
+	// curve.elo[p]
+
+	// The attenuation is defined for energies tbnew->energy
+
+	//std::cout << "numbands = " << numbands << std::endl;
+
+	for (unsigned int p = 0; p < numbands; p++){
+	  // std::cout << "p = " << p << " computed energy = " << curve.elo[p] << std::endl;
+
+	  factor = curve.elo[p]*1e2 - 10.0 + 0.5; //The 0.5 takes care of the rounding from double to int
+	  index = factor;
+
+	  /* std::cout << "factor = " << factor
+	    << " index = " << index << " NH energy = " << tbnew->energy[index]
+		    << " atten = " << tbnew->attenuation[index]
+		    << std::endl;*/
+	  
+	  
+	  
 	  for (unsigned int i = 0; i < numbins; i++){
         
-	    curve.f[p][i] *= tbnew[p]; 
+	    curve.f[p][i] *= tbnew->attenuation[index]; 
         	
 	  }
 	}
@@ -124,14 +149,15 @@ class LightCurve Attenuate (class LightCurve* incurve, double* tbnew){
 
 
 
-void ReadTBNEW(double nh, double *tbnew ){
+void ReadTBNEW(double nh, class ISM* tbnew ){
 
   double **atten;
   atten = dmatrix(0,400,0,1191);
-  double *tbnew_nh, *tbnew_energy;
-  tbnew_nh = dvector(0,1191);  // attenuation for each photon energy
-  tbnew_energy = dvector(0,1191); // value of photon energy 
+
   int inh;
+
+  tbnew->energy = dvector(0,1191);
+  tbnew->attenuation = dvector(0,1191);
 
   // TBNEW file has entries for 1190 photon energies!
 
@@ -143,44 +169,35 @@ void ReadTBNEW(double nh, double *tbnew ){
       ism.open("ISM/tbnew_full.txt");
       char line[265]; // line of the data file being read in
       double get_nh, get_e, get_att;
-      for (unsigned int k(1); k<= 400; k++){
-	for (unsigned int i(0); i<1191; i++){
+      for (unsigned int k(1); k< 400; k++){ // k is a label for the value of nH
+	for (unsigned int i(0); i<1191; i++){ // i is a label for the photon energy
 	  ism.getline(line,265);
 	  //std::cout << "line = " << line << std::endl;
 	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
-	  tbnew_energy[i] = get_e;
+	  tbnew->energy[i] = get_e;
 	  atten[k][i] = get_att;
+	  
 	}
       }
       std::cout << "nh = " << nh << "e18 cm^2" << std::endl;
       inh = nh;
       //std::cout << "inh = " << inh  << std::endl;
      
-     
+      // Read in appropriate column of matrix into vector (depending on value of NH)
       if (inh < 10 && inh > 0)
-	tbnew_nh = atten[1];      
+	tbnew->attenuation = atten[1];      
       if (inh >= 10){
 	inh = 2+(nh-10)/5;
-	tbnew_nh = atten[inh];
+	tbnew->attenuation = atten[inh];
       }
       
 
-      for (unsigned int p(0); p<NCURVES; p++){
-
-	if (p%2==0){ //p is even
-	  tbnew[p] = 0.25*(3.0*tbnew_nh[p/2] + tbnew_nh[p/2+1]);
-	}
-	else{ //p is odd
-	  tbnew[p] = 0.25 * (tbnew_nh[p/2] + 3.0*tbnew_nh[p/2+1]);
-	}	
-      }
-      
-      //std::cout << "tbnew[0] = " << tbnew[0] << std::endl;
+     
 
 	// 20230117 FIX UP Energies
 
       free_dmatrix(atten,0,400,0,1191);
-      //free_dvector(tbnew_nh,0,1191);
+     
 }
    
    
