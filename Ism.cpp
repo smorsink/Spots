@@ -103,7 +103,7 @@ class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, doub
 }
 
 
-class LightCurve Attenuate (class LightCurve* incurve, unsigned int attenuation, double nh, double* tbnew){
+class LightCurve Attenuate (class LightCurve* incurve, double* tbnew){
 
 	class LightCurve curve;
 	unsigned int numbins;
@@ -128,9 +128,13 @@ void ReadTBNEW(double nh, double *tbnew ){
 
   double **atten;
   atten = dmatrix(0,400,0,1191);
-  double *tbnew_nh;
-  tbnew_nh = dvector(0,1191);
+  double *tbnew_nh, *tbnew_energy;
+  tbnew_nh = dvector(0,1191);  // attenuation for each photon energy
+  tbnew_energy = dvector(0,1191); // value of photon energy 
   int inh;
+
+  // TBNEW file has entries for 1190 photon energies!
+
   
   // Read in the attenuation file
 
@@ -144,12 +148,13 @@ void ReadTBNEW(double nh, double *tbnew ){
 	  ism.getline(line,265);
 	  //std::cout << "line = " << line << std::endl;
 	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
+	  tbnew_energy[i] = get_e;
 	  atten[k][i] = get_att;
 	}
       }
       std::cout << "nh = " << nh << "e18 cm^2" << std::endl;
       inh = nh;
-      std::cout << "inh = " << inh  << std::endl;
+      //std::cout << "inh = " << inh  << std::endl;
      
      
       if (inh < 10 && inh > 0)
@@ -170,8 +175,9 @@ void ReadTBNEW(double nh, double *tbnew ){
 	}	
       }
       
-	std::cout << "tbnew[0] = " << tbnew[0] << std::endl;
- 
+      //std::cout << "tbnew[0] = " << tbnew[0] << std::endl;
+
+	// 20230117 FIX UP Energies
 
       free_dmatrix(atten,0,400,0,1191);
       //free_dvector(tbnew_nh,0,1191);

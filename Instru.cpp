@@ -20,8 +20,81 @@
 #include "Struct.h"
 #include "time.h"
 #include "Instru.h"
+#include "nrutil.h"
 #include <stdio.h>
 using namespace std;
+
+
+// Read in the combined ARF and RMF response matrix
+// Up to date NICER response for 2023
+
+void ReadResponse(class Instrument* nicer){
+
+  nicer->elo = dvector(0,NUM_NICER_CHANNELS);
+  nicer->ehi = dvector(0,NUM_NICER_CHANNELS);
+  nicer->start = lvector(0,NUM_NICER_CHANNELS);
+  nicer->response = dmatrix(0,NUM_NICER_CHANNELS,0,NUM_NICER_CHANNELS);
+  
+  std::ifstream file;
+  file.open("instrument/NICERarray50_rsp.txt");
+	
+  if(file.is_open()) {
+    for (unsigned int p(0);p<NUM_NICER_CHANNELS;p++){ // was NCURVES
+      file >> nicer->elo[p];
+      file >> nicer->ehi[p];
+      file >> nicer->start[p];
+
+      /* if (p < 2)
+	std::cout << std::endl << " p = " << p 
+		  << " Photon Energy Range: " << nicer->elo[p]
+		  << " to " << nicer->ehi[p] << " keV" << std::endl;*/
+	    
+	    
+      for (unsigned int j(0); j<=300; j++){
+	file >> nicer->response[p][j];
+	/*if (p < 2)
+	  std::cout << " r[" << p << "," << j << "]= " << nicer->response[p][j] ;*/
+	      
+      }
+    }
+  }else{
+    throw( Exception( "instrument response curve file is not found" ));
+  }
+  file.close();
+}
+
+class LightCurve ApplyResponse(class LightCurve* incurve, class Instrument* nicer){
+
+  class LightCurve curve;
+
+  std::cout << "Entered ApplyResponse!" << std::endl;
+  
+  curve = (*incurve);
+
+  // Interpolate computed flux in each energy band to find the flux in the nicer bands
+
+  // Apply response matrix to the interpolated flux
+
+  std::cout << "NCURVES = " << NCURVES << std::endl;
+  
+  for (unsigned int p(0); p<NCURVES; p++){
+
+    //std::cout << "ApplyResponse: p = " << p << std::endl;
+
+    if (p==2)
+      std::cout
+      << "curve.elo[" << p <<"] = " << curve.elo[p]
+      << " nicer.elo[p] = " << nicer->elo[p]
+	      << std::endl;
+
+
+  }
+
+
+  return curve;
+  
+  
+}
 
 
 

@@ -57,7 +57,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
                                           // argv, actual character strings of cmd line args
 
 
- std::cout << "Hello!" << std::endl;
+  //std::cout << "Hello!" << std::endl;
   
   /*********************************************/
   /* VARIABLE DECLARATIONS AND INITIALIZATIONS */
@@ -96,14 +96,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
     nh(0.0);					// real nh = nh*e18
 
-  unsigned long int *start;                    // Starting channels for Instrument Response 
-  double *arf, *offaxis;
-  double **response;          // Instrument Response Curve
-
-  start = lvector(0,NCURVES);
-  arf = dvector(0,NCURVES);
-  offaxis = dvector(0,NCURVES);
-  response = dmatrix(0,NCURVES,0,400);
+ 
   
   double SurfaceArea(0.0);
 
@@ -119,7 +112,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numtheta_in(1),
     spotshape(0), 		  // Spot shape; 0=standard
     numbands(NCURVES),    // Number of energy bands;
-    inst_curve(0);		  // Instrument response flag, 1 = NICER response curve
+    inst_curve(0);		  // Instrument response flag, 0 = No instrument response; 1 = NICER response curve
 
 
   int NlogTeff, Nlogg, NlogE, Nmu, Npts;
@@ -368,8 +361,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			    << "      2 for CFL quark star poly model" << std::endl
 			    << "      3 for spherical model" << std::endl
 			    << "-R Instrument response curve [0]:" << std::endl
-			    << "      0 nothing's done as if all channels are 1 cm^2" << std::endl
-			    << "      1 NICER 2014 'fine channels' effective areas" << std::endl
+			    << "      0 No instrument response" << std::endl
+			    << "      1 NICER combined ARF & RMF response matrix" << std::endl
 			    << "-r * Radius of star (at the equator), in km." << std::endl
 			    << "-s Spectral model of radiation: [0]" << std::endl
 			    << "      0 for monochromatic." << std::endl
@@ -478,12 +471,15 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // Widths of energy intervals
     if (logEflag) { // logarithmic intervals
       DeltaLogE = (log10(E_band_upper_1) - log10(E_band_lower_1))/(numbands);
-      std::cout << "DeltaLogE = " << DeltaLogE << std::endl;
+      //std::cout << "DeltaLogE = " << DeltaLogE << std::endl;
     }
     else{ // linear intervals
       DeltaE = (E_band_upper_1 - E_band_lower_1)/(numbands);
-      std::cout << "DeltaE = " << DeltaE << std::endl;
+      //std::cout << "DeltaE = " << DeltaE << std::endl;
     }
+
+
+
     
  
     /**********************************/
@@ -527,7 +523,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     curve.flags.spotshape = spotshape;
 
-  
+    //std::cout << "A. curve.cbands = " << curve.cbands << std::endl;
 
     double *tbnew;
     tbnew = dvector(0,NCURVES);
@@ -542,6 +538,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
      ReadNSXHnew(&curve);
    }
+
 
    
     /*************************/
@@ -617,112 +614,19 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
     /*      OPEN INSTRUMENT RESPONSE CURVE    */
     /******************************************/
+    class Instrument nicer;
+    std::cout << "Read in the Instrumental Response: ints_curve = " << inst_curve << std::endl;
 
-    std::cout << "Read in the Instrumental Response: ints_curve = " << curve.flags.inst_curve << std::endl;
+    if (inst_curve == 1 ){ // READ in the response matrix
 
+ 
+      ReadResponse( &nicer);
 
-    if (curve.flags.inst_curve == 2){ // May 2014 version of response matrix
-
-      	std::ifstream file;
-	file.open("Area/NICER_May2014_rsp.txt");
-	double elow,ehigh;
-	
-	if(file.is_open()) {
-	  for (unsigned int p(0);p<NCURVES;p++){
-	    file >> elow;
-	    file >> ehigh;
-	    file >> start[p];
-	    for (unsigned int j(0); j<=76; j++){
-	      file >> response[p][j]; 
-	    }
-	  }
-	}else{
-        throw( Exception( "instrument response curve file is not found" ));
-        }
-        file.close();
-
-
-	
+      
     }
+    
 
-        if (curve.flags.inst_curve == 3){ //Version 1.02 (March 2018) of response matrix
-
-      	std::ifstream file;
-	std::cout << "Opening v1.02 NICER Response Matrix" << std::endl;
-	file.open("Area/rmf_v1.02_newformat.txt");
-	double elow,ehigh,junk;
-	int channel;
-	// start[p] holds the number of non-zero elements
-	
-	if(file.is_open()) {
-	  for (unsigned int p(0);p<NCURVES;p++){
-	    file >> channel;
-	    file >> elow;
-	    file >> ehigh;
-	    file >> start[p];
-	    if (p==0){
-	      std::cout << "Channel #" << channel
-			<< " Elo = " << elow
-			<< " Ehi = " << ehigh
-			<< " Number of Nonzeros = " << start[p]
-			<< std::endl;	      
-	    }
-	    
-	    for (unsigned int j(0); j<start[p]; j++){
-	      file >> response[p][j];
-	      if (p==0)
-		std::cout << response[p][j] << " ";
-	    }
-	    if (p==0)
-	      std::cout << std::endl;
-	  }	  
-	}else{
-        throw( Exception( "instrument response curve file is not found" ));
-        }
-        file.close();
-
-	//std::ifstream file;
-	std::cout << "Off-Axis Correction Area v1.02" << std::endl;
-	file.open("Area/offset_correction_chans25to355_noheader.txt");
-	if(file.is_open()) {
-	  for (unsigned int p(0);p<24;p++){
-	    offaxis[p] = 0.0;
-	  }
-
-	  
-	  for (unsigned int p(24);p<NCURVES;p++){
-	    file >> channel;
-	    file >> junk;
-	    file >> junk;
-	    file >> offaxis[p];
-	   
-	    
-	    
-	  }	  
-	}
-	else{
-        throw( Exception( "off-axis response file is not found" ));
-        }
-        file.close();
-
-	std::cout << "On-Axis Area v1.02" << std::endl;
-	file.open("Area/ni_xrcall_onaxis_v1.02_arf_noheader.txt");
-	if(file.is_open()) {	  
-	  for (unsigned int p(0);p<NCURVES;p++){
-	    file >> channel;
-	    file >> junk;
-	    file >> junk;
-	    file >> arf[p];
-	    file >> junk;
-	    file >> junk;
-	    file >> junk;
-	    file >> junk;
-	    file >> junk; 	    
-	  }	  
-	}	
-        file.close();	
-    }
-
+   
 
 
     /***************************/
@@ -772,7 +676,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* Initialize time and flux */
     /****************************/
 
-    std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << curve.numbands << std::endl;
+    //std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << curve.numbands << std::endl;
     //std::cout << "NCURVES=" << NCURVES << std::endl;
     flxcurve = &normcurve;
     flxcurve2 = &normcurve;
@@ -784,7 +688,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	}
     } 
 
-  
+    // Define photon energies for computation
+
+    for (unsigned int p(0); p <= numbands; p++){
+
+      curve.elo[p] = E_band_lower_1 + p*DeltaE;
+      curve.ehi[p] = E_band_lower_1 + (p+1)*DeltaE;
+
+      //if (p == 0)
+      //std::cout << "elo[0] = " << curve.elo[p] << " ehi[0] = " << curve.ehi[p] << std::endl;
+
+    }
+
 
     /*********************************/
     /* FIRST HOT SPOT - STANDARD CASE*/
@@ -825,13 +740,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  //  for (unsigned int k(1); k < 2; k++) { // Loop through the circles
 
-	  std::cout << "p = " << p
+	  /* std::cout << "p = " << p
 		    << " pieces = " << pieces
 		    << " Theta_spot = " << theta_1 *180/Units::PI << " (deg) "  << theta_1 << " (rad)"
 		    << " k = " << k
 		    << " theta_k = " << curve.para.theta_k[k]
 		    << " phi_k = " << curve.para.phi_k[k]
-		    << std::endl;
+		    << std::endl;*/
 
 	  
 	  deltatheta = curve.para.dtheta[k];
@@ -898,7 +813,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  // Note: dS is in dimensionless code units, so NOT km^2
 	  
 
-	  std::cout << "numphi = " << numphi << std::endl;
+	  //std::cout << "numphi = " << numphi << std::endl;
 	  
 	  for ( unsigned int j(0); j < 0.5*numphi ; j++ ) {// looping through the phi divisions
 	  //for ( int j(0); j < 10 ; j++ ) {// looping through the phi divisions
@@ -910,16 +825,18 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
 	    if ( j==0){
-	      std::cout << "starting ComputeAngles" << std::endl;
+	      //std::cout << "starting ComputeAngles" << std::endl;
 
 	      curve = ComputeAngles(&curve, defltoa); 	
-	      std::cout << "Spot1: starting ComputeCurve curve.dOmega_s[0] = " << curve.dOmega_s[0]<< std::endl;
+	      //std::cout << "Spot1: starting ComputeCurve curve.dOmega_s[0] = " << curve.dOmega_s[0]<< std::endl;
 	      curve = ComputeCurve(&curve);
-	      std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
+	      //std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
 	      
 	      curve = TimeDelays(&curve);
-	      std::cout << "Spot1: finished TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
+	      //std::cout << "Spot1: finished TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
 	    }
+
+	    //std::cout << "Spot1: Finished curve.cbands =  " << curve.cbands << std::endl;
 
 
 	  
@@ -930,7 +847,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    for ( int i(0); i < numbins; i++ ) {
 	      int q(i+j);
 	      int qq(i-j);
-	      if (q>=numbins){
+	      if (q>=numbins){		
 		//std::cout << "??? q= " << q << std::endl;
 		q+=-numbins;
 	      }
@@ -1097,8 +1014,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /**********************************/
 
     if (nh != 0){
-      std::cout << "Apply ISM to the Signal!" << std::endl;    
-      curve = Attenuate(&curve,tbnew);	
+      std::cout << "Apply ISM to the Signal!" << std::endl;
+      std::cout << " Before ISM flux[0][0] = " << curve.f[0][0] << std::endl;
+      
+      curve = Attenuate(&curve,tbnew);
+
+      std::cout << " After ISM flux[0][0] = " << curve.f[0][0] << std::endl;
+
     }
    
 
@@ -1127,35 +1049,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
-
-
-           
-      //if (curve.flags.inst_curve == 2)
-      //curve = Inst_Res2(&curve, curve.flags.inst_curve,start,response);
-
-      if (curve.flags.inst_curve == 3){ // Apply response to both signal and background
-	std::cout << "Apply the Response Matrix " << std::endl;
-
-	// Apply the ARF
-	for (unsigned int p = 0; p < numbands; p++){
-	  for (unsigned int i = 0; i < numbins; i++){          	   
-	    curve.f[p][i] *= arf[p];
-	    flxcurve->f[p][i] *= arf[p];
-	  }
-	}	
-
-	// Redistribution Matrix
-	//curve = Inst_Res3(&curve, curve.flags.inst_curve,start,response); // Signal
-	//(*flxcurve) = Inst_Res3(flxcurve, curve.flags.inst_curve,start,response); // Background
-
-	// Offaxis Response
-	for (unsigned int p = 0; p < 355; p++){
-	  for (unsigned int i = 0; i < numbins; i++){          	   
-	    curve.f[p][i] *= offaxis[p];
-	    flxcurve->f[p][i] *= offaxis[p];
-	  }
-	}	
-      }     
+      curve = ApplyResponse(&curve,&nicer);
     } // Finished Applying the Response Matrix
 
     double spotcounts = 0.0;
@@ -1234,7 +1128,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		<< " curve.cbins = " << curve.cbands
 		<< " numbands = " << numbands
 		<< " E_diff = " << E_diff
-		<< " E0 = " << curve.para.E_band_lower_1 + (0.0)*E_diff << std::endl;
+		<< " E0 = " << curve.elo[0] << std::endl;
       
       for ( unsigned int p(0); p < numbands; p++ ) {
 	for ( unsigned int i(0); i < numbins; i++ ) {
@@ -1245,6 +1139,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  else{
 	    Eobs = curve.para.E_band_lower_1 + (p)*E_diff;
 	  }
+
+	  Eobs = curve.elo[p];
 	  
 	  out << Eobs << "\t";
 	  out << curve.t[i]<< "\t";		
@@ -1263,13 +1159,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // Free previously allocated memory
 
 
-     if (curve.flags.beaming_model == 11){ // New NSX-H model
+    /* if (curve.flags.beaming_model == 11){ // New NSX-H model
 	free_dvector(curve.mclogTeff,0,NlogTeff);
 	free_dvector(curve.mclogg,0,Nlogg);
 	free_dvector(curve.mcloget,0,NlogE);
 	free_dvector(curve.mccangl,0,Nmu);
 	free_dvector(curve.mccinte,0,Npts*Nmu);
-     }
+	}*/
 
 
 

@@ -22,10 +22,13 @@
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 256  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! number of different light curves that it will calculate
+#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!!
+// NCURVES is the number of energy bands that the code will compute before the instrument response is applied.
+
 #define FBANDS 300        // Final number of energy channels
 #define CBANDS 300         // Number of energy bands computed
 #define MR 1000             // Maximum number of m/r values
+#define NUM_NICER_CHANNELS 700   // Number of NICER energy channels
 
 //#define NCURVES 1
 //#define FBANDS 1
@@ -116,6 +119,8 @@ class LightCurve {                     // Stores all the data about the light cu
 	public:
 	double t[MAX_NUMBINS];                 // one-dimensional array that hold the value of time of emission; normalized between 0 and 1
 	double f[NCURVES][MAX_NUMBINS];        // two-dimensional array of fluxes (one one-dimensional array for each energy curve)
+	double elo[NCURVES];                   // Lowest energy included in energy band "p"
+	double ehi[NCURVES];                   // Highest energy included in energy band "p"
 	bool visible[MAX_NUMBINS];             // is the spot visible at that point
 	double t_o[MAX_NUMBINS];               // the time in the observer's frame; takes into account the light travel time
 	double cosbeta[MAX_NUMBINS];           // as seen in MLCB17 (cos of zenith angle, between the norm vector and initial photon direction)
@@ -148,9 +153,7 @@ class LightCurve {                     // Stores all the data about the light cu
 	bool ingoing;                          // True if one or more photons are ingoing
 	bool problem;                          // True if a problem occurs
 	unsigned int count;                    // for outputting command line args in Chisquare, chi.cpp
-	//     	int start[NCURVES];                    // Starting channels for Instrument Response 
-	//double area[NCURVES];
-	//double response[NCURVES][400];          // Instrument Response Curve
+
 };
 
 
@@ -165,6 +168,15 @@ class DataStruct {             // if reading in data, this would be the experime
 	unsigned int numbins;            // Number of time or phase bins for one spin period; 
 	//Also the number of flux data points
 	unsigned int numbands;
+};
+
+
+class Instrument { // Information about the instrument's response matrix, etc
+ public:
+  unsigned long *start;
+  double **response; // Response matrix (combined ARF and RFM)
+  double *elo;       // Lowest energy (in keV) photon in channel p
+  double *ehi;       // Highest energy photon in channel p
 };
 
 

@@ -423,13 +423,13 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
   double r_eq = model->R_at_costheta(0.0); // Equatorial radius
   double phaseshift = incurve->para.phaseshift;
 
-  std::cout << "Welcome to SpotShape! " 
+  /*std::cout << "Welcome to SpotShape! " 
 	    << " phaseshift = " << phaseshift
 	    << " pieces = " << pieces
 	    << " p = " << p
 	    << " numtheta = " << numtheta
 	    << " spotshape = " << curve.flags.spotshape
-	    << std::endl;
+	    << std::endl;*/
 
   
   
@@ -441,9 +441,9 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
   // Add in overall phaseshift
   for (int k(0); k<numtheta; k++){
     curve.para.phi_k[k] = phaseshift;
-    std::cout << "SPOTSHAPE: k = " << k
+    /*std::cout << "SPOTSHAPE: k = " << k
 	      << " phi = " << curve.para.phi_k[k]
-	      << std::endl;
+	      << std::endl;*/
   }
 
   // phi_k is a relative phase with respect to the spot centre.
@@ -488,9 +488,9 @@ class LightCurve SpotShape( int pieces, int p, int numtheta, double theta_1, dou
 	    //std::cout << "SpotShape: k="<< k << " theta_k="<< thetak*180/Units::PI << " phi_edge=" << curve.para.phi_k[k] << std::endl;
 
 	}
-	      std::cout << "SPOTSHAPE: k = " << k
+	  /* std::cout << "SPOTSHAPE: k = " << k
 	      << " phi = " << curve.para.phi_k[k]
-	      << std::endl;
+	      << std::endl;*/
       }
     } // end spotshape=0 case
 
@@ -816,8 +816,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     double singamma(0.0);
     singamma = sqrt( 1.0 - pow( cosgamma, 2.0 ));
 
-    std::cout << "ComputeAngles:" << std::endl;
-    std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
+    //std::cout << "ComputeAngles:" << std::endl;
+    //std::cout << "ComputeAngles: b_R_max = " << curve.defl.b_psi[3*NN] << curve.defl.b_R_max << std::endl;
 
     if (mu < 0.0){
       /* std::cout << "ComputeAngles: Southern Hemisphere!"
@@ -832,7 +832,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
     curve.problem = false;
 
 
-    std::cout << "ComputeCurve: phi_0 = " << phi_0 << std::endl;
+    //std::cout << "ComputeCurve: phi_0 = " << phi_0 << std::endl;
     
     /********************************************************/
     /* COMPUTE EMISSION TIME, PHASE BINS, AND LIGHT BENDING */

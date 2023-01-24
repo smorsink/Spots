@@ -99,6 +99,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
   // DeltaE = (E_band_upper_1 - E_band_lower_1)/(numbands-1.0);
       std::cout << "COMPUTE CURVE: Lowest energy = " << E_band_lower_1
+		<< " = " << curve.elo[0] 
 		<< " Highest energy = " << E_band_upper_1
 		<< " numbands = " << numbands
 		<< " Delta(E) = " << DeltaE
@@ -281,6 +282,9 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	      E0 = curve.para.E_band_lower_1 + (p)*E_diff;
 	    }
 	    
+
+	    E0 = curve.elo[p]; // Use the lower limit of the energy band;
+
 	    
 	    curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
