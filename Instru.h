@@ -10,10 +10,6 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-//#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-#define NCURVES 300
-//
 
 
 class LightCurve Inst_Res (class LightCurve* incurve, unsigned int inst_curve);

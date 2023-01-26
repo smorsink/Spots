@@ -65,7 +65,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   double E0, E1, E2, DeltaE, DeltaLogE;
 
   unsigned int numbins(MAX_NUMBINS);  // Time bins of light curve (usually 128)
-  unsigned int numbands(NCURVES);  // Number of Energy Bands
+  unsigned int numbands(0);  // Number of Energy Bands
 
   bool logEflag(false);
 
@@ -101,21 +101,13 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
       std::cout << "COMPUTE CURVE: Lowest energy = " << E_band_lower_1
 		<< " = " << curve.elo[0] 
 		<< " Highest energy = " << E_band_upper_1
-		<< " numbands = " << numbands
+		<< " numbands = curve.numbands = " << numbands
 		<< " Delta(E) = " << DeltaE
 		<< std::endl;
 
-  
-  //cout << curve.mccinte[0] << endl;
-  std::cout << "beaming model = " << curve.flags.beaming_model << std::endl;
-   
   redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
-
-  //std::cout << "redshift = " << redshift << std::endl;
-
-  // double M = Units::nounits_to_cgs(curve.para.mass, Units::MASS);
+ 
   double R = Units::nounits_to_cgs(curve.para.req, Units::LENGTH);
-  //   double delta = 1 / sqrt(1 - 2.0*curve.para.mass/curve.para.req);
   double delta = 1.0 / sqrt(1.0 - 2.0*mass_over_req);
 
   double cos_theta = cos(curve.para.theta);
@@ -128,8 +120,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
        + (0.975 * mass_over_req) * pow(curve.para.omega_bar_sq,3.0))  *  pow(cos_theta,2)
     + (13.47 * mass_over_req - 27.13 * pow(mass_over_req,2)) *  pow(curve.para.omega_bar_sq,2.0) * cos_theta * (1.0 - cos_theta);
   double lgrav = log10(delta * mass_over_req * pow(Units::C,2)/R * obl_approx);
-  //std::cout << "theta = " << curve.para.theta * 180.0/Units::PI << " cos(theta) = " << cos_theta << " g = " << delta * mass_over_req * pow(Units::C,2)/R * obl_approx
-  //	      << " log(g) = " << lgrav << std::endl;
 
 
   std::cout << "ComputeCurve: Gravity log(g) = " << lgrav << std::endl;
@@ -138,58 +128,21 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   int i_lgrav = (lgrav-13.7)/0.1;
   if (i_lgrav < 1) i_lgrav = 1;
 
-  // New on Nov 2
 
-  //i_lgrav--;
-
-  //
   
   double gvec[5];
   for (int q(0); q<4; q++){
-    gvec[q+1] = 13.7+0.1*(i_lgrav-1+q);
-
-    //std::cout << "Gravity lgrav=" << lgrav << " gvec["<<q <<"]="<<gvec[q+1] <<std::endl;
-    
+    gvec[q+1] = 13.7+0.1*(i_lgrav-1+q);    
   }
 
   bolo = 2.0e9 * 2.404 * Units::C * pow(temperature * Units::EV/(Units::H_PLANCK * Units::C) , 3); // use this one! probably!
   // the e9 in the beginning is for changing T^3 from keV to eV
   // 2.404 comes from evaluating Bradt equation 6.17 (modified, for photon number count units), using the Riemann zeta function for z=3
 
-  std::cout << "ATMO: Number of Energy bands = " << numbands << std::endl;
-  std::cout << "Eband_upper = " << E_band_upper_1 << std::endl;
-  std::cout << "Eband_lower = " << E_band_lower_1 << std::endl;
-
-  /*
-  double E_diff = 1.0;
-  if ( numbands == 1){
-    E0 = curve.para.E0;
-  }
-  else{
-    E_diff = (E_band_upper_1 - E_band_lower_1)/numbands;
-    std::cout << "Final Energy band width = " << E_diff << std::endl;
-
-    // Compute new energy band width
-
-    //numbands = curve.cbands;
-    std::cout << "Number of bands to be computed = " << numbands << std::endl;
-    E_diff *= (curve.tbands*1.0)/(numbands*1.0);
-    std::cout << "New Energy band width = " << E_diff << std::endl;
-  }
-  */
-  
-  std::cout << "curve.flags.spectral_model = " << curve.flags.spectral_model << std::endl;
-  std::cout << "curve.flags.beaming_model = " << curve.flags.beaming_model << std::endl;
-  std::cout << "curve.flags.logEflag = " << logEflag << std::endl;
-  
   
   for ( unsigned int i(0); i < numbins; i++ ) { // Compute flux for each phase bin
-
-    //std::cout << "ATMO:: i = " << i << " dOm = " << curve.dOmega_s[i] << std::endl;
     
     if ( curve.dOmega_s[i] != 0.0 ) {
-
-      
       
       // Default value is gray = 1
       gray = 1.0; // beaming_model == 0
@@ -234,8 +187,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	      E0 = curve.para.E_band_lower_1 + (p+0.5)*E_diff;
 	    }
 	    
-	    
-
+	   
 	    curve.f[p][i] = gray * curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3)
 	      * BlackBody(temperature,E0*redshift/curve.eta[i])*2.0e9 / pow(Units::C * Units::H_PLANCK, 2) * pow(temperature * Units::EV, 3);
 	    
@@ -272,32 +224,13 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  //std::cout << "Temperature = " << curve.para.temperature << std::endl;
 	  
 	  for (unsigned int p = 0; p<numbands; p++){
-	    
-	    //E0 = E_band_lower_1 + (p + 0.5)*E_diff;
 
-	    if (logEflag){ // logarithmic
-	      E0 = curve.para.E_band_lower_1 * pow(10,(p)*DeltaLogE);
-	    }
-	    else{
-	      E0 = curve.para.E_band_lower_1 + (p)*E_diff;
-	    }
-	    
-
+	    // E0 is the observed photon energy.
 	    E0 = curve.elo[p]; // Use the lower limit of the energy band;
-
 	    
 	    curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
 			cos_theta, theta_index, curve.para.temperature, lgrav, &curve);
-
-	    if (p==0 && i==0)
-	      std::cout << "ATMO (H): Omega = " << curve.dOmega_s[i]
-			<< " solid angle = " << solidangle
-			<< " E0 = " << E0
-			<< " DeltaLogE = " << DeltaLogE
-			<< " DeltaE = " << DeltaE
-			<< " flux = " << curve.f[p][i]
-			<< std::endl;
 
 	    if (logEflag){ // Logarithmic
 	      if (p==0 && i==0)
@@ -310,7 +243,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	      curve.f[p][i] *= DeltaE; // Fake Integration	   
 	    }
 
-	    if (p==0 && i==0)
+	    /*if (p==0 && i==0)
 	      std::cout << "ATMO (H): Omega = " << curve.dOmega_s[i]
 			<< " solid angle = " << solidangle
 			<< " E0 = " << E0
@@ -318,7 +251,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 			<< " DeltaE = " << DeltaE
 			<< " flux = " << curve.f[p][i]
 			<< " log(10) = " << log(10.0)
-			<< std::endl;
+			<< std::endl;*/
 	    
 	  }
 	}

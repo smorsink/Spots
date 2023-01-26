@@ -22,7 +22,7 @@
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
 #define MAX_NUMBINS 256  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
 #define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 300        // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!!
+#define NCURVES 700       
 // NCURVES is the number of energy bands that the code will compute before the instrument response is applied.
 
 #define FBANDS 300        // Final number of energy channels
@@ -30,9 +30,6 @@
 #define MR 1000             // Maximum number of m/r values
 #define NUM_NICER_CHANNELS 700   // Number of NICER energy channels
 
-//#define NCURVES 1
-//#define FBANDS 1
-//#define CBANDS 1
 
 
 struct Parameters {      // local bit of spot information
@@ -41,11 +38,6 @@ struct Parameters {      // local bit of spot information
   double phi_0;          // Azimuthal angular location of the centre of the spot; in radians
   double dS;             // Area of grid bit
   double incl;           // Inclination angle (between NS spin axis and observer's line of sight); in radians
-  double aniso;          // Anisotropy
-  double Gamma;          // Angle between true normal to surface and radial vector
-  double Gamma1;         // Not related to above gamma; spectral index
-  double Gamma2;         // Not related to above gamma; spectral index
-  double Gamma3;         // Not related to above gamma; spectral index
   double temperature;    // Temperature of the spot, in the spot's frame; in keV or Kelvin (depends on Temperature Flag)
   double mass;           // Mass of the star; unitless in here
   double radius;         // Radius of the spot; unitless in here
@@ -62,9 +54,6 @@ struct Parameters {      // local bit of spot information
   double E_band_lower_2; // Lower bound of energy band for flux calculation; in keV
   double E_band_upper_2; // Upper bound of energy band for flux calculation; in keV
   double distance;       // Distance from earth to NS; in meters
-  //  double rsc;            // Scattering radius; adds scattering junk; in meters
-  //double Isc;            // Scattering intensity; adds scattering junk
-  //double bmodel;         // who knows?
   double E0; // NICER
   double L1; // NICER
   double L2; // NICER
@@ -94,10 +83,6 @@ struct Flags {
 
 class Defl {
 	public:                       // allocates the memory for the lookup table -- not evenly spaced
-  //double psi_b[3*NN+1];         // table where given psi, look up b_R
-  //	double b_psi[3*NN+1];         // table where given b_R, look up psi
-  //	double dcosa_dcosp_b[3*NN+1];     // table for looking up d(cosalpha)/d(cospsi) values
-  //	double toa_b[3*NN+1];           // table for toa values
 	double *psi_b; // psi values for specific M/R
 	double *b_psi; // b values for specific M/R
 	double *dcosa_dcosp_b; // dcos(alpha)/dcos(psi) values for specific M/R

@@ -11,9 +11,6 @@
 #define NDIM 5  //
 #define MPTS 6  //
 
-#define MAX_NUMBINS 256 // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!!
-//#define NCURVES 1      // REMEMBER TO CHANGE THIS IN STRUCT.H AS WELL!! number of different light curves that it will calculate
-#define NCURVES 300
 
 
 // Calculates chi^2
@@ -46,9 +43,9 @@ class LightCurve ShiftCurve( class LightCurve* angles, double phishift);
 
 //STAY IN CHI.CPP
 // Normalizes the light curve flux to 1
-class LightCurve Normalize1( double Flux[NCURVES][MAX_NUMBINS], unsigned int numbins );
+//class LightCurve Normalize1( double Flux[NCURVES][MAX_NUMBINS], unsigned int numbins );
 
-class LightCurve Normalize2( double Flux[NCURVES][MAX_NUMBINS], unsigned int numbins );
+//class LightCurve Normalize2( double Flux[NCURVES][MAX_NUMBINS], unsigned int numbins );
 
 
 //Calculates Legendre polynomial P2 for equation 8, MLCB
