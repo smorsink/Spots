@@ -30,6 +30,10 @@ using namespace std;
 
 void ReadResponse(class Instrument* nicer){
 
+  // NUM_NICER_CHANNELS is the number of NICER energy channels that will be read in.
+  // There are more channels than this in the response matrix
+
+  
   nicer->elo = dvector(0,NUM_NICER_CHANNELS);
   nicer->ehi = dvector(0,NUM_NICER_CHANNELS);
   nicer->start = lvector(0,NUM_NICER_CHANNELS);
@@ -44,12 +48,16 @@ void ReadResponse(class Instrument* nicer){
       file >> nicer->ehi[p];
       file >> nicer->start[p];
 
-      /* if (p < 2)
+      if ( nicer->start[p] != 0 )
+	std::cout << "WARNING: start[" << p << "] = " << nicer->start[p] << std::endl;
+      
+      if (p < 301)
 	std::cout << std::endl << " p = " << p 
 		  << " Photon Energy Range: " << nicer->elo[p]
-		  << " to " << nicer->ehi[p] << " keV" << std::endl;*/
+		  << " to " << nicer->ehi[p] << " keV" << std::endl;
 	    
-	    
+      // The number 300 comes from the structure of the response matrix file
+      
       for (unsigned int j(0); j<=300; j++){
 	file >> nicer->response[p][j];
 	/*if (p < 2)
@@ -63,10 +71,82 @@ void ReadResponse(class Instrument* nicer){
   file.close();
 }
 
+
+
+// Read in a light curve computed for numbands different energy bands.
+// Interpolate to find the same light curve computed for the NICER energy channels
+class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrument* nicer){
+
+  std::cout << "ConvertEnergyChannels: We computed " << incurve->numbands << " number of bands" << std::endl;
+  std::cout << "                       starting with " << incurve->elo[0] << " keV at intervals Delta(E) = "
+	    << incurve->ehi[0] - incurve->elo[0] << " keV" << std::endl;
+
+  class LightCurve newcurve;
+  double energy, energyfactor;
+
+  newcurve = (*incurve);
+   
+      for (unsigned int p(0);p<NUM_NICER_CHANNELS;p++){ // loop through the NICER energy channels
+
+	if (p<3){
+	  std::cout
+	    << "Computed curve.elo[" << p <<"] = " << incurve->elo[p]
+	    << " nicer.elo[p] = " << nicer->elo[p]
+	    << std::endl;
+	  std::cout
+	    << "Computed curve.elhi[" << p <<"] = " << incurve->ehi[p]
+	    << " nicer.ehi[p] = " << nicer->ehi[p]
+	    << std::endl;	  
+	}
+
+	energy = nicer->elo[p];
+
+	double factor = (energy - incurve->elo[0])/(incurve->ehi[0] - incurve->elo[0]);
+	int index = factor;
+
+	if (p<3){
+	  
+	  std::cout
+	    << " NICER channel energy = " << energy 
+	    << " Closest computed energy is "
+	    << " factor = " << factor
+	    << " index = " << index
+	    << " energy[index] = " << incurve->elo[index]
+	    << std::endl;
+	}
+	  
+	
+	// Interpolate to find the flux in the NICER energy channel
+
+	newcurve.elo[p] = nicer->elo[p];
+	newcurve.ehi[p] = nicer->ehi[p];
+
+	energyfactor = (energy - incurve->elo[index])/(incurve->elo[index+1]-incurve->elo[index]);
+
+	for (unsigned int i(0); i<=newcurve.numbins; i++){
+	  // linear interpolation for each timebin	 	  
+	  newcurve.f[p][i] = incurve->f[index][i] + (incurve->f[index+1][i] - incurve->f[index][i]) * energyfactor;
+
+	  /* if(i==0 && p<3)
+	    std::cout
+	    << "f1 = " << incurve->f[index][i] << " f2 = " << incurve->f[index+][i]*/
+	  
+	}	
+      }
+
+      // newcurve now has NUM_NICER_CHANNELS energy bands!
+      newcurve.numbands = NUM_NICER_CHANNELS;
+      
+      return newcurve;
+  
+}
+
+
 class LightCurve ApplyResponse(class LightCurve* incurve, class Instrument* nicer){
 
-  class LightCurve curve;
-
+  class LightCurve curve, newcurve;
+  double factor;
+  
   std::cout << "Entered ApplyResponse!" << std::endl;
   
   curve = (*incurve);
@@ -74,24 +154,30 @@ class LightCurve ApplyResponse(class LightCurve* incurve, class Instrument* nice
   // Interpolate computed flux in each energy band to find the flux in the nicer bands
 
   // Apply response matrix to the interpolated flux
-
-  std::cout << "NCURVES = " << NCURVES << std::endl;
+  // It is important that the number of energy channels in "incurve" be the same as the number of channels used in the response matrix.
+  //std::cout << "NCURVES = " << NCURVES << std::endl;
+  //std::cout << "curve.numbands = " << curve.numbands << std::endl;
   
-  for (unsigned int p(0); p<NCURVES; p++){
+  for (unsigned int p(0); p<NUM_NICER_CHANNELS; p++){
 
-    //std::cout << "ApplyResponse: p = " << p << std::endl;
+    // p refers to the index of the original photon.
+    // This photon gets mapped to channels labelled q
+    
+    for (unsigned int q(0); q < 300; q++){
 
-    if (p==2)
-      std::cout
-      << "curve.elo[" << p <<"] = " << curve.elo[p]
-      << " nicer.elo[p] = " << nicer->elo[p]
-	      << std::endl;
-
+      factor = nicer->response[p][q] * (nicer->ehi[p]-nicer->elo[p]);
+      if (factor != 0){
+	for(unsigned int i(0);i<curve.numbins;i++){	
+	  newcurve.f[q][i] += curve.f[p][i] * factor;
+	}
+      }
+    }
 
   }
-
-
-  return curve;
+  newcurve.numbands = 300;
+  newcurve.numbins = curve.numbins;
+  
+  return newcurve;
   
   
 }

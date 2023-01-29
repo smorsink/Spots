@@ -16,8 +16,7 @@ numbins=32     # phase bins
 
 spectraltype=0 # 
 spotmodel=0    # circular in the static frame, no gamma
-inst_res=0     # No instrument
-attenuation=0  # No ISM
+inst_res=1     # No instrument
 
 # doubles -- using "e" notation
 spin=300 # in Hz
@@ -43,7 +42,7 @@ numbands=300
 
 elo=0.1
 ehi=4.0
-numbands=39
+numbands=78
 
 ## MAKING THE DATA FILE
 if test ! -d "$out_dir"
