@@ -144,6 +144,7 @@ void ReadNSXHnew(class LightCurve* curve){
 // NSX - Hydrogen Atmosphere Computed by Wynn Ho
 // Calculate the final interpolated intensity
 // This "new" version takes into account that the energy is really the ratio: E/kT
+// Returns specific intensity "I" in units of: erg s^-1 cm^{-2} Hz^{-1} ster^-1
 double NSXHnew(double E, double cos_theta, int theta_index, double T, double lgrav,  class LightCurve* curve){
 
   //std::cout << "Welcome to NSX! E=" << E << std::endl;

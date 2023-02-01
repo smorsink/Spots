@@ -176,21 +176,25 @@ void ReadTBNEW(double nh, class ISM* tbnew ){
 	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
 	  tbnew->energy[i] = get_e;
 	  atten[k][i] = get_att;
+	  if (i==0 && k==40)
+	    std::cout << "nh = " << get_nh
+	      << " energy = " << get_e << " atten = " << get_att <<std::endl;
 	  
 	}
       }
       std::cout << "nh = " << nh << "e18 cm^2" << std::endl;
       inh = nh;
-      //std::cout << "inh = " << inh  << std::endl;
+      std::cout << "inh = " << inh  << std::endl;
      
       // Read in appropriate column of matrix into vector (depending on value of NH)
       if (inh < 10 && inh > 0)
 	tbnew->attenuation = atten[1];      
       if (inh >= 10){
 	inh = 2+(nh-10)/5;
+	std::cout << "inh = " << inh  << std::endl;
 	tbnew->attenuation = atten[inh];
       }
-      
+      std::cout << "energy = " << tbnew->energy[0] << " attenuation = " << tbnew->attenuation[0] << std::endl;
 
      
 

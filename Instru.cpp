@@ -51,7 +51,7 @@ void ReadResponse(class Instrument* nicer){
       if ( nicer->start[p] != 0 )
 	std::cout << "WARNING: start[" << p << "] = " << nicer->start[p] << std::endl;
       
-      if (p < 301)
+     if (p > 301)
 	std::cout << std::endl << " p = " << p 
 		  << " Photon Energy Range: " << nicer->elo[p]
 		  << " to " << nicer->ehi[p] << " keV" << std::endl;
@@ -104,14 +104,14 @@ class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrume
 	double factor = (energy - incurve->elo[0])/(incurve->ehi[0] - incurve->elo[0]);
 	int index = factor;
 
-	if (p<3){
+	if (p>300){
 	  
 	  std::cout
+	    <<" channel = " << p
 	    << " NICER channel energy = " << energy 
-	    << " Closest computed energy is "
 	    << " factor = " << factor
 	    << " index = " << index
-	    << " energy[index] = " << incurve->elo[index]
+	    << " closest energy[index] = " << incurve->elo[index]
 	    << std::endl;
 	}
 	  
@@ -127,6 +127,9 @@ class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrume
 	  // linear interpolation for each timebin	 	  
 	  newcurve.f[p][i] = incurve->f[index][i] + (incurve->f[index+1][i] - incurve->f[index][i]) * energyfactor;
 
+	  newcurve.f[p][i] *= (1.0)/(incurve->elo[index+1]-incurve->elo[index]);
+
+	  
 	  /* if(i==0 && p<3)
 	    std::cout
 	    << "f1 = " << incurve->f[index][i] << " f2 = " << incurve->f[index+][i]*/

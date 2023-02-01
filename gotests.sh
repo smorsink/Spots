@@ -42,7 +42,7 @@ numbands=300
 
 elo=0.1
 ehi=4.0
-numbands=78
+numbands=39
 
 ## MAKING THE DATA FILE
 if test ! -d "$out_dir"
@@ -67,7 +67,8 @@ beaming=11
 temp=1.0e6 #Kelvin
 #temp=8.617333262e-2 # in keV (Surface temperature)
 temp=0.08617315 # keV
-nh=5
+#nh=5
+nh=200 # units of 1e18 cm^-2
 
 ## RUNNING THE CODE
 ./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model"  -E "$deltatheta" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file1" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" -A "$nh" -R 1

@@ -223,10 +223,13 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 	  //std::cout << "Temperature = " << curve.para.temperature << std::endl;
 	  
-	  for (unsigned int p = 0; p<numbands; p++){
+	  for (unsigned int p = 0; p<=numbands; p++){
 
-	    // E0 is the observed photon energy.
+	    // E0 is the observed photon energy in keV
 	    E0 = curve.elo[p]; // Use the lower limit of the energy band;
+
+	    // NSXHnew returns specific intensity in units of erg (s Hz)^{-1} cm^-2 str^-1
+	    
 	    
 	    curve.f[p][i] = solidangle
 	      * NSXHnew(E0*redshift/curve.eta[i], 
@@ -240,7 +243,11 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	    }
 	    else{ // Linear
 	      curve.f[p][i] *= (1.0 / ( (E0) * Units::H_PLANCK ));	    
-	      curve.f[p][i] *= DeltaE; // Fake Integration	   
+	      curve.f[p][i] *= DeltaE/numbins; // Fake Integration
+	      //curve.f[p][i] *= (1.0 / (E0 * 1e3 * Units::EV )); // divide by photon energy in erg
+	      // f now has units of number of photons/(cm^2)
+	      // multiply by delta t x delta f = time bin x photon frequency bin
+	      //curve.f[p][i] *= (DeltaE * 1e3 * Units::EV / Units::H_PLANCK)/(numbins);
 	    }
 
 	    /*if (p==0 && i==0)

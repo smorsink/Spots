@@ -889,6 +889,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     } // End Standard Case of first spot
 
 
+    // f has units of number of photons/cm^2
+    
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
@@ -923,7 +925,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     
     std::cout << "*****Finished the first spot!" << std::endl;
-    std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0] << std::endl;
+    std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0]
+	      << " number of photons/(cm^2) "<< std::endl;
     
 
     // Flxcurve holds the current version of the waveform
@@ -1060,8 +1063,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
     
         /***************************************************/
-    /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
-    /***************************************************/
+	/* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
+	/***************************************************/
     sprintf(out_file,"Test/out3.txt");
     out.open(out_file, std::ios_base::trunc);
     out.precision(10);
