@@ -246,8 +246,6 @@ class LightCurve Inst_Res3 (class LightCurve* incurve, unsigned int inst_curve, 
 	newcurve.numbands = numbands;
 	newcurve.numbins = numbins;
 	
-	int newindex;
-
 	
     for (unsigned int p =0; p<NCURVES; p++)
 	for (unsigned int i=0; i<numbins;i++)

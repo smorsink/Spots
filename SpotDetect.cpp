@@ -67,82 +67,40 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     
   std::ofstream out;      // output stream; printing information to the output file
 
-  double incl_1(90.0),          // Inclination angle of the observer, in degrees
-    incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
-    theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
-    theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
-    d_theta_2(0.0),
-    d_incl_2(0.0),
-    mass,                       // Mass of the star, in M_sun
-    rspot(0.0),                 // Radius of the star at the spot, in km
-    mass_over_req,              // Dimensionless mass divided by radius ratio
-    omega,                      // Frequency of the spin of the star, in Hz
-    req,                        // Radius of the star at the equator, in km
+  double 
     phaseshift(0.0),                    // Phase shift of spot (in radians)
-    spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in Kelvin
-    spot2_temperature(0.0),		// Temperature of second spot
-    rho(0.0),                   // Angular radius of the first spot, in radians
-    rho2(0.0),
-    dphi(1.0),                  // Each chunk of azimuthal angle projected onto equator, when broken up into the bins (see numphi)
-    phishift,
-    mu_1(1.0),                  // = cos(theta_1), unitless
-    mu_2(1.0),                  // = cos(theta_2), unitless
-    cosgamma,                   // Cos of the angle between the radial vector and the vector normal to the surface; defined in equation 13, MLCB
-    //Flux[NCURVES][MAX_NUMBINS], // Array of fluxes; Each curve gets its own vector of fluxes based on photons in bins.
-    //Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
-    chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
-    phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
+   
     nh(0.0);					// real nh = nh*e18
 
- 
-  
-  double SurfaceArea(0.0);
+
   double Eobs;
 
-  double E0, DeltaE(0.0), DeltaLogE(0.0), rot_par;
+  double E0, DeltaE(0.0), DeltaLogE(0.0);
     
-  unsigned int NS_model(1),       // Specifies oblateness (option 3 is spherical)
-    spectral_model(0),    // Spectral model choice (initialized to blackbody)
-    beaming_model(0),     // Beaming model choice (initialized to isotropic)
+  unsigned int 
     numbins(MAX_NUMBINS), // Number of time or phase bins for one spin period; Also the number of flux data points
     databins(MAX_NUMBINS),   // Number of phase bins in the data
-    numphi(1),            // Number of azimuthal (projected) angular bins per spot
-    numtheta(1),          // Number of latitudinal angular bins per spot
-    numtheta_in(1),
-    spotshape(0), 		  // Spot shape; 0=standard
     numbands(NCURVES),    // Number of energy bands that will be computed;
     inst_curve(0);		  // Instrument response flag, 0 = No instrument response; 1 = NICER response curve
 
   // Note: space will be allocated for a total of NCURVES different energy bands
   // We will compute only numbands different energy bands
 
-  
-  int NlogTeff, Nlogg, NlogE, Nmu, Npts;
+ 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
-    test_file[256] = "test.txt",
-       bend_file[256] = "No File Name Specified!", 
-       data_file[256],                // Name of input file for reading in data
-    filenameheader[256]="Run";
-     
+    data_file[256] = "none.txt",
+    test_file[256] = "test.txt";
+      
          
   // flags!
-  bool incl_is_set(false),         // True if inclination is set at the command line (inclination is a necessary variable)
-    	 theta_is_set(false),        // True if theta is set at the command line (theta is a necessary variable)
-    	 mass_is_set(false),         // True if mass is set at the command line (mass is a necessary variable)
-    	 rspot_is_set(false),        // True if rspot is set at the command line (rspot is a necessary variable)
-    	 omega_is_set(false),        // True if omega is set at the command line (omega is a necessary variable)
-    	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
-    	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
-    kelvin(false),                    // True if Temperature is in Kelvin; Otherwise in keV
-    logEflag(false),
-    	 ignore_time_delays(false),  // True if we are ignoring time delays
-         bend_file_is_set(false),
-    two_spots(false);           // True if we are modelling a NS with two antipodal hot spots
+  bool 
+    datafile_is_set(false),     // True if a data file for inputting is set at the command line
+    logEflag(false);
     	
    
     		
@@ -315,17 +273,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* PASS VALUES INTO THE STRUCTURE */
     /**********************************/    	
     
-    curve.para.mass = mass;
-    curve.para.mass_over_r = mass_over_req;
-    curve.para.omega = omega;
-    curve.para.omega_bar_sq = rot_par;
-    curve.para.radius = req;
-    curve.para.req = req;
-    curve.para.theta = theta_1;
-    curve.para.theta_c = theta_1;
-    curve.para.incl = incl_1;
-    curve.para.temperature = spot_temperature;
-    //curve.para.ts = ts;
     curve.para.E_band_lower_1 = E_band_lower_1;
     curve.para.E_band_upper_1 = E_band_upper_1;
 
@@ -336,18 +283,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.numbins = numbins;
     curve.para.phaseshift=phaseshift;
 
-    curve.flags.ignore_time_delays = ignore_time_delays;
-    curve.flags.spectral_model = spectral_model;
-    curve.flags.beaming_model = beaming_model;
-    curve.flags.ns_model = NS_model;
-    curve.flags.bend_file = bend_file_is_set;
     curve.flags.inst_curve = inst_curve;
     curve.numbands = numbands; // The number of energy bands computed
     curve.tbands = NCURVES; // The number of energy bands allocated into memory
     curve.cbands = numbands; // The number of energy bands computed
-    curve.flags.kelvin = kelvin;
     curve.flags.logEflag = logEflag;
-    curve.flags.spotshape = spotshape;
+  
 
 
     /***************************/

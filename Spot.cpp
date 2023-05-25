@@ -68,11 +68,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   std::ofstream out;      // output stream; printing information to the output file
 
   double incl_1(90.0),          // Inclination angle of the observer, in degrees
-    incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
+    //incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     d_theta_2(0.0),
-    d_incl_2(0.0),
     mass,                       // Mass of the star, in M_sun
     rspot(0.0),                 // Radius of the star at the spot, in km
     mass_over_req,              // Dimensionless mass divided by radius ratio
@@ -92,7 +91,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
-    chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
+    //chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0),               // Length of observation (in seconds)
     phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
@@ -121,7 +120,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   // We will compute only numbands different energy bands
 
   
-  int NlogTeff, Nlogg, NlogE, Nmu, Npts;
+ 
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
     test_file[256] = "test.txt",
@@ -149,7 +148,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
   class LightCurve *flxcurve, *flxcurve2;
-  class DataStruct obsdata;           // observational data as read in from a file
+  //class DataStruct obsdata;           // observational data as read in from a file
 
 
   

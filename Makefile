@@ -76,7 +76,7 @@ SpotEmit.o: \
 
 SpotDetect.o: \
 	SpotDetect.cpp \
-	Struct2.h \
+	Struct.h \
 	Units.h \
 	Makefile
 	$(CC) $(CCFLAGS) -c SpotDetect.cpp

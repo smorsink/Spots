@@ -219,7 +219,6 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 	  int theta_index = th_index_nsx( cos_theta, &curve);
 	  
 	  double solidangle = curve.dOmega_s[i] * pow(curve.eta[i],4) * pow(redshift,-3);
-	  double Elo, Ehi, Emid;
 
 	  //std::cout << "Temperature = " << curve.para.temperature << std::endl;
 	  
@@ -273,7 +272,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
       if (curve.flags.spectral_model == 2){ // Integrated Flux for Modified Blackbodies
 	
-	double Elo, Ehi, Emid;
+	double Elo, Ehi;
 	
 	  if (curve.flags.kelvin){
 	    temperature *= Units::K_BOLTZ/Units::EV*1e-3 ; // Convert T to keV

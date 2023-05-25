@@ -71,7 +71,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   std::ofstream out;      // output stream; printing information to the output file
 
   double incl_1(90.0),          // Inclination angle of the observer, in degrees
-    incl_2(90.0),               // PI - incl_1; needed for computing flux from second hot spot, since cannot have a theta greater than 
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     d_theta_2(0.0),
@@ -82,9 +81,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     req,                        // Radius of the star at the equator, in km
     phaseshift(0.0),                    // Phase shift of spot (in radians)
     spot_temperature(0.0),      // Temperature of first spot, in the star's frame, in Kelvin
-    spot2_temperature(0.0),		// Temperature of second spot
+    //spot2_temperature(0.0),		// Temperature of second spot
     rho(0.0),                   // Angular radius of the first spot, in radians
-    rho2(0.0),
     dphi(1.0),                  // Each chunk of azimuthal angle projected onto equator, when broken up into the bins (see numphi)
     phishift,
     mu_1(1.0),                  // = cos(theta_1), unitless
@@ -94,7 +92,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
-    chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
+    //chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
     obstime(1.0);               // Length of observation (in seconds)
    				
@@ -122,13 +120,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   // We will compute only numbands different energy bands
 
   
-  int NlogTeff, Nlogg, NlogE, Nmu, Npts;
 
   char out_file[256] = "flux.txt",    // Name of file we send the output to; unused here, done in the shell script
     test_file[256] = "test.txt",
-       bend_file[256] = "No File Name Specified!", 
-       data_file[256],                // Name of input file for reading in data
-    filenameheader[256]="Run";
+    bend_file[256] = "No File Name Specified!"; 
+  
      
          
   // flags!
@@ -138,12 +134,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     	 rspot_is_set(false),        // True if rspot is set at the command line (rspot is a necessary variable)
     	 omega_is_set(false),        // True if omega is set at the command line (omega is a necessary variable)
     	 model_is_set(false),        // True if NS model is set at the command line (NS model is a necessary variable)
-    	 datafile_is_set(false),     // True if a data file for inputting is set at the command line
     kelvin(false),                    // True if Temperature is in Kelvin; Otherwise in keV
     logEflag(false),
     	 ignore_time_delays(false),  // True if we are ignoring time delays
-         bend_file_is_set(false),
-    two_spots(false);           // True if we are modelling a NS with two antipodal hot spots
+    bend_file_is_set(false);
+   
     	
    
     		
