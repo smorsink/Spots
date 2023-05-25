@@ -13,10 +13,16 @@ CCFLAGS=-Wall -pedantic -O3
 
 LDFLAGS=-lm
 
-NAMES=spot bend
+NAMES=spot emit bend detect
 
 OBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
 	Chi.o Hydrogen.o Atmo.o TimeDelays.o BlackBody.o Instru.o Ism.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
+
+EOBJ=PolyOblModelBase.o  PolyOblModelCFLQS.o PolyOblModelNHQS.o Units.o OblDeflectionTOA.o \
+	Chi.o Hydrogen.o Atmo.o TimeDelays.o BlackBody.o SphericalOblModel.o matpack.o interp.o nrutil.o # defining the objects
+
+DOBJ=Units.o \
+	Instru.o Ism.o matpack.o interp.o nrutil.o # defining the objects
 
 APPOBJ=Spot.o
 
@@ -26,6 +32,12 @@ all: $(NAMES)
 
 spot: Spot.o $(OBJ)
 	$(CC) $(CCFLAGS) Spot.o $(OBJ) $(LDFLAGS) -o spot
+
+emit: SpotEmit.o $(EOBJ)
+	$(CC) $(CCFLAGS) SpotEmit.o $(EOBJ) $(LDFLAGS) -o emit
+
+detect: SpotDetect.o $(DOBJ)
+	$(CC) $(CCFLAGS) SpotDetect.o $(DOBJ) $(LDFLAGS) -o detect
 
 bend: Bend.o $(OBJ)
 	$(CC) $(CCFLAGS) Bend.o $(OBJ) $(LDFLAGS) -o bend
@@ -46,6 +58,29 @@ Spot.o: \
 	Units.h \
 	Makefile
 	$(CC) $(CCFLAGS) -c Spot.cpp
+
+SpotEmit.o: \
+	SpotEmit.cpp \
+	OblDeflectionTOA.h \
+	Chi.h \
+	Atmo.h \
+	TimeDelays.h \
+	Struct.h \
+	PolyOblModelNHQS.h \
+	PolyOblModelCFLQS.h \
+	SphericalOblModel.h \
+	OblModelBase.h \
+	Units.h \
+	Makefile
+	$(CC) $(CCFLAGS) -c SpotEmit.cpp
+
+SpotDetect.o: \
+	SpotDetect.cpp \
+	Struct2.h \
+	Units.h \
+	Makefile
+	$(CC) $(CCFLAGS) -c SpotDetect.cpp
+
 
 Bend.o: \
 	Bend.cpp \
@@ -158,11 +193,29 @@ Instru.o: \
 	matpack.h
 	$(CC) $(CCFLAGS) -c Instru.cpp
 
+Ism2.o: \
+	Ism.h \
+	Ism2.cpp \
+	Units.h 
+	$(CC) $(CCFLAGS) -c Ism2.cpp
+
+
+Instru2.o: \
+	Instru.h \
+	OblDeflectionTOA.h \
+	Instru2.cpp \
+	OblModelBase.h \
+	Units.h \
+	matpack.h
+	$(CC) $(CCFLAGS) -c Instru2.cpp
+
 Ism.o: \
 	Ism.h \
 	Ism.cpp \
 	Units.h 
 	$(CC) $(CCFLAGS) -c Ism.cpp
+
+
 
 Units.o: \
 	Units.h \

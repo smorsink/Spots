@@ -1,8 +1,12 @@
 /***************************************************************************************/
-/*                                   Spot.cpp
+/*                                   SpotEmit.cpp
 
     This code produces a pulse profile once a set of parameter describing the star, 
     spectrum, and hot spot have been inputed.
+
+    This version computes the flux without applying the ISM absorption or the instrument response.
+
+    This version only computes one circular spot.
     
     Based on code written by Coire Cadeau and modified by Sharon Morsink and 
     Abigail Stevens.
@@ -22,6 +26,7 @@
 // 2016-11-13 - SMM: When spot goes over the pole, changed the order that pieces are computed.
 // 2016-12-01 - SMM: Adding dynamic memory allocation
 // 2023-01-24 - SMM: Attenuation due to the ISM (TBNEW) is applied to the signal before the instrumental response is added.
+// 2023-04-18 - SMM: This version does NOT include ISM or the NICER response file
 
 // INCLUDE ALL THE THINGS! 
 // If you do not get this reference, see 
@@ -39,8 +44,6 @@
 #include "Atmo.h"
 #include "Hydrogen.h"
 #include "TimeDelays.h"
-#include "Instru.h"
-#include "Ism.h"
 #include "PolyOblModelNHQS.h"
 #include "PolyOblModelCFLQS.h"
 #include "SphericalOblModel.h"
@@ -72,7 +75,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     theta_1(90.0),              // Emission angle (latitude) of the first upper spot, in degrees, down from spin pole
     theta_2(90.0),              // Emission angle (latitude) of the second lower spot, in degrees, up from spin pole (180 across from first spot)
     d_theta_2(0.0),
-    d_incl_2(0.0),
     mass,                       // Mass of the star, in M_sun
     rspot(0.0),                 // Radius of the star at the spot, in km
     mass_over_req,              // Dimensionless mass divided by radius ratio
@@ -94,9 +96,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
     chisquared(1.0),            // The chi^2 of the data; only used if a data file of fluxes is inputed
     distance(3.0857e20),        // Distance from earth to the NS, in meters; default is 10kpc
-    obstime(1.0),               // Length of observation (in seconds)
-    phase_2(0.5),				// Phase of second spot, 0 < phase_2 < 1
-    nh(0.0);					// real nh = nh*e18
+    obstime(1.0);               // Length of observation (in seconds)
+   				
 
  
   
@@ -148,9 +149,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     		
   // Create LightCurve data structure
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
-  class LightCurve *flxcurve, *flxcurve2;
-  class DataStruct obsdata;           // observational data as read in from a file
-
+  class LightCurve *flxcurve;
+ 
 
   
   /*********************************************************/
@@ -161,27 +161,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         if ( argv[i][0] == '-' ) {  // the '-' flag lets the computer know that we're giving it information from the cmd line
             switch ( argv[i][1] ) {
 
-        case 'A': // ISM column density, in multiples of 1e18cm^2
-        			sscanf(argv[i+1], "%lf", &nh);
-        			break;
+ 
 	            
 	    case 'b': // Bending Angle File
 	            	sscanf(argv[i+1], "%s", bend_file);	
 					bend_file_is_set = true;
 	            	break;
 
-	    case 'B': // Phase of second spot, 0 < phase_2 < 1 (antipodal = 0.5)
-	    			sscanf(argv[i+1], "%lf", &phase_2);
-				phase_2 *= -1.0;
-	    			break;
-
-	    case 'C': // Temperature of second spot
-	    			sscanf(argv[i+1], "%lf", &spot2_temperature);
-	    			break;
-
-	    case 'd': // Size of second spot
-	    			sscanf(argv[i+1], "%lf", &rho2);
-	    			break;	
 	            
 	    case 'D':  // Distance to NS in kpc
 	            	sscanf(argv[i+1], "%lf", &distance);
@@ -194,9 +180,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                theta_is_set = true;
 	                break;
 
-		case 'E':  // Offset emission angle of the second spot (degrees), latitude
-	                sscanf(argv[i+1], "%lf", &d_theta_2);
-	                break;    
+
 	    case 'f':  // Spin frequency (Hz)
 	                sscanf(argv[i+1], "%lf", &omega);
 	                omega_is_set = true;
@@ -214,13 +198,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                incl_is_set = true;
 	                break;
 	            
-	    case 'I': // Name of input file
-	            	sscanf(argv[i+1], "%s", data_file);
-	            	datafile_is_set = true;
-	            	break;
-	                
-	          	    
-
+	          	   
 	    case 'K': // Kelvin or keV?
 	      // If -K is added then use Kelvin [Default is keV]
 	      kelvin = true; // Use Kelvin
@@ -228,7 +206,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    case 'l':  // phase shift.
 	                sscanf(argv[i+1], "%lf", &phaseshift);
-	                phaseshift *= -1.0;
+	                //phaseshift *= -1.0;
 	                break;
 
 	    case 'L': // Energy bands evenly space in log space?
@@ -250,7 +228,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 					else
 			  			numbins = databins;		 
 	                break;
-	               
+
+	    case 'N': // Multiply phaseshift by -1
+	      phaseshift *=-1;
+	      break;
+			
 	    case 'o':  // Name of output file
 	                sscanf(argv[i+1], "%s", out_file);
 	                break;
@@ -267,10 +249,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                sscanf(argv[i+1], "%u", &NS_model);
 	                model_is_set = true;
 	                break;
-
-	    case 'R':  // Instrument Response Curve
-	    			sscanf(argv[i+1], "%u", &inst_curve);
-	    			break;
 	      	          
 	    case 'r':  // Radius of the star at the equator(km)
 	                sscanf(argv[i+1], "%lf", &req);
@@ -323,27 +301,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      			sscanf(argv[i+1], "%lf", &obstime);
 	      			break;
 
-	            	
-	    case '2': // If the user want two spots
-	            	two_spots = true;
-	            	break;
-	            	
-	            case '3': // Header for file name
-	            	sscanf(argv[i+1],"%s", filenameheader);
-	            	break;
 	            
 	            
                 case 'h': default: // Prints help
-		  std::cout << "\n\nSpot help:  -flag description [default value]\n" << std::endl      	            		  
-			    << "-A ISM column density, in multiples of base value [0]" << std::endl
-			    << "      base value is 1e18 cm^-2 " << std::endl
+		  std::cout << "\n\nSpotEmit help:  -flag description [default value]\n" << std::endl      	            		  
 			    << "-b Bending Angle File" << std::endl
-			    << "-B Phase of second spot, 0 < phase_2 < 1 [0.5]" << std::endl
-			    << "-C Temperature of second spot, in log(K) [0.0]" << std::endl
-			    << "-d Size of second spot. [0.0]" << std::endl
 			    << "-D Distance from earth to star, in kpc. [10]" << std::endl
 			    << "-e * Latitudinal location of emission region, in degrees, between 0 and 90." << std::endl
-			    << "-E Offset latitudinal angle of second spot (from antipodal), in degrees [0.0]" << std::endl
+			  
 			    << "-f * Spin frequency of star, in Hz." << std::endl
 			    << "-g Atmosphere beaming model [0]:" << std::endl
 			    << "      0 for BB, no beaming" << std::endl
@@ -367,9 +332,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			    << "      1 for Neutron/Hybrid quark star poly model" << std::endl
 			    << "      2 for CFL quark star poly model" << std::endl
 			    << "      3 for spherical model" << std::endl
-			    << "-R Instrument response curve [0]:" << std::endl
-			    << "      0 No instrument response" << std::endl
-			    << "      1 NICER combined ARF & RMF response matrix" << std::endl
+			    
 			    << "-r * Radius of star (at the equator), in km." << std::endl
 			    << "-s Spectral model of radiation: [0]" << std::endl
 			    << "      0 for monochromatic." << std::endl
@@ -384,10 +347,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			    << "-x NICER funny line E0" << std::endl
 			    << "-X NICER funny line DeltaE" << std::endl
 			    << "-Z Observation time in seconds [1.0]" << std::endl
-			    << "-2 Flag for calculating two hot spots. Using this sets it to true. [false]" << std::endl
+			   
 			    << " Note: '*' next to description means required input parameter." << std::endl
 			    << std::endl;
-		  return 0;
+		  //return 0;
             } // end switch	
         } // end if
     } // end for
@@ -528,14 +491,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     curve.flags.spotshape = spotshape;
 
 
-    /***************************/
-    /* Read in TBNew ISM File  */
-    /***************************/ 
-
-    class ISM ism;   
-    // Read in TBNew using the correct value of NH.
-    if (nh != 0.0)
-      ReadTBNEW(nh,&ism);
+  
     
 
     /****************************/
@@ -549,21 +505,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    }
 
 
-   
-  
-   
-    /******************************************/
-    /*      OPEN INSTRUMENT RESPONSE CURVE    */
-    /******************************************/
-    class Instrument nicer;
-    std::cout << "Read in the Instrumental Response: ints_curve = " << inst_curve << std::endl;
-
-    if (inst_curve == 1 ){ // READ in the response matrix
  
-      ReadResponse( &nicer);
-      
-    }
-    
 
   
     /*********************************************************************************/
@@ -610,7 +552,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << curve.numbands << std::endl;
     //std::cout << "NCURVES=" << NCURVES << std::endl;
     flxcurve = &normcurve;
-    flxcurve2 = &normcurve;
+    
 
     for ( unsigned int i(0); i < numbins; i++ ) {
       curve.t[i] = i / (1.0 * numbins); // + phaseshift/(2.0*Units::PI);  // defining the time used in the lightcurves
@@ -625,9 +567,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       curve.elo[p] = E_band_lower_1 + p*DeltaE;
       curve.ehi[p] = E_band_lower_1 + (p+1)*DeltaE;
-
-      //if (p == 0)
-      //std::cout << "elo[0] = " << curve.elo[p] << " ehi[0] = " << curve.ehi[p] << std::endl;
 
     }
 
@@ -652,16 +591,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
     // If spot is in 2 pieces, p=0 is the crescent; p=1 is the symmetric part over the pole
 
-    //if (numbands != 1)
-    //numbands = NCURVES;
 
     if ( rho <= 1e-2 )
       numtheta = 1;
 
-    //std::cout << "A: phaseshift = " << phaseshift << std::endl;
     
     for (unsigned int p(0);p<pieces;p++){
-      //    for (unsigned int p(0);p<1;p++){
       
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
@@ -671,13 +606,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  //  for (unsigned int k(1); k < 2; k++) { // Loop through the circles
 
-	  /* std::cout << "p = " << p
+	   std::cout << "p = " << p
 		    << " pieces = " << pieces
 		    << " Theta_spot = " << theta_1 *180/Units::PI << " (deg) "  << theta_1 << " (rad)"
 		    << " k = " << k
 		    << " theta_k = " << curve.para.theta_k[k]
 		    << " phi_k = " << curve.para.phi_k[k]
-		    << std::endl;*/
+		    << std::endl;
 
 	  
 	  deltatheta = curve.para.dtheta[k];
@@ -737,7 +672,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	    if ( spotshape == 1 ) curve.para.dS /= curve.para.gamma_k[k];
 	    if ( spotshape == 0 ) curve.para.dS *= curve.para.gamma_k[k];
 	  }
-       
+	  std::cout << "##### rho = " << rho << " dS = " << curve.para.dS << std::endl;
     
 	  if ( NS_model != 3 ) curve.para.dS /= curve.para.cosgamma;
 
@@ -823,12 +758,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     // f has units of number of photons/cm^2
-    
+
+
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
     
-    sprintf(test_file,"Test/out1.txt");
+    sprintf(test_file,"Test/emit1.txt");
     out.open(test_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
@@ -854,18 +790,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     out.close();
     
 
-    
-    
 
-    
-    std::cout << "*****Finished the first spot!" << std::endl;
-    std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0]
-	      << " number of photons/(cm^2) "<< std::endl;
-    
 
-    // Flxcurve holds the current version of the waveform
-
-    // Integrate over the phase bins
+    // Integrate over the phase bins if numbins > 32
       
     int binfactor (numbins/databins);
     std::cout << "binfactor = " << binfactor
@@ -936,11 +863,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     }
 
 
-   /***************************************************/
+
+      /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
     
-    sprintf(test_file,"Test/out2.txt");
+    sprintf(test_file,"Test/emit2.txt");
     out.open(test_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
@@ -969,26 +897,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 
     
-
-    /**********************************/
-    /*       APPLYING ATTENUATION     */
-    /**********************************/
-
-    if (nh != 0){
-      std::cout << "Apply ISM to the Signal!" << std::endl;
-      std::cout << " Before ISM flux[0][0] = " << curve.f[0][0] << std::endl;
-      
-      curve = Attenuate(&curve,&ism);
-
-      std::cout << " After ISM flux[0][0] = " << curve.f[0][0] << std::endl;
-
-    }
-
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
-    /*
-    sprintf(out_file,"Test/out2.txt");
+    
+    //sprintf(test_file,"Test/out1.txt");
     out.open(out_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
@@ -998,7 +911,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     else
       std::cout << "Opening "<< out_file << " for printing " << std::endl;
 
-    out << "#Spot after ISM absorption" << std::endl;
+    //out << "#Spot before ISM absorption" << std::endl;
     
     for ( unsigned int p(0); p < numbands; p++ ) {
       for ( unsigned int i(0); i < numbins; i++ ) {
@@ -1012,127 +925,20 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }
     }
     out.close();
-    */
-
+    
 
 
     
-    /***************************************/
-    /* START OF INSTRUMENT EFFECT ROUTINES */
-    /***************************************/
 
-    // Interpolate to create all the other energy bands
-    std::cout << "Number of energy bands computed = " << numbands << std::endl;
-
-    curve = ConvertEnergyChannels(&curve, &nicer);
-    numbands = curve.numbands;
-
-        std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
-
-
+ 
     
-        /***************************************************/
-	/* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
-	/***************************************************/
-	
-	sprintf(test_file,"Test/out3.txt");
-    out.open(test_file, std::ios_base::trunc);
-    out.precision(10);
-    if ( out.bad() || out.fail() ) {
-      std::cerr << "Couldn't open output file: " << out_file << " Exiting." << std::endl;
-      return -1;
-    }
-    else
-      std::cout << "Opening "<< out_file << " for printing " << std::endl;
-
-    out << "#Spot using " << NUM_NICER_CHANNELS << " NICER energy channels" << std::endl;
-    
-    for ( unsigned int p(0); p < numbands; p++ ) {
-      for ( unsigned int i(0); i < numbins; i++ ) {
-
-	Eobs = curve.elo[p];
-	  
-	out << Eobs << "\t";
-	out << curve.t[i]<< "\t";		
-	out << curve.f[p][i] << "\t";
-	out << p << std::endl;
-      }
-    }
-    out.close();
-	
-    
-     
-
-    /******************************************/
-    /*     MULTIPLYING OBSERVATION TIME       */
-    /******************************************/
-    
-    for (unsigned int p = 0; p < curve.numbands; p++){
-        for (unsigned int i = 0; i < curve.numbins; i++){          
-	  //curve.f[p][i] *= obstime/(databins);  
-	  curve.f[p][i] *= obstime;  
-        }
-    }
-    
+    std::cout << "*****Finished the spot!" << std::endl;
+    std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0]
+	      << " number of photons/(cm^2) "<< std::endl;
+    std::cout << "number of time bins = " << numbins << " number of energy bins = " << numbands << std::endl;
     
 
-    /* if (numbands !=1)
-      numbands = curve.tbands;
-
-    std::cout << "numbands = " << numbands << std::endl;
-    */
-    
-    /******************************************/
-    /*  APPLYING INSTRUMENT RESPONSE CURVE    */
-    /******************************************/
-
-    //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
-    if (curve.flags.inst_curve > 0){
-      std::cout << "Applying Instrument Response" << std::endl;
-      curve = ApplyResponse(&curve,&nicer);
-    } // Finished Applying the Response Matrix
-
-    // double spotcounts = 0.0;
-    //double bkgcounts = 0.0;
-
-   
-
-
-   
-    std::cout.precision(10);
-    //std::cout << "Log(Likelihood) = " <<  chisquared << std::endl;
-
-    
-    /***************************************************/
-    /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
-    /***************************************************/
-
-    //sprintf(out_file,"Test/out4.txt");
-      out.open(out_file, std::ios_base::trunc);
-      out.precision(10);
-      if ( out.bad() || out.fail() ) {
-	std::cerr << "Couldn't open output file: " << out_file << " Exiting." << std::endl;
-	return -1;
-      }
-      else
-	std::cout << "Opening "<< out_file << " for printing " << std::endl;
-
-      out << "#Response matrix applied to light curve" << std::endl;
-      
-      for ( unsigned int p(30); p < curve.numbands; p++ ) {
-	for ( unsigned int i(0); i < curve.numbins; i++ ) {
-
-	  Eobs = curve.elo[p];
-	  
-	  // out << Eobs << "\t";
-	  out << p << "\t";
-	  out << i << "\t";
-	  // out << curve.t[i]<< "\t";		
-	  out << curve.f[p][i] << "\t";
-	  out << p << std::endl;
-	}
-      }
-      out.close();
+ 
     
     delete model;
     return 0;

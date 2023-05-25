@@ -20,15 +20,15 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 64  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
-#define MIN_NUMBINS 32   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 1000       
+#define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MIN_NUMBINS 128   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
+#define NCURVES 1500       
 // NCURVES is the number of energy bands that the code will compute before the instrument response is applied.
 
 //#define FBANDS 300        // Final number of energy channels
 #define CBANDS 300         // Number of energy bands computed
 #define MR 1000             // Maximum number of m/r values
-#define NUM_NICER_CHANNELS 1000   // Number of NICER energy channels
+#define NUM_NICER_CHANNELS 1500   // Number of NICER energy channels
 
 
 
@@ -153,7 +153,7 @@ class DataStruct {             // if reading in data, this would be the experime
 	unsigned int numbins;            // Number of time or phase bins for one spin period; 
 	//Also the number of flux data points
 	unsigned int numbands;
-};
+	};
 
 
 class Instrument { // Information about the instrument's response matrix, etc
