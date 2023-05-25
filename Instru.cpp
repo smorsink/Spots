@@ -51,10 +51,10 @@ void ReadResponse(class Instrument* nicer){
       if ( nicer->start[p] != 0 )
 	std::cout << "WARNING: start[" << p << "] = " << nicer->start[p] << std::endl;
       
-     if (p > 301)
+      /*if (p > 301)
 	std::cout << std::endl << " p = " << p 
 		  << " Photon Energy Range: " << nicer->elo[p]
-		  << " to " << nicer->ehi[p] << " keV" << std::endl;
+		  << " to " << nicer->ehi[p] << " keV" << std::endl;*/
 	    
       // The number 300 comes from the structure of the response matrix file
       
@@ -88,7 +88,7 @@ class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrume
    
       for (unsigned int p(0);p<NUM_NICER_CHANNELS;p++){ // loop through the NICER energy channels
 
-	if (p<3){
+	/*if (p<3){
 	  std::cout
 	    << "Computed curve.elo[" << p <<"] = " << incurve->elo[p]
 	    << " nicer.elo[p] = " << nicer->elo[p]
@@ -97,14 +97,14 @@ class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrume
 	    << "Computed curve.elhi[" << p <<"] = " << incurve->ehi[p]
 	    << " nicer.ehi[p] = " << nicer->ehi[p]
 	    << std::endl;	  
-	}
+	    }*/
 
 	energy = nicer->elo[p];
 
 	double factor = (energy - incurve->elo[0])/(incurve->ehi[0] - incurve->elo[0]);
 	int index = factor;
 
-	if (p>300){
+	/*	if (p>300){
 	  
 	  std::cout
 	    <<" channel = " << p
@@ -113,7 +113,7 @@ class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrume
 	    << " index = " << index
 	    << " closest energy[index] = " << incurve->elo[index]
 	    << std::endl;
-	}
+	    }*/
 	  
 	
 	// Interpolate to find the flux in the NICER energy channel

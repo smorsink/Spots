@@ -84,22 +84,24 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       out.precision(10);
 
       char line[265]; // line of the data file being read in
-      double get_t, get_e, get_f1, get_f2, get_eem, get_et;
+      double get_f1, get_f2, get_eem, get_et;
       double chisquare, loglikely;
+      double get_t, get_e;
+      int channel;
 
       for (unsigned i(0);i<numbands;i++){ // loop through the energy bands
 
 	for (unsigned j(0);j<numbins;j++){ // loop through the time bins
 
 	  in1.getline(line,265);  
-	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f1 );
+	  sscanf( line, "%lf %lf %lf %d", &get_e, &get_t, &get_f1, &channel );
 	  //sscanf( line, "%lf %lf", &get_t, &get_f1 );
 
 	  if (i == 0 && j == 0)
 	    std::cout << "line1 = " << line << std::endl;
 
 	  in2.getline(line,265);
-	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f2 );
+	  sscanf( line, "%lf %lf %lf %d", &get_e, &get_t, &get_f2, &channel );
 		  
 	  //sscanf( line, "%lf %lf", &get_t, &get_f2);
 
@@ -111,10 +113,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  diff = (get_f1-get_f2);
 
-	  if(std::isnan(diff) )
+	  if(std::isnan(diff) || diff < 0.0 )
 	    diff= 0.0;
 
 	 
+	  if (i == 0 && j == 0)
+	    std::cout << "Diff = " << diff << std::endl;
 
 
 	  

@@ -75,7 +75,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
     
   // One monochromatic energy, hardwired value, in keV
   //    E_mono = 1.0;
-  std::cout << "ComputeCurve: Starting ComputeCurve" << std::endl;
+  //std::cout << "ComputeCurve: Starting ComputeCurve" << std::endl;
   curve = (*angles);
 
   mass_over_r = curve.para.mass_over_r;
@@ -98,12 +98,12 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
 
 
   // DeltaE = (E_band_upper_1 - E_band_lower_1)/(numbands-1.0);
-      std::cout << "COMPUTE CURVE: Lowest energy = " << E_band_lower_1
+  /*     std::cout << "COMPUTE CURVE: Lowest energy = " << E_band_lower_1
 		<< " = " << curve.elo[0] 
 		<< " Highest energy = " << E_band_upper_1
 		<< " numbands = curve.numbands = " << numbands
 		<< " Delta(E) = " << DeltaE
-		<< std::endl;
+		<< std::endl;*/
 
   redshift = 1.0 / sqrt( 1 - 2.0 * mass_over_r);
  
@@ -122,7 +122,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
   double lgrav = log10(delta * mass_over_req * pow(Units::C,2)/R * obl_approx);
 
 
-  std::cout << "ComputeCurve: Gravity log(g) = " << lgrav << std::endl;
+  //std::cout << "ComputeCurve: Gravity log(g) = " << lgrav << std::endl;
 
   
   int i_lgrav = (lgrav-13.7)/0.1;
