@@ -697,6 +697,9 @@ double SpotIntegrand( double rho, double zeta, class LightCurve* incurve, class 
   return integrand;
 }
 
+
+// ReBinCurve -- If our lightcurve is computed with more time bins than required, then rebin downwards.
+
 class LightCurve ReBinCurve(class DataStruct* obsdata, class LightCurve* incurve) {
 
   class LightCurve curve;
@@ -765,6 +768,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
            distance;                  // Distance from Earth to NS, inputted in meters
 
     double red;
+    double dcosalpha_dcospsi;
            
     unsigned int numbins(MAX_NUMBINS);// Number of phase bins the light curve is split into; same as number of flux data points
     numbins = curve.numbins;
@@ -895,7 +899,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 
         int sign(0);
         double b_R_val(0.0);
-        bool result(false);
+        bool result(false), visible;
 	double psi(0.0);
 	double err(0.0);
         int k(0);
@@ -946,7 +950,8 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	    b_guess =  polint(&curve.defl.psi_b[k], &curve.defl.b_psi[k], 4, psi, &err);
 	    //	    std::cout << "b = " << b_guess << " err = " << err << std::endl;
 
-	    curve.dcosalpha_dcospsi[i] = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
+	    //curve.dcosalpha_dcospsi[i] = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
+	    dcosalpha_dcospsi = polint(&curve.defl.psi_b[k], &curve.defl.dcosa_dcosp_b[k], 4, psi, &err);
 	    //std::cout << "dcosa = " << curve.dcosalpha_dcospsi[i] << " err = " << err << std::endl;
 
 	    toa_val =  polint(&curve.defl.psi_b[k], &curve.defl.toa_b[k], 4, psi, &err);
@@ -972,14 +977,16 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	//	std::cout << "b_R = " << b_R_val << " psi = " << curve.psi[i] << std::endl;
 
         if ( result == false && i == 0) { 
-            curve.visible[i] = false;
+	  //curve.visible[i] = false;
+	  visible = false;
             curve.t_o[i] = 0.0;
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
 	     
         }
         else if ( result == false ) { 
-            curve.visible[i] = false;
+	  //curve.visible[i] = false;
+	  visible = false;
             curve.t_o[i] = curve.t[i] + curve.t_o[i-1] - curve.t[i-1];
             curve.dOmega_s[i] = 0.0;
             curve.eclipse = true;
@@ -1070,10 +1077,12 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 		                  << ", cos(gamma) = " << cosgamma
 		                  << ", cos(delta) = " << cosdelta.at(i)
 		                  << " (visibility condition)." << std::endl << std::endl;*/
-	            curve.visible[i] = false;
+	      //curve.visible[i] = false;
+	      visible = false;
             }
             else {
-	            curve.visible[i] = true;
+	      //curve.visible[i] = true;
+	      visible = true;
             }
 			
 			/********************************************************/
@@ -1088,7 +1097,7 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 			/*									  dOmega_s          */
 			/********************************************************/
 			
-            if ( curve.visible[i] ) { // visible 
+            if ( visible ) { // visible 
             	if (alpha == 0.0 && curve.psi[i] == 0.0 & phi_em.at(i) == 0.0) 
             		cosxi.at(i) = 0.0; // to avoid NAN errors from dividing by 0; appears when incl = theta at i=0
 	            else 
@@ -1119,10 +1128,15 @@ class LightCurve ComputeAngles ( class LightCurve* incurve,
 	            curve.t_o[i] = curve.t[i] + (omega * toa_val * radius) / (2.0 * Units::PI);	           
          
 
-	            curve.dOmega_s[i] = (dS / (distance * distance)) 
+		    //  curve.dOmega_s[i] = (dS / (distance * distance)) 
+		    //                 * (1.0 / (1.0 - 2.0 * mass_over_r)) 
+		    //                 * curve.cosbeta[i] 
+		    //                 * curve.dcosalpha_dcospsi[i];  // PG8
+
+		    curve.dOmega_s[i] = (dS / (distance * distance)) 
 	                               * (1.0 / (1.0 - 2.0 * mass_over_r)) 
 	                               * curve.cosbeta[i] 
-	                               * curve.dcosalpha_dcospsi[i];  // PG8
+	                               * dcosalpha_dcospsi;  // PG8
 
 		    /* double I_obs = pow(curve.eta[i],3) * pow(sqrt( 1 - 2.0 * mass_over_r),3)
 		      * BlackBody(curve.para.temperature,1.0 / sqrt( 1 - 2.0 * mass_over_r)/curve.eta[i])

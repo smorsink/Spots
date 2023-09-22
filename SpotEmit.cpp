@@ -204,10 +204,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                //phaseshift *= -1.0;
 	                break;
 
-	    case 'L': // Energy bands evenly space in log space?
-	      logEflag = true; // Use log space
-	      std::cout << "Logspace for Energy" << std::endl;
+	    case 'L': // Add an extra phaseshift for comparison with Amsterdam?
+	      phaseshift -= 2.0*Units::PI/(32.0*4.0);
 	      break;
+	      
 	      
 	          	          
 	    case 'm':  // Mass of the star (solar mass units)
@@ -406,14 +406,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* UNIT CONVERSIONS -- MAKE EVERYTHING DIMENSIONLESS */
     /*****************************************************/
 
-    std::cout << "Spin Frequency = " << omega << " Hz" << std::endl;
-    std::cout << "Mass = " << mass << " MSUN" << std::endl;
-    std::cout << "R_eq = " << req << " km" << std::endl;
-    std::cout << "Distance = " << distance << "m" << std::endl;
+    //std::cout << "Spin Frequency = " << omega << " Hz" << std::endl;
+    //std::cout << "Mass = " << mass << " MSUN" << std::endl;
+    //std::cout << "R_eq = " << req << " km" << std::endl;
+    //std::cout << "Distance = " << distance << "m" << std::endl;
 
     mass_over_req = mass/(req) * Units::GMC2 * 1;
-    std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
-    std::cout << "R/M = " << 1.0/mass_over_req << std::endl;
+    //std::cout << "GM/(R_eqc^2) = " << mass_over_req << std::endl;
+    //std::cout << "R/M = " << 1.0/mass_over_req << std::endl;
  
     //incl_1 *= (Units::PI / 180.0);  // radians
     //d_incl_2 *= (Units::PI / 180.0);  // radians
@@ -429,7 +429,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     distance = Units::cgs_to_nounits( distance*100, Units::LENGTH );
     rot_par = pow(omega*req,2)/mass_over_req;
 
-    std::cout << "R/d = " << req/distance << std::endl;
+    //    std::cout << "R/d = " << req/distance << std::endl;
 
 
     
@@ -511,7 +511,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     if ( NS_model == 1 ) { // Oblate Neutron Hybrid Quark Star model
         // Default model for oblate neutron star
 
-      std::cout << " Oblate Neutron Star" << std::endl;
+      // std::cout << " Oblate Neutron Star" << std::endl;
       model = new PolyOblModelNHQS( req,
 		   		    mass_over_req,
 				    rot_par );
@@ -544,9 +544,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* Initialize time, flux and energies */
     /**************************************/
 
-    //std::cout << "Number of Time bins = " << numbins << " " << "Number of Energy Bands = " << curve.numbands << std::endl;
-    //std::cout << "NCURVES=" << NCURVES << std::endl;
-    flxcurve = &normcurve;
+   flxcurve = &normcurve;
     
 
     for ( unsigned int i(0); i < numbins; i++ ) {
@@ -598,17 +596,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	// Looping through the mesh of the spot
       	for (unsigned int k(0); k < numtheta; k++) { // Loop through the circles
-
-	  //  for (unsigned int k(1); k < 2; k++) { // Loop through the circles
-
-	   std::cout << "p = " << p
-		    << " pieces = " << pieces
-		    << " Theta_spot = " << theta_1 *180/Units::PI << " (deg) "  << theta_1 << " (rad)"
-		    << " k = " << k
-		    << " theta_k = " << curve.para.theta_k[k]
-		    << " phi_k = " << curve.para.phi_k[k]
-		    << std::endl;
-
 	  
 	  deltatheta = curve.para.dtheta[k];
 	  double thetak = curve.para.theta_k[k];
@@ -676,12 +663,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  //std::cout << "numphi = " << numphi << std::endl;
 	  
-	  for ( unsigned int j(0); j < 0.5*numphi ; j++ ) {// looping through the phi divisions
+	  for ( unsigned int j(0); j < numphi ; j++ ) {// looping through the phi divisions
 	  //for ( int j(0); j < 10 ; j++ ) {// looping through the phi divisions
 
 	    //curve.para.phi_0 =  -phi_edge + (j+0.5)*dphi;			
 
-	    curve.para.phi_0 = phaseshift;
+	    curve.para.phi_0 = phaseshift + phi_edge;
 	   
 	    
 	    //Heart of spot, calculate curve for the first phi bin - otherwise just shift
@@ -709,8 +696,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      }
 	      if (qq<0) qq += numbins;
 	      for ( unsigned int pp(0); pp < curve.cbands; pp++ ) {
-		flxcurve->f[pp][i] += curve.f[pp][q];
-		if (j!=0) flxcurve->f[pp][i] += curve.f[pp][qq];
+		flxcurve->f[pp][i] += curve.f[pp][qq];
+		//if (j!=0) flxcurve->f[pp][i] += curve.f[pp][qq];
 	      }
 	    } // ending Add curve
 	  } // end for-j-loop
@@ -763,11 +750,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     out.open(test_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
-      std::cerr << "Couldn't open output file: " << out_file << " Exiting." << std::endl;
+      std::cerr << "Couldn't open output file: " << test_file << " Exiting." << std::endl;
       return -1;
     }
     else
-      std::cout << "Opening "<< out_file << " for printing " << std::endl;
+      std::cout << "Opening "<< test_file << " for printing " << std::endl;
 
     out << "#Spot before ISM absorption" << std::endl;
     
@@ -778,7 +765,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  
 	out << Eobs << "\t";
 	out << curve.t[i]<< "\t";		
-	out << curve.f[p][i] << "\t";
+	//out << curve.f[p][i] << "\t";
+	out << flxcurve->f[p][i] << "\t";
 	out << p << std::endl;
       }
     }
@@ -830,14 +818,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	if (p==0)
 	  curve.t[i] = curve.t[i*binfactor];
 
-		if (p==0)
+	/*	if (p==0)
 	  std::cout << " i=" << i
 		    << " t[0]=" << flxcurve->t[i]
 		    << " newt[0]=" << curve.t[i]
 		    << " f[0]=" << flxcurve->f[p][binfactor*i+0] 
 		    << " f[1]=" << flxcurve->f[p][binfactor*i+1]
 		    << " new f[0] = " << curve.f[p][i]
-		    << std::endl;
+		    << std::endl;*/
 	
       }
     }
@@ -867,11 +855,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     out.open(test_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
-      std::cerr << "Couldn't open output file: " << out_file << " Exiting." << std::endl;
+      std::cerr << "Couldn't open output file: " << test_file << " Exiting." << std::endl;
       return -1;
     }
     else
-      std::cout << "Opening "<< out_file << " for printing " << std::endl;
+      std::cout << "Opening "<< test_file << " for printing " << std::endl;
 
     //out << "#Spot before ISM absorption" << std::endl;
     

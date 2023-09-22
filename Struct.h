@@ -20,9 +20,10 @@
 #include <float.h>
 
 #define NN 100            // lookup table for bending angle (deflection angle) calculation
-#define MAX_NUMBINS 128  // REMEMBER TO CHANGE THIS IN CHI.H AS WELL!! how many time bins the light curve is cut up into
+#define MAX_NUMBINS 128  //  how many time bins the light curve is cut up into
 #define MIN_NUMBINS 128   // We need a minimum number of bins since the curves won't be accurate if we use too few bins.
-#define NCURVES 1500       
+#define NCURVES 1500
+//#define NCURVES 500
 // NCURVES is the number of energy bands that the code will compute before the instrument response is applied.
 
 //#define FBANDS 300        // Final number of energy channels
@@ -59,11 +60,11 @@ struct Parameters {      // local bit of spot information
   double L2; // NICER
   double DeltaE; // width of energy band
   double DeltaLogE; //logarithmic width of energy band
-  double theta_k[250]; // location of spot bins
+  double theta_k[256]; // location of spot bins
   double phaseshift;   // Overall phase shift of spot
-  double phi_k[250];   // phi location of edge of spot
-  double dtheta[250]; // width of spot bins
-  double gamma_k[250]; // value of lorentz gamma at the spot bin
+  double phi_k[256];   // phi location of edge of spot
+  double dtheta[256]; // width of spot bins
+  double gamma_k[256]; // value of lorentz gamma at the spot bin
 };
 
 struct Flags {
@@ -106,15 +107,15 @@ class LightCurve {                     // Stores all the data about the light cu
 	double f[NCURVES][MAX_NUMBINS];        // two-dimensional array of fluxes (one one-dimensional array for each energy curve)
 	double elo[NCURVES];                   // Lowest energy included in energy band "p"
 	double ehi[NCURVES];                   // Highest energy included in energy band "p"
-	bool visible[MAX_NUMBINS];             // is the spot visible at that point
+	//bool visible[MAX_NUMBINS];             // is the spot visible at that point
 	double t_o[MAX_NUMBINS];               // the time in the observer's frame; takes into account the light travel time
 	double cosbeta[MAX_NUMBINS];           // as seen in MLCB17 (cos of zenith angle, between the norm vector and initial photon direction)
 	double eta[MAX_NUMBINS];               // doppler shift factor; MLCB33
 	double psi[MAX_NUMBINS];               // bending angle; MLCB15
 	double cospsi[MAX_NUMBINS];
-	double R_dpsi_db[MAX_NUMBINS];         // derivative with respect to b of MLCB20 times the radius
+	//double R_dpsi_db[MAX_NUMBINS];         // derivative with respect to b of MLCB20 times the radius
 	double b[MAX_NUMBINS];                 // impact parameter; defined in dimensionless units
-	double dcosalpha_dcospsi[MAX_NUMBINS]; // appears in MLCB30
+	//double dcosalpha_dcospsi[MAX_NUMBINS]; // appears in MLCB30
 	double dOmega_s[MAX_NUMBINS];          // solid angle weight factor; MLCB30
 	struct Parameters para;                // parameters from above; para is like i, Parameters is like Integer
 	struct Flags flags;                    // flags from above

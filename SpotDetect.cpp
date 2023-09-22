@@ -122,19 +122,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
         case 'A': // ISM column density, in multiples of 1e18cm^2
         			sscanf(argv[i+1], "%lf", &nh);
         			break;
-	            
-	    
-	                
-	 
-	            
+	            	            
 	    case 'I': // Name of input file
 	            	sscanf(argv[i+1], "%s", data_file);
 	            	datafile_is_set = true;
 	            	break;
-	                
-	          	    
-
-	 
 	          
 	    case 'n':  // Number of phase or time bins
 	                sscanf(argv[i+1], "%u", &databins);
@@ -339,8 +331,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       curve.elo[p] = E_band_lower_1 + p*DeltaE;
       curve.ehi[p] = E_band_lower_1 + (p+1)*DeltaE;
 
-      if (p == 0)
-	std::cout << "elo[0] = " << curve.elo[p] << " ehi[0] = " << curve.ehi[p] << std::endl;
+      // if (p == 0)
+      //std::cout << "elo[0] = " << curve.elo[p] << " ehi[0] = " << curve.ehi[p] << std::endl;
 
     }
 

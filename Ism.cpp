@@ -126,15 +126,15 @@ class LightCurve Attenuate (class LightCurve* incurve, class ISM* tbnew){
 	//std::cout << "numbands = " << numbands << std::endl;
 
 	for (unsigned int p = 0; p < numbands; p++){
-	  std::cout << "Attenuate: p = " << p << " computed energy = " << curve.elo[p] << std::endl;
+	  // std::cout << "Attenuate: p = " << p << " computed energy = " << curve.elo[p] << std::endl;
 
 	  factor = curve.elo[p]*1e2 - 10.0 + 0.5; //The 0.5 takes care of the rounding from double to int
 	  index = factor;
 
-	  std::cout << "factor = " << factor
+	  /* std::cout << "factor = " << factor
 	    << " index = " << index << " NH energy = " << tbnew->energy[index]
 		    << " atten = " << tbnew->attenuation[index]
-		    << std::endl;
+		    << std::endl;*/
 	  
 	  
 	  
@@ -176,11 +176,11 @@ void ReadTBNEW(double nh, class ISM* tbnew ){
 	  sscanf( line, "%lf %lf %lf", &get_nh, &get_e, &get_att );
 	  tbnew->energy[i] = get_e;
 	  atten[k][i] = get_att;
-	  if (i==0 && k < 300)
+	  /*if (i==0 && k < 300)
 	    std::cout
 	      << " k = " << k 
 	      << " nh = " << get_nh
-	      << " energy = " << get_e << " atten = " << get_att <<std::endl;
+	      << " energy = " << get_e << " atten = " << get_att <<std::endl;*/
 	  
 	}
       }
