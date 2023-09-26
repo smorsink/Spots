@@ -1,0 +1,18 @@
+Cole Miller's comments about this version of the instrument response file
+
+
+...and here is the response file.  I have put together the ARF and RMF files, and have checked that this file is consistent with what Devarshi is using as well.
+
+First column: minimum photon energy for that line, in keV.
+Second column: maximum photon energy for that line, in keV.
+Third column: starting energy channel for that line (it's always zero in this case)
+Remaining columns: effective area for a photon in the indicated range to be read in a given energy channel.  The fourth column is for energy channel (start+0), the fifth column is for energy channel (start+1), etc.
+
+For example, suppose that you have a photon energy of 0.377 keV.  You scan down the file until you get to the line:
+
+ 0.375000  0.380000   0 0 0 0 0 0 0 0 0 2.12798e-07 1.50293e-06 5.073e-06 1.58811e-05 4.68392e-05 0.000129645 0.000335622 0.000810309 0.00182013 0.00379594 0.00734084 0.0131702 0.0220302 0.0349054 0.0544669 0.0899025 0.168871 0.361086 0.815278 1.80253 3.74546 7.20136 12.7674 20.8959 31.6415 44.4179 57.8752 70.0233 78.6508 81.9588 79.1682 70.8271 58.6461 44.9218 31.8253 20.8563 12.649 7.10541 3.70127 1.79067 0.806151 0.338478 0.132889 0.0489234 0.0169397 0.00553248 0.00170915 0.000500894 0.000139675 3.71574e-05 9.44799e-06 2.29835e-06 4.92266e-07 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+
+Now say that you are interested in the effective area of a photon of this energy being read into energy channel 40.  The third column says that you start at energy channel 0, so the fourth column says that the effective area of this photon being read into channel (0+0=0) is 0 cm^2; the fifth says that the effective area of this photon being read into energy channel (0+1=1) is 0 cm^2, ..., the effective area of this photon being read into energy channel (0+40=40) is 58.6461 cm^2 (assuming that I counted correctly).
+
+Best,
+Cole
