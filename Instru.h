@@ -20,4 +20,6 @@ class LightCurve Inst_Res3 (class LightCurve* incurve, unsigned int inst_curve, 
 
 void ReadResponse(class Instrument* nicer);
 
+class LightCurve ConvertEnergyChannels(class LightCurve* incurve, class Instrument* nicer);
+
 class LightCurve ApplyResponse(class LightCurve* incurve, class Instrument* nicer);
