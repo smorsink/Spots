@@ -9,7 +9,8 @@
 
 #Sharon needs to use the following:
 CC=c++
-CCFLAGS=-Wall -pedantic -O3 
+CCFLAGS=-Wall -std=c++11 -pedantic -O3
+# When runing on Cirrus (Ubuntu Linux) we need the -std=c++11 (or maybe 14) flag
 
 LDFLAGS=-lm
 
