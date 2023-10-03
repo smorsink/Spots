@@ -14,7 +14,6 @@
 //#define NCURVES 300
 //
 
-class LightCurve Wabs (class LightCurve* incurve, unsigned int attenuation, double nh);
 
 class LightCurve Attenuate (class LightCurve* incurve, class ISM* ism);
 
