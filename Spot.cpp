@@ -81,7 +81,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     phishift,
     mu_1(1.0),                  // = cos(theta_1), unitless
     cosgamma,                   // Cos of the angle between the radial vector and the vector normal to the surface; defined in equation 13, MLCB
-    //Flux[NCURVES][MAX_NUMBINS], // Array of fluxes; Each curve gets its own vector of fluxes based on photons in bins.
     Temp[NCURVES][MAX_NUMBINS],
     E_band_lower_1(2.0),        // Lower bound of first energy band to calculate flux over, in keV.
     E_band_upper_1(3.0),        // Upper bound of first energy band to calculate flux over, in keV.
@@ -570,7 +569,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /**************************************/
     
     flxcurve = &normcurve;
-    std::cout << "A: numbands = " << curve.numbands << std::endl;
+    //std::cout << "A: numbands = " << curve.numbands << std::endl;
 
     for ( int i(0); i < numbins; i++ ) {
       curve.t[i] = i / (1.0 * numbins); // + phaseshift/(2.0*Units::PI);  // defining the time used in the lightcurves
@@ -624,7 +623,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     
     for (unsigned int p(0);p<pieces;p++){
 
-      std::cout << "p = " << p << std::endl;
+      //std::cout << "p = " << p << std::endl;
       
       	curve = SpotShape(pieces,p,numtheta,theta_1,rho, &curve, model);
       	double deltatheta(0.0);
@@ -665,7 +664,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  
 	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
 
-	  std::cout << "k = " << k
+	  /*	  std::cout << "k = " << k
 	    << " delta(theta) = " << deltatheta
 		    << " thetak = " << thetak
 		    << " phi_edge = " << phi_edge
@@ -673,7 +672,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 		    << " numbins = " << numbins
 		    << " dphi = " << dphi
 		    << " dS/r^2 = " << sin(thetak) * deltatheta * dphi * numphi
-		    << std::endl;
+		    << std::endl;*/
 	  
 
 	  if (numphi==0){
@@ -718,11 +717,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	    //curve.para.phi_0 =  phi_edge + dphi;
 
-	    if ( j==0)
-	      std::cout << "A: phi_0 = " << curve.para.phi_0
-			<< " phi_edge = " << phi_edge
-			<< " phaseshift = " << phaseshift
-			<< std::endl;
+	    
 
 	    // Add to the Surface Area
 	    SurfaceArea += curve.para.dS;
@@ -734,12 +729,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      curve = ComputeAngles(&curve, defltoa); 	
 	      //std::cout << "Spot1: starting ComputeCurve curve.dOmega_s[0] = " << curve.dOmega_s[0]<< std::endl;
 	      curve = ComputeCurve(&curve);
-	      std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;	      
+	      //std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;	      
 	      curve = TimeDelays(&curve);
-	      std::cout << "Spot1: finished TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
+	      //std::cout << "Spot1: finished TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
 	    }
 
-	    std::cout << "Spot1: Finished curve.cbands =  " << curve.cbands << std::endl;
 
 	    // Add curves, load into Flux array
 	    for ( int i(0); i < numbins; i++ ) {
@@ -751,16 +745,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      }
 	      if (qq<0) qq += numbins;
 	      for ( unsigned int pp(0); pp < curve.cbands; pp++ ) {
-		//	if (j==0)
 		  flxcurve->f[pp][i] += curve.f[pp][qq];
-		  /* if (pp==0 )
-		    std::cout << " j=" << j << " qq="<< qq
-			      << " Delta(F) = " << curve.f[0][qq]
-			      << " flux[0][i] = " << flxcurve->f[0][i] << std::endl;*/
-		/*	if (j!=0) flxcurve->f[pp][i] += curve.f[pp][qq];
-		if (pp==0 && i==0)
-		std::cout << " j=" << j << "q="<< 0 << " flux[0][0] = " << flxcurve->f[0][0] << std::endl;*/
-		
+		  		
 	      }
 	    } // ending Add curve
 	  } // end for-j-loop
@@ -803,14 +789,26 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  free_dvector(curve.defl.toa_b,0,301);
       	} // closing for loop through theta divisions
 
-	//std::cout << std::endl << "Surface Area = " << SurfaceArea / pow(rspot,2) << std::endl;
-	//std::cout << "2 pi r^2 (1-cos(rho)) = " <<  2.0*Units::PI  * (1.0 - cos(rho)) << std::endl;
-
 	
     } // End Standard Case of first spot
 
 
     // f has units of number of photons/cm^2
+
+
+    /******************************************/
+    /* Deallocate Memory for the H Atmosphere */
+    /******************************************/ 
+
+    // Define the Atmosphere Model
+    // NSX 
+    if (curve.flags.beaming_model == 11){ // Wynn Ho's NSX-H atmosphere
+      CloseNSXHnew(&curve);
+      std::cout << "Finished deallocating memory for the Hydrogren atmosphere!" << std::endl;
+    }
+
+
+
     
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
@@ -846,11 +844,6 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     
     
 
-    
-    std::cout << "*****SPOT: Finished the first spot!" << std::endl;
-    std::cout << "*****SPOT: Flux[0][0] = " << flxcurve->f[0][0]
-	      << " number of photons/(cm^2) "<< std::endl;
-    
 
     // Flxcurve holds the current version of the waveform
 
@@ -897,21 +890,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	if (p==0)
 	  curve.t[i] = curve.t[i*binfactor];
 
-	/*	if (p==0)
-	  std::cout << " i=" << i
-		    << " t[0]=" << flxcurve->t[i]
-		    << " newt[0]=" << curve.t[i]
-		    << " f[0]=" << flxcurve->f[p][binfactor*i+0] 
-		    << " f[1]=" << flxcurve->f[p][binfactor*i+1]
-		    << " new f[0] = " << curve.f[p][i]
-		    << std::endl;*/
+
 	
       }
     }
     numbins = databins;
     curve.numbins = numbins;
-
-    //std::cout << "B: numbins = " << numbins << std::endl;
 
 
     for ( int i(0); i< databins; i++){
@@ -920,9 +904,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       }
     }
     
-    std::cout << "*****Averaged over Phase bins!\n" << std::endl;
-    std::cout << "*****Flux[0][0] = " << flxcurve->f[0][0] << std::endl;
-
+ 
     }
 
 
@@ -983,14 +965,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /***************************************/
 
     // Interpolate to create all the other energy bands
-    std::cout << "Number of energy bands computed = " << numbands << std::endl;
 
     nicercurve = ConvertEnergyChannels(&curve, &nicer);
     numbands = nicercurve.numbands;
 
-        std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
-
-
+ 
     
         /***************************************************/
 	/* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
@@ -1007,7 +986,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  std::cout << "Opening "<< test_file << " for printing " << std::endl;
 
 	out << "#Spot using " << NUM_NICER_CHANNELS << " NICER energy channels" << std::endl;
-    
+
+     	
     for ( unsigned int p(0); p < numbands; p++ ) {
       for ( unsigned int i(0); i < numbins; i++ ) {
 

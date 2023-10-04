@@ -385,36 +385,42 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // Interpolate to create all the other energy bands
     std::cout << "Number of energy bands computed = " << numbands << std::endl;
 
+    std::cout << "Before Conversion: flux[0][0] = " << curve.f[0][0] << std::endl;
+
+    
     nicercurve = ConvertEnergyChannels(&curve, &nicer);
-    numbands = curve.numbands;
+    numbands = nicercurve.numbands;
+    numbins = 32;
+    
+    std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
+    std::cout << "Number of NICER time bins = " << numbins << std::endl;
 
-        std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
-
+    std::cout << "After Conversion: flux[0][0] = " << nicercurve.f[0][0] << std::endl;
 
     /***************************************************/
     /* WRITING COLUMN HEADINGS AND DATA TO OUTPUT FILE */
     /***************************************************/
     
-    sprintf(test_file,"Test/detect3.txt");
+    sprintf(test_file,"Tests/detect3.txt");
     out.open(test_file, std::ios_base::trunc);
     out.precision(10);
     if ( out.bad() || out.fail() ) {
-      std::cerr << "Couldn't open output file: " << out_file << " Exiting." << std::endl;
+      std::cerr << "Couldn't open output file: " << test_file << " Exiting." << std::endl;
       return -1;
     }
     else
-      std::cout << "Opening "<< out_file << " for printing " << std::endl;
+      std::cout << "Opening "<< test_file << " for printing " << std::endl;
 
     //out << "#Spot before ISM absorption" << std::endl;
     
     for ( unsigned int p(0); p < numbands; p++ ) {
       for ( unsigned int i(0); i < numbins; i++ ) {
 
-	Eobs = curve.elo[p];
+	Eobs = nicercurve.elo[p];
 	  
 	out << Eobs << "\t";
-	out << curve.t[i]<< "\t";		
-	out << curve.f[p][i] << "\t";
+	out << nicercurve.t[i]<< "\t";		
+	out << nicercurve.f[p][i] << "\t";
 	out << p << std::endl;
       }
     }
@@ -428,13 +434,14 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
-    for ( unsigned int i(0); i< databins; i++){
+    for ( unsigned int i(0); i< numbins; i++){
       for (unsigned int p(0);p<numbands-1;p++){
-	curve.f[p][i] *= obstime;
+	nicercurve.f[p][i] *= obstime;
       }
     }
 
 
+    std::cout << "After Multiplication: flux[0][0] = " << nicercurve.f[0][0] << std::endl;
 
     
 
@@ -445,15 +452,17 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
 
     //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
+    nicercurve.numbins = curve.numbins;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
-      //curve = ApplyResponse(&curve,&nicer);
+      nicercurve = ApplyResponse(&nicercurve,&nicer);
     } // Finished Applying the Response Matrix
 
     // double spotcounts = 0.0;
     //double bkgcounts = 0.0;
 
    
+    std::cout << "After After Response: flux[0][0] = " << nicercurve.f[30][0] << std::endl;
 
 
  
@@ -477,13 +486,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
       for ( unsigned int p(30); p < curve.numbands; p++ ) {
 	for ( unsigned int i(0); i < curve.numbins; i++ ) {
 
-	  Eobs = curve.elo[p];
+	  Eobs = nicercurve.elo[p];
 	  
 	  // out << Eobs << "\t";
 	  out << p << "\t";
 	  out << i << "\t";
 	  // out << curve.t[i]<< "\t";		
-	  out << curve.f[p][i] << std::endl;
+	  out << nicercurve.f[p][i] << std::endl;
 	  //out << p << std::endl;
 	}
       }

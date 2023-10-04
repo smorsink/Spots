@@ -51,7 +51,7 @@ inclination=43 # in degrees
 ######
 ###### TEST 1: First spot - Tiny; on equator - Compute with 0 ISM and 0 instrument
 ######
-NN=256
+NN=4
 numtheta="$NN"
 
 # One small spot on equator
@@ -73,25 +73,26 @@ out_file1="$out_dir/small-NH$nh-NN$NN-256.txt"
 echo "Printing to $out_file1"
 
 # -L flag creates phaseshift for comparing with Amsterdam!!!!
+# When running with 256 time bins, -L is not needed
 
 
 # RUNNING THE CODE
-./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model" -l "$phaseshift" -L -n "$numbins" -b "angles1000.txt" -o "$out_file1" -p "$rho" -T "$temp" -K -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" -A "$nh" -R "$inst_res"
+#
+#./spot -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file1" -p "$rho" -T "$temp" -K -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" -A "$nh" -R "$inst_res"
 
 
 times
 
-numbins=32
 out_file2="$out_dir/hyd-tiny-emit.txt"
 ## RUNNING THE CODE
-#./emit -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file2" -p "$rho" -T "$temp" -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" 
+#./emit -m "$mass" -r "$radius" -f "$spin" -i "$inclination" -e "$emission" -q "$NS_model" -l "$phaseshift" -n "$numbins" -b "angles1000.txt" -o "$out_file2" -p "$rho" -T "$temp" -K -D "$distance" -t "$numtheta" -g "$beaming" -s "$spectraltype" -S "$numbands" -u "$elo" -U "$ehi" -P "$spotmodel" -Z "$obstime" -A "$nh" -R "$inst_res"
 
 
 
 
 out_file3="$out_dir/hyd-tiny-test$nh.txt"
 ## RUNNING THE CODE
-#./detect  -n "$numbins" -o "$out_file3"  -S "$numbands" -u "$elo" -U "$ehi" -A "$nh" -R "$inst_res" -I "$out_file2" -Z "$obstime"
+./detect  -n "$numbins" -o "$out_file3"  -S "$numbands" -u "$elo" -U "$ehi" -A "$nh" -R "$inst_res" -I "$out_file2" -Z "$obstime"
 
 
 
