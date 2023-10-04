@@ -108,7 +108,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   class LightCurve curve;  // variables curve and normalized curve, of type LightCurve
   // class LightCurve *flxcurve, *flxcurve2;
   //class DataStruct obsdata;           // observational data as read in from a file
-
+  class NICERCurve nicercurve;
 
   
   /*********************************************************/
@@ -385,7 +385,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // Interpolate to create all the other energy bands
     std::cout << "Number of energy bands computed = " << numbands << std::endl;
 
-    curve = ConvertEnergyChannels(&curve, &nicer);
+    nicercurve = ConvertEnergyChannels(&curve, &nicer);
     numbands = curve.numbands;
 
         std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
@@ -447,7 +447,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
-      curve = ApplyResponse(&curve,&nicer);
+      //curve = ApplyResponse(&curve,&nicer);
     } // Finished Applying the Response Matrix
 
     // double spotcounts = 0.0;

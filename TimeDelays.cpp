@@ -31,8 +31,9 @@ class LightCurve TimeDelays( class LightCurve* angles ) {
   int numbins = curve.numbins;
   int numbands = curve.cbands;
 
-  //std::cout << "TIMEDELAYS: number of energy bands = " << numbands << std::endl;
-
+  std::cout << "TIMEDELAYS: number of energy bands = " << numbands << std::endl;
+  std::cout << "TIMEDELAYS: number of time bins = " << numbins << std::endl;
+  
   double tvec[6], fvec[6], err;
 
   std::ofstream ttt;

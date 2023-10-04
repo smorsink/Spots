@@ -143,7 +143,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
    
     		
   // Create LightCurve data structure
-  class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
+  class LightCurve curve;  // variables curve and normalized curve, of type LightCurve
   class LightCurve *flxcurve;
  
 
@@ -544,7 +544,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /* Initialize time, flux and energies */
     /**************************************/
 
-   flxcurve = &normcurve;
+    //   flxcurve = &normcurve;
     
 
     for ( unsigned int i(0); i < numbins; i++ ) {

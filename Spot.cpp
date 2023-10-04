@@ -140,7 +140,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
   class LightCurve curve, normcurve;  // variables curve and normalized curve, of type LightCurve
   class LightCurve *flxcurve;
   //class DataStruct obsdata;           // observational data as read in from a file
-
+  class NICERCurve nicercurve; // output light curve using NICER energy channels and time bins
 
   
   /*********************************************************/
@@ -207,7 +207,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 			
 			
 	    case 'L': // Add an extra phaseshift for comparison with Amsterdam?
-	      phaseshift -= 2.0*Units::PI/(32.0*4.0);
+	      //phaseshift -= 2.0*Units::PI/(32.0*4.0);
+	      //phaseshift += 2.0*Units::PI/(32.0*2.0);
 	      break;
 	      
 	          	          
@@ -217,7 +218,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	                break;
 	          
 	    case 'n':  // Number of phase or time bins
-	                sscanf(argv[i+1], "%u", &databins);
+	                sscanf(argv[i+1], "%d", &databins);
 					if ( databins < MIN_NUMBINS) {
 			  			numbins = MIN_NUMBINS;
 					}
@@ -583,6 +584,13 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     for (unsigned int p(0); p <= numbands; p++){
       curve.elo[p] = E_band_lower_1 + p*DeltaE;
       curve.ehi[p] = E_band_lower_1 + (p+1)*DeltaE;
+
+
+      flxcurve->elo[p] = curve.elo[p];
+      flxcurve->ehi[p] = curve.ehi[p];
+      
+      // if (p < 10)
+      //std::cout << "p = " << p << " E = " << curve.elo[p] << std::endl;
     }
 
 
@@ -653,7 +661,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  numphi = 2.0*phi_edge/dphi;
 	  phishift = 2.0*phi_edge - numphi*dphi;
 
-	   	    
+
+	  
 	  curve.para.dS = pow(rspot,2) * sin(thetak) * deltatheta * dphi;
 
 	  std::cout << "k = " << k
@@ -698,7 +707,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  // Note: dS is in dimensionless code units, so NOT km^2
 	  
 
-	  std::cout << "numphi = " << numphi << " phishift = " << phishift << std::endl;
+	  //std::cout << "numphi = " << numphi << " phishift = " << phishift << std::endl;
 
 	  // SMM: Changed 0.5 to 1.0 below
 	  for ( unsigned int j(0); j < 1*numphi ; j++ ) {// looping through the phi divisions
@@ -725,12 +734,12 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	      curve = ComputeAngles(&curve, defltoa); 	
 	      //std::cout << "Spot1: starting ComputeCurve curve.dOmega_s[0] = " << curve.dOmega_s[0]<< std::endl;
 	      curve = ComputeCurve(&curve);
-	      //std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;	      
+	      std::cout << "Spot1: Before TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;	      
 	      curve = TimeDelays(&curve);
 	      std::cout << "Spot1: finished TimeDelays curve.f[0][0] = " << curve.f[0][0] << std::endl;
 	    }
 
-	    //std::cout << "Spot1: Finished curve.cbands =  " << curve.cbands << std::endl;
+	    std::cout << "Spot1: Finished curve.cbands =  " << curve.cbands << std::endl;
 
 	    // Add curves, load into Flux array
 	    for ( int i(0); i < numbins; i++ ) {
@@ -820,9 +829,9 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     out << "#Spot before ISM absorption" << std::endl;
     
     for ( unsigned int p(0); p < numbands; p++ ) {
-      for ( int i(0); i < numbins; i++ ) {
+      Eobs = curve.elo[p];
 
-	Eobs = curve.elo[p];
+      for ( int i(0); i < numbins; i++ ) {
 	  
 	out << Eobs << "\t";
 	out << curve.t[i]<< "\t";		
@@ -902,7 +911,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     numbins = databins;
     curve.numbins = numbins;
 
-    std::cout << "B: numbins = " << numbins << std::endl;
+    //std::cout << "B: numbins = " << numbins << std::endl;
 
 
     for ( int i(0); i< databins; i++){
@@ -976,8 +985,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     // Interpolate to create all the other energy bands
     std::cout << "Number of energy bands computed = " << numbands << std::endl;
 
-    curve = ConvertEnergyChannels(&curve, &nicer);
-    numbands = curve.numbands;
+    nicercurve = ConvertEnergyChannels(&curve, &nicer);
+    numbands = nicercurve.numbands;
 
         std::cout << "Number of NICER Energy Bands = " << numbands << std::endl;
 
@@ -1005,8 +1014,8 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	Eobs = curve.elo[p];
 	  
 	out << Eobs << "\t";
-	out << curve.t[i]<< "\t";		
-	out << curve.f[p][i] << "\t";
+	out << nicercurve.t[i]<< "\t";		
+	out << nicercurve.f[p][i] << "\t";
 	out << p << std::endl;
       }
     }
@@ -1019,10 +1028,10 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /*     MULTIPLYING OBSERVATION TIME       */
     /******************************************/
     
-    for (unsigned int p = 0; p < curve.numbands; p++){
+    for (unsigned int p = 0; p < nicercurve.numbands; p++){
         for (unsigned int i = 0; i < curve.numbins; i++){          
 	  //curve.f[p][i] *= obstime/(databins);  
-	  curve.f[p][i] *= obstime;  
+	  nicercurve.f[p][i] *= obstime;  
         }
     }
     
@@ -1039,9 +1048,11 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
     /******************************************/
 
     //    std::cout << "Apply Instrument Response to Spot: ints_curve = " << curve.flags.inst_curve << std::endl;
+
+    nicercurve.numbins = curve.numbins;
     if (curve.flags.inst_curve > 0){
       std::cout << "Applying Instrument Response" << std::endl;
-      curve = ApplyResponse(&curve,&nicer);
+      nicercurve = ApplyResponse(&nicercurve,&nicer);
     } // Finished Applying the Response Matrix
 
     
@@ -1075,7 +1086,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 	  out << p << "\t";
 	  out << i << "\t";
 	  // out << curve.t[i]<< "\t";		
-	  out << curve.f[p][i] << "\t";
+	  out << nicercurve.f[p][i] << "\t";
 	  out << p << std::endl;
 	}
     }
