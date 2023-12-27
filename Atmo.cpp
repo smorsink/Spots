@@ -119,6 +119,7 @@ class LightCurve ComputeCurve( class LightCurve* angles ) {
        + (0.653 * mass_over_req - 2.864 * pow(mass_over_req,2)) * pow(curve.para.omega_bar_sq,2.0)
        + (0.975 * mass_over_req) * pow(curve.para.omega_bar_sq,3.0))  *  pow(cos_theta,2)
     + (13.47 * mass_over_req - 27.13 * pow(mass_over_req,2)) *  pow(curve.para.omega_bar_sq,2.0) * cos_theta * (1.0 - cos_theta);
+  
   double lgrav = log10(delta * mass_over_req * pow(Units::C,2)/R * obl_approx);
 
 

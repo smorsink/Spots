@@ -1,7 +1,7 @@
 /***************************************************************************************/
-/*                                   Format.cpp
+/*                                   DiffCurve.cpp
 
-This code reads in a data file and changes it into our format.
+This code reads in 2 pulse waveforms and subtracts them to see how close they are.
 
 The program needs to know:
 (1) number of time bins
@@ -93,37 +93,25 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
 	  in1.getline(line,265);  
 	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f1 );
-	  //sscanf( line, "%lf %lf", &get_t, &get_f1 );
 
 	  if (i == 0 && j == 0)
 	    std::cout << "line1 = " << line << std::endl;
 
 	  in2.getline(line,265);
 	  sscanf( line, "%lf %lf %lf", &get_e, &get_t, &get_f2 );
-		  
-	  //sscanf( line, "%lf %lf", &get_t, &get_f2);
+		
 
-	  //if (i == 0 && j == 0)
-	  //std::cout << "line2 = " << line << std::endl;
-
-
-	  //if ( i==0)
-
-	  diff = (get_f1-get_f2)/get_f1 * 100;
+	  //diff = (get_f1-get_f2)/get_f1 * 100;
+	  diff = (get_f1-get_f2);
 
 	  if(std::isnan(diff) )
 	    diff= 0.0;
 
-	  chisquare += get_f1 * pow( 1.0 - get_f2/get_f1,2);
+	  // chisquare += get_f1 * pow( 1.0 - get_f2/get_f1,2);
 
-	  loglikely += get_f1 * log(get_f2) - get_f2;
+	  //loglikely += get_f1 * log(get_f2) - get_f2;
 
-	  /*
-	  if (fabs(get_f1) < 1e-8)
-	    diff = (get_f1-get_f2)/get_f1 * 100;
-	  else
-	    diff = 0.0;
-	  */
+	
 	  
 	    out << get_e << " " 
 		<< get_t << " "
@@ -142,12 +130,7 @@ int main ( int argc, char** argv ) try {  // argc, number of cmd line args;
 
       std::cout.precision(10);
 
-      //std::cout << "Chi^2 = " << chisquare << std::endl;
-      std::cout << "Chi^2/2 = " << 0.5*chisquare << std::endl;
-      //std::cout << "dof = " << numbands * numbins << std::endl;
-
-      std::cout << "Log(L) = " << loglikely << std::endl;
-
+     
 
       in1.close();
       in2.close();
